@@ -1,5 +1,6 @@
 stages:
   - build
+  - pages
 
 variables:
   IMG: "rescue"
@@ -34,6 +35,7 @@ build_img:
       - "*.img"
 
 pages:
+  stage: pages
   script:
     - touch public/index.html
   artifacts:
