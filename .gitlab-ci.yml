@@ -32,3 +32,10 @@ build_img:
   artifacts:
     paths:
       - "*.img"
+
+pages:
+  artifacts:
+    paths:
+      - public
+  only:
+    - pages
