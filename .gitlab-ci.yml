@@ -30,6 +30,8 @@ build_img:
       done
     - chmod +x mkimg.sh
     - ./mkimg.sh -x "${SETSEXT}" -m ${SIZE} -i ${IMG}.img -s ${SVC}
+  except:
+    - pages
   artifacts:
     paths:
       - "*.img"
