@@ -13,21 +13,20 @@ OS=$(uname -s)
 
 case $OS in
 Linux)
-	accel=kvm
+	ACCEL=",accel=kvm"
 	;;
 Darwin)
-	accel=hvf
+	ACCEL=",accel=hvf"
 	;;
 NetBSD)
-	accel=nvmm
+	ACCEL=",accel=nvmm"
 	;;
 *)
-	echo "Unknown hypervisor"
-	exit 1
+	echo "Unknown hypervisor, no acceleration"
 esac
 
 qemu-system-x86_64 \
-	-M microvm,x-option-roms=off,rtc=on,acpi=off,pic=off,accel=$accel \
+	-M microvm,x-option-roms=off,rtc=on,acpi=off,pic=off${ACCEL} \
 	-m 256 -cpu host,+invtsc \
 	-kernel $kernel -append "console=com root=ld0a -z" \
 	-serial mon:stdio -display none \
