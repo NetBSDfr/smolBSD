@@ -31,7 +31,7 @@ Warning those are _NetBSD-current_ kernels!
   - `sudo` or `doas`
   - `rsync`
   - `nm`
-  - `bsdtar`
+  - `bsdtar` (install with libarchive-tools on linux)
 - A x86 VT-capable, or ARM64 CPU is recommended
 
 ## Project structure
