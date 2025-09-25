@@ -165,7 +165,7 @@ x86_64|i386)
 	cpuflags="-cpu ${cputype},+invtsc"
 	root=${root:-"ld0a"}
 	# stack smashing with version 9.0 and 9.1
-	${QEMU} --version|egrep -q '9\.[01]' && \
+	${QEMU} --version| grep -q -E '9\.[01]' && \
 		extra="$extra -L bios -bios bios-microvm.bin"
 	;;
 aarch64)
