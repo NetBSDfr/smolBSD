@@ -104,7 +104,7 @@ fi
 # use VirtIO console when available, if not, emulated ISA serial console
 if nm $kernel 2>&1 | grep -q viocon_earlyinit; then
 	console=viocon
-	[ -z "$max_ports" ] && max_ports=1
+	[ -z "$max_ports" ] && max_ports=3
 	consdev="\
 -chardev stdio,signal=off,mux=on,id=char0 \
 -device virtio-serial-device,max_ports=${max_ports} \
@@ -136,6 +136,15 @@ Darwin)
 	[ "$MACHINE" = "arm64" ] && MACHINE="aarch64" cputype="cortex-a710"
 	;;
 OpenBSD)
+	MACHINE=$(uname -p)
+	ACCEL=",accel=tcg"
+	# uname -m == "amd64" but qemu-system is "qemu-system-x86_64"
+	if [ "$MACHINE" = "amd64" ]; then
+		MACHINE="x86_64"
+	fi
+	cputype="qemu64"
+	;;
+FreeBSD)
 	MACHINE=$(uname -p)
 	ACCEL=",accel=tcg"
 	# uname -m == "amd64" but qemu-system is "qemu-system-x86_64"

@@ -1,5 +1,7 @@
 #!/bin/sh
 
+set -euf
+
 progname=${0##*/}
 
 usage()
@@ -52,10 +54,24 @@ svc=${svc:-"rescue"}
 megs=${megs:-"20"}
 img=${img:-"rescue-${arch}.img"}
 sets=${sets:-"rescue.tar.xz"}
+rootdir=${rootdir:-}
+kernel=${kernel:-}
+curlsh=${curlsh:-}
+rofs=${rofs:-}
+ADDSETS=${ADDSETS:-}
+ADDPKGS=${ADDPKGS:-}
+SVCIMG=${SVCIMG:-}
 
 OS=$(uname -s)
 TAR=tar
 FETCH=curl
+
+is_netbsd=
+is_linux=
+is_darwin=
+is_openbsd=
+is_freebsd=
+is_unknown=
 
 case $OS in
 NetBSD)
@@ -72,6 +88,8 @@ Darwin)
 	is_darwin=1;;
 OpenBSD)
 	is_openbsd=1;;
+FreeBSD)
+	is_freebsd=1;;
 *)
 	is_unknown=1;
 esac
@@ -110,6 +128,11 @@ if [ -n "$is_linux" ]; then
 	mke2fs -O none $img
 	mount -o loop $img $mnt
 	mountfs="ext2fs"
+elif [ -n "$is_freebsd" ]; then
+	vnd=$(mdconfig -l -f $img || mdconfig -f $img)
+	newfs -o time -O2 /dev/${vnd}
+	mount -o noatime /dev/${vnd} $mnt
+	mountfs="ffs"
 else # NetBSD (and probably OpenBSD)
 	vnd=$(vndconfig -l|grep -m1 'not'|cut -f1 -d:)
 	vndconfig $vnd $img
@@ -171,7 +194,7 @@ fi
 # warning, postinst operations are done on the builder
 
 [ -d ../service/${svc}/postinst ] && \
-	for x in ../service/${svc}/postinst/*.sh
+    for x in $(set +f; ls ../service/${svc}/postinst/*.sh)
 	do
 		# if SVCIMG variable exists, only process its script
 		if [ -n "$SVCIMG" ]; then
@@ -186,7 +209,7 @@ fi
 # backup MAKEDEV so imgbuilder rc can copy it
 cp dev/MAKEDEV etc/
 # unionfs with ext2 leads to i/o error
-sed -i 's/-o union//g' dev/MAKEDEV
+sed -i'' -e 's/-o union//g' dev/MAKEDEV
 # record wanted pkgsrc version
 echo "PKGVERS=$PKGVERS" > etc/pkgvers
 
@@ -197,6 +220,7 @@ cd ..
 
 umount $mnt
 
-[ -z "$is_linux" ] && vndconfig -u $vnd
+[ -n "$is_freebsd" ] && mdconfig -d -u $vnd
+[ -z "$is_linux" ] && [ -z "$is_freebsd" ] && vndconfig -u $vnd
 
 exit 0

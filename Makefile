@@ -96,12 +96,18 @@ SVCSZ?=		128
 
 IMGSIZE?=	512
 
+# QUIET: default to quiet mode with Q=@, use Q= for verbose
+Q=@
+
 ARROW="➡️"
 CHECK="✅"
 
+help:
+	$Qgrep '.*:$$' Makefile
+
 kernfetch:
-	@mkdir -p kernels
-	@if [ ! -f kernels/${KERNEL} ]; then \
+	$Qmkdir -p kernels
+	$Qif [ ! -f kernels/${KERNEL} ]; then \
 		echo "${ARROW} fetching kernel"; \
 		if [ "${ARCH}" = "amd64" -o "${ARCH}" = "i386" ]; then \
 			${FETCH} -o kernels/${KERNEL} ${KDIST}/${KERNEL}; \
@@ -112,9 +118,9 @@ kernfetch:
 	fi
 
 setfetch:
-	@echo "${ARROW} fetching sets"
-	@[ -d ${SETSDIR} ] || mkdir -p ${SETSDIR}
-	@for s in ${SETS}; do \
+	$Qecho "${ARROW} fetching sets"
+	$Q[ -d ${SETSDIR} ] || mkdir -p ${SETSDIR}
+	$Qfor s in ${SETS}; do \
 		[ -f ${SETSDIR}/$${s} ] || ${FETCH} -o ${SETSDIR}/$${s} ${DIST}/sets/$${s}; \
 	done
 
@@ -130,12 +136,12 @@ rescue:
 	${SUDO} chown ${USER}:${GROUP} ${.TARGET}-${ARCH}.img
 
 base:
-	@${MAKE} setfetch SETS="${BASE}"
-	@echo "${ARROW} creating root filesystem (${IMGSIZE}M)"
-	@${SUDO} ./mkimg.sh -i ${SERVICE}-${ARCH}.img -s ${SERVICE} \
+	$Q${MAKE} setfetch SETS="${BASE}"
+	$Qecho "${ARROW} creating root filesystem (${IMGSIZE}M)"
+	$Q${SUDO} ./mkimg.sh -i ${SERVICE}-${ARCH}.img -s ${SERVICE} \
 		-m ${IMGSIZE} -x "${BASE}" ${EXTRAS}
-	@${SUDO} chown ${USER}:${GROUP} ${SERVICE}-${ARCH}.img
-	@echo "${CHECK} image ready: ${SERVICE}-${ARCH}.img"
+	$Q${SUDO} chown ${USER}:${GROUP} ${SERVICE}-${ARCH}.img
+	$Qecho "${CHECK} image ready: ${SERVICE}-${ARCH}.img"
 
 prof:
 	${MAKE} setfetch SETS="${PROF}"
@@ -165,31 +171,31 @@ live:	kernfetch
 	[ -f ${LIVEIMG} ] || ${FETCH} -o- ${LIVEIMGGZ}|gzip -dc > ${LIVEIMG}
 
 buildimg: kernfetch
-	@mkdir -p images
-	@echo "${ARROW} building the builder image"
-	@${MAKE} MOUNTRO=y SERVICE=build IMGSIZE=320 base
-	@mv -f build-${ARCH}.img images/
+	$Qmkdir -p images
+	$Qecho "${ARROW} building the builder image"
+	$Q${MAKE} MOUNTRO=y SERVICE=build IMGSIZE=320 base
+	$Qmv -f build-${ARCH}.img images/
 
 fetchimg:
-	@mkdir -p images
-	@echo "${ARROW} fetching builder image"
-	@if [ ! -f images/${BUILDIMG} ]; then \
+	$Qmkdir -p images
+	$Qecho "${ARROW} fetching builder image"
+	$Qif [ ! -f images/${BUILDIMG} ]; then \
 		${FETCH} -o- ${BUILDIMGURL}.xz | xz -dc > images/${BUILDIMG}; \
 	fi
 
 build:	kernfetch
-	@if [ ! -f images/${.TARGET}-${ARCH}.img ]; then \
+	$Qif [ ! -f images/${.TARGET}-${ARCH}.img ]; then \
 		${MAKE} buildimg; \
 	fi
-	@mkdir -p tmp
-	@rm -f tmp/build-*
+	$Qmkdir -p tmp
+	$Qrm -f tmp/build-*
 	# save variables for sourcing in the build vm
-	@echo "${ENVVARS}"|sed 's/\ /\n/g' > tmp/build-${SERVICE}
-	@echo "${ARROW} starting the builder microvm"
-	@./startnb.sh -k kernels/${KERNEL} -i images/${.TARGET}-${ARCH}.img -c 2 -m 512 \
+	$Qecho "${ENVVARS}"|sed 's/\ /\n/g' > tmp/build-${SERVICE}
+	$Qecho "${ARROW} starting the builder microvm"
+	$Q./startnb.sh -k kernels/${KERNEL} -i images/${.TARGET}-${ARCH}.img -c 2 -m 512 \
 		-p ${PORT} -w . -x "-pidfile qemu-${.TARGET}.pid" &
 	# wait till the build is finished, guest removes the lock
-	@while [ -f tmp/build-${SERVICE} ]; do sleep 0.2; done
-	@echo "${ARROW} killing the builder microvm"
-	@kill $$(cat qemu-${.TARGET}.pid)
-	@${SUDO} chown ${USER}:${GROUP} ${SERVICE}-${ARCH}.img
+	$Qwhile [ -f tmp/build-${SERVICE} ]; do sleep 0.2; done
+	$Qecho "${ARROW} killing the builder microvm"
+	$Qkill $$(cat qemu-${.TARGET}.pid)
+	$Q${SUDO} chown ${USER}:${GROUP} ${SERVICE}-${ARCH}.img
