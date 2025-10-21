@@ -83,6 +83,39 @@ if [ -z "$kernel" -o -z "$img" ]; then
 	usage
 fi
 
+# Handle tar files created by macOS staging approach
+# Check if img ends with .tar or if a .tar file exists for the specified .img
+tarfile=""
+tar_extracted_dir=""
+if [ "${img%.tar}" != "$img" ]; then
+	# User specified a .tar file directly
+	tarfile="$img"
+	img="${img%.tar}"
+elif [ -f "${img%.img}.tar" -a ! -f "$img" ]; then
+	# Found corresponding .tar file for .img
+	tarfile="${img%.img}.tar"
+fi
+
+if [ -n "$tarfile" -a -f "$tarfile" ]; then
+	echo "* Found tar archive $tarfile, extracting to directory..."
+
+	# Create extraction directory based on image name
+	tar_extracted_dir="${img%.img}.d"
+
+	# Extract if not already extracted
+	if [ ! -d "$tar_extracted_dir" ]; then
+		mkdir -p "$tar_extracted_dir"
+		tar -xf "$tarfile" -C "$tar_extracted_dir"
+		echo "* Extracted to: $tar_extracted_dir"
+	else
+		echo "* Using existing directory: $tar_extracted_dir"
+	fi
+
+	# Use the directory path as the root filesystem via 9p
+	img="$tar_extracted_dir"
+	use_9p_root=yes
+fi
+
 [ -n "$hostfwd" ] && network="\
 -device virtio-net-device,netdev=net${uuid}0 \
 -netdev user,id=net${uuid}0,ipv6=off,$(echo "$hostfwd"|sed -E 's/(udp|tcp)?::/hostfwd=\1::/g')"
@@ -209,13 +242,27 @@ fi
 # QMP is available
 [ -n "${qmp_port}" ] && extra="$extra -qmp tcp:localhost:${qmp_port},server,wait=off"
 
-cmd="${QEMU} -smp $cores \
-	$mflags -m $mem $cpuflags \
-	-kernel $kernel -append \"console=${console} root=${root} ${append}\" \
-	-global virtio-mmio.force-legacy=false ${share} \
-	-device virtio-blk-device,drive=hd${uuid}0${sharerw} \
-	-drive if=none,file=${img},format=raw,id=hd${uuid}0 \
-	${drive2} ${network} ${d} ${viosock} ${extra}"
+# Build the command differently if using 9p root from tar extraction
+if [ -n "$use_9p_root" ]; then
+	echo "* Using 9p filesystem for root from directory: $img"
+	# Use 9p virtio filesystem as root
+	cmd="${QEMU} -smp $cores \
+		$mflags -m $mem $cpuflags \
+		-kernel $kernel -append \"console=${console} root=9p:root ${append}\" \
+		-global virtio-mmio.force-legacy=false \
+		-fsdev local,path=${img},security_model=none,id=root \
+		-device virtio-9p-device,fsdev=root,mount_tag=root \
+		${share} ${drive2} ${network} ${d} ${viosock} ${extra}"
+else
+	# Normal block device root
+	cmd="${QEMU} -smp $cores \
+		$mflags -m $mem $cpuflags \
+		-kernel $kernel -append \"console=${console} root=${root} ${append}\" \
+		-global virtio-mmio.force-legacy=false ${share} \
+		-device virtio-blk-device,drive=hd${uuid}0${sharerw} \
+		-drive if=none,file=${img},format=raw,id=hd${uuid}0 \
+		${drive2} ${network} ${d} ${viosock} ${extra}"
+fi
 
 [ -n "$VERBOSE" ] && echo "$cmd" && exit
 

@@ -3,6 +3,7 @@
 VERS?=		11
 PKGVERS?=	11.0_2025Q3
 UNAME_M!=	uname -m
+UNAME_S!=	uname -s
 # for an obscure reason, packages path use uname -m...
 DIST?=		https://nycdn.netbsd.org/pub/NetBSD-daily/netbsd-${VERS}/latest/${ARCH}/binary
 .if !defined(ARCH)
@@ -31,9 +32,14 @@ EXTRAS+=	-o
 
 ENVVARS=	SERVICE=${SERVICE} ARCH=${ARCH} PKGVERS=${PKGVERS} MOUNTRO=${MOUNTRO}
 .if ${WHOAMI} != "root"
+# macOS doesn't need sudo anymore (uses staging approach)
+.  if ${UNAME_S} == "Darwin"
+SUDO=		${ENVVARS}
+.  else
 SUDO!=		command -v doas >/dev/null && \
 		echo '${ENVVARS} doas' || \
 		echo 'sudo -E ${ENVVARS}'
+.  endif
 .else
 SUDO=		${ENVVARS}
 .endif
@@ -133,21 +139,28 @@ pkgfetch:
 rescue:
 	${MAKE} setfetch SETS="${RESCUE}"
 	${SUDO} ./mkimg.sh -m 20 -x "${RESCUE}" ${EXTRAS}
+.if ${UNAME_S} != "Darwin"
 	${SUDO} chown ${USER}:${GROUP} ${.TARGET}-${ARCH}.img
+.endif
 
 base:
 	$Q${MAKE} setfetch SETS="${BASE}"
 	$Qecho "${ARROW} creating root filesystem (${IMGSIZE}M)"
 	$Q${SUDO} ./mkimg.sh -i ${SERVICE}-${ARCH}.img -s ${SERVICE} \
 		-m ${IMGSIZE} -x "${BASE}" ${EXTRAS}
+.if ${UNAME_S} != "Darwin"
 	$Q${SUDO} chown ${USER}:${GROUP} ${SERVICE}-${ARCH}.img
+ 	@${SUDO} chown ${USER}:${GROUP} ${SERVICE}-${ARCH}.img
+.endif
 	$Qecho "${CHECK} image ready: ${SERVICE}-${ARCH}.img"
 
 prof:
 	${MAKE} setfetch SETS="${PROF}"
 	${SUDO} ./mkimg.sh -i ${.TARGET}-${ARCH}.img -s ${.TARGET} -m 1024 -k kernels/${KERNEL} \
 		-x "${PROF}" ${EXTRAS}
+.if ${UNAME_S} != "Darwin"
 	${SUDO} chown ${WHOAMI} ${.TARGET}-${ARCH}.img
+.endif
 
 # for use with sailor, needs rework
 #imgbuilder:
@@ -198,4 +211,6 @@ build:	kernfetch
 	$Qwhile [ -f tmp/build-${SERVICE} ]; do sleep 0.2; done
 	$Qecho "${ARROW} killing the builder microvm"
 	$Qkill $$(cat qemu-${.TARGET}.pid)
+.if ${UNAME_S} != "Darwin"
 	$Q${SUDO} chown ${USER}:${GROUP} ${SERVICE}-${ARCH}.img
+.endif
