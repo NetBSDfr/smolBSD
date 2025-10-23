@@ -1,0 +1,5 @@
+# Minimal fake NetBSD set for testing
+# This is not a real NetBSD set, just test data
+
+This is a test file for smolBSD unit tests.
+It simulates content that would be in a real NetBSD set.

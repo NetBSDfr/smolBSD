@@ -1,4 +1,4 @@
-name: Build smolBSD image
+name: Build and Test smolBSD
 
 on:
   push:
@@ -6,6 +6,9 @@ on:
       - main
     paths-ignore:
       - 'README.md'
+  pull_request:
+    branches:
+      - main
   workflow_dispatch:
     inputs:
       img:
@@ -30,7 +33,70 @@ on:
         default:
 
 jobs:
+  test:
+    runs-on: ubuntu-latest
+    container:
+      image: debian:latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Set up environment
+        run: |
+          apt update && apt install -y curl xz-utils make sudo git libarchive-tools rsync bmake e2fsprogs shellcheck python3 python3-pip
+          rm -rf /var/cache
+
+      - name: Install Python dependencies
+        run: |
+          cd app
+          pip3 install -r requirements.txt
+
+      - name: Run syntax checks
+        run: |
+          make -C tests syntax
+
+      - name: Run shellcheck
+        run: |
+          make -C tests shellcheck
+
+      - name: Run unit tests
+        run: |
+          make -C tests unit
+
+      - name: Run integration tests
+        run: |
+          make -C tests integration
+
+      - name: Run service configuration tests
+        run: |
+          make -C tests unit integration  # Service config tests are run as part of integration tests
+
+      - name: Run app tests
+        run: |
+          make -C tests app
+
+      - name: Run VM tests
+        run: |
+          make -C tests vm
+
+      - name: Run functional tests
+        run: |
+          make -C tests functional
+
+      - name: Run performance tests
+        run: |
+          make -C tests performance
+
+      - name: Run service tests
+        run: |
+          make -C tests service
+
+      - name: Run all tests
+        run: |
+          make -C tests test
+
   build_img:
+    needs: test
     runs-on: ubuntu-latest
     container:
       image: debian:latest
