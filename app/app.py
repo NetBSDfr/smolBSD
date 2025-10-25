@@ -4,24 +4,28 @@ import os
 import psutil
 import socket
 import subprocess
+import dotenv
 import sys
 from flask import Flask, send_file, jsonify, request
 
 app = Flask(__name__)
+# Get environment variables from .flaskenv / .env
+dotenv.load_dotenv()
 
+cwd = os.environ['FLASK_CWD'] if 'FLASK_CWD' in os.environ else '..'
+loglevel = int(os.environ['FLASK_LOGLEVEL']) if 'FLASK_LOGLEVEL' in os.environ else logging.ERROR
 log = logging.getLogger('werkzeug')
-log.setLevel(logging.ERROR)
+log.setLevel(loglevel)
 
 vmlist = {}
 
-
 def get_vmlist():
     vmlist.clear()
-    for filename in os.listdir('etc'):
+    for filename in os.listdir(f'{cwd}/etc'):
         if filename.endswith('.conf'):
             vmname = None
             config_data = {}
-            with open(f'etc/{filename}', 'r') as f:
+            with open(f'{cwd}/etc/{filename}', 'r') as f:
                 lines = f.readlines()
                 for line in lines:
                     line = line.strip()
@@ -35,13 +39,12 @@ def get_vmlist():
                     elif '=' in line:
                         key, value = line.split('=', 1)
                         config_data[key.strip()] = value.strip()
-            
+
             if vmname is None:
                 sys.exit(f"no vm field in {filename}")
-            
-            # Check if QEMU process is running 
-            pid_file = f'qemu-{vmname}.pid'
-            status = 'running' if os.path.exists(pid_file) else 'stopped'
+
+            # Check if QEMU process is running
+            status = 'running' if get_pid(vmname) > 0 else 'stopped'
 
             vmlist[vmname] = config_data
             vmlist[vmname]['status'] = status
@@ -94,16 +97,27 @@ def query_qmp(command, vmname):
 
         return json.loads(response)
 
+def get_pid(vmname):
+    pid_file = f"{cwd}/qemu-{vmname}.pid"
+    if not os.path.exists(pid_file):
+        return -1
+    f = open(pid_file, "r")
+    pid = int(f.read().strip())
+    if psutil.pid_exists(pid):
+        return pid
+    else:
+        return -1
 
 def get_cpu_usage(vmname):
     ncpus = 1
     r = query_qmp("query-cpus-fast", vmname)
     if r and 'return' in r:
         ncpus = len(r['return'])
-    with open(f"qemu-{vmname}.pid", "r") as f:
-        pid = int(f.read().strip())
-        process = psutil.Process(pid)
-        return process.cpu_percent(interval=0.1) / ncpus
+    pid = get_pid(vmname)
+    if pid < 0:
+        return 0
+    process = psutil.Process(pid)
+    return process.cpu_percent(interval=0.1) / ncpus
 
 ## routes
 
@@ -112,6 +126,9 @@ def index():
     # do not render template, frontend logic handled by Vue
     return send_file("index.html")
 
+@app.route("/static/smolBSD.png")
+def assets():
+    return send_file("static/smolBSD.png")
 
 @app.route("/vmlist")
 def vm_list():
@@ -120,19 +137,19 @@ def vm_list():
 
 @app.route("/getkernels")
 def getkernels():
-    return list_files("kernels")
+    return list_files(f'{cwd}/kernels/')
 
 
 @app.route("/getimages")
 def getimages():
-    return list_files("images")
+    return list_files(f'{cwd}/images/')
 
 
 @app.route("/start", methods=["POST"])
 def start_vm():
     vm_name = request.json.get("vm_name")
 
-    config_file = f'etc/{vm_name}.conf'
+    config_file = f'{cwd}/etc/{vm_name}.conf'
 
     if not os.path.exists(config_file):
         return jsonify(
@@ -140,7 +157,7 @@ def start_vm():
         ), 404
 
     try:
-        subprocess.Popen(["./startnb.sh", "-f", config_file, "-d"])
+        ret = subprocess.Popen([f"{cwd}/startnb.sh", "-f", config_file, "-d"], cwd=cwd)
         return jsonify({"success": True, "message": "Starting VM"})
     except Exception as e:
         return jsonify({"success": False, "message": str(e)}), 500
@@ -149,18 +166,16 @@ def start_vm():
 @app.route("/stop", methods=["POST"])
 def stop_vm():
     vm_name = request.json.get("vm_name")
-
-    pid_file = f'qemu-{vm_name}.pid'
-
-    if not os.path.exists(pid_file):
-        return jsonify(
-            {"success": False, "message": "PID file not found"}
-        ), 404
+    pid_file = f'{cwd}/qemu-{vm_name}.pid'
 
     try:
-        with open(pid_file, 'r') as f:
-            pid = f.read().strip()
+        pid = get_pid(vm_name)
+        if pid < 0:
+            return jsonify(
+                {"success": False, "message": "PID file not found"}
+            ), 404
         os.kill(int(pid), 15)
+        os.remove(pid_file)
         return jsonify({"success": True, "message": "Stopping VM"})
     except Exception as e:
         return jsonify({"success": False, "message": str(e)}), 500
@@ -184,9 +199,8 @@ def saveconf():
                 }
             ), 400
 
-        directory = './etc'
-        os.makedirs(directory, exist_ok=True)
-        file_path = os.path.join(directory, f"{vmname}.conf")
+        os.makedirs(f'{cwd}/etc', exist_ok=True)
+        file_path = f"{cwd}/etc/{vmname}.conf"
 
         with open(file_path, 'w') as file:
             for key, value in data.items():
@@ -216,7 +230,7 @@ def saveconf():
 @app.route('/rm/<vm>', methods=['DELETE'])
 def rm_file(vm):
     try:
-        filepath = f"etc/{vm}.conf"
+        filepath = f"{cwd}/etc/{vm}.conf"
 
         if not os.path.isfile(filepath):
             return jsonify(
@@ -248,10 +262,7 @@ def cpu_usage(vmname):
     except Exception as e:
         return jsonify({"success": False, "message": str(e)}), 500
 
-
-if __name__ == "__main__":
-
-    os.chdir("..");
+if __name__ in ["__main__", "app"]:
     vmlist = get_vmlist()
- 
-    app.run(debug=False, host='0.0.0.0')
+    if __name__ == "__main__":
+        app.run()
