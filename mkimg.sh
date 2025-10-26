@@ -8,7 +8,7 @@ usage()
 {
 	cat 1>&2 << _USAGE_
 Usage: $progname [-s service] [-m megabytes] [-i image] [-x set]
-       [-k kernel] [-o] [-c URL]
+       [-k kernel] [-o] [-c URL] [-d]
 	Create a root image
 	-s service	service name, default "rescue"
 	-r rootdir	hand crafted root directory to use
@@ -18,6 +18,7 @@ Usage: $progname [-s service] [-m megabytes] [-i image] [-x set]
 	-k kernel	kernel to copy in the image
 	-c URL		URL to a script to execute as finalizer
 	-o		read-only root filesystem
+	-d		enable debug mode (verbose output)
 _USAGE_
 	exit 1
 }
@@ -28,7 +29,7 @@ rsynclite()
 	(cd $1 && tar cfp - .)|(cd $2 && tar xfp -)
 }
 
-options="s:m:i:r:x:k:c:oh"
+options="s:m:i:r:x:k:c:odh"
 
 while getopts "$options" opt
 do
@@ -41,10 +42,17 @@ do
 	k) kernel="$OPTARG";;
 	c) curlsh="$OPTARG";;
 	o) rofs=y;;
+	d) debug=y;;
 	h) usage;;
 	*) usage;;
 	esac
 done
+
+# Enable debug mode if requested
+if [ -n "$debug" ]; then
+	set -x  # Print commands as they execute
+	set -v  # Print shell input lines as they are read
+fi
 
 export ARCH PKGVERS
 
@@ -110,19 +118,20 @@ if [ -z "$is_netbsd" -a -f "service/${svc}/NETBSD_ONLY" ]; then
 	exit 1
 fi
 
-[ -n "$is_darwin" -o -n "$is_unknown" ] && \
+[ -n "$is_unknown" ] && \
 	echo "${progname}: OS is not supported" && exit 1
 
-if [ -n "$is_linux" ]; then
-	u=M
+if [ -n "$is_darwin" ]; then
+	# Use temporary directory to stage files
+	stagedir=$(mktemp -d)
+	mnt=$stagedir
 else
-	u=m
+	# Use platform-independent dd syntax that works with both GNU and BSD dd
+	# bs=1048576 (1MB in bytes) works on all platforms
+	dd if=/dev/zero of=./${img} bs=1048576 count=${megs}
+	mkdir -p mnt
+	mnt=$(pwd)/mnt	
 fi
-
-dd if=/dev/zero of=./${img} bs=1${u} count=${megs}
-
-mkdir -p mnt
-mnt=$(pwd)/mnt
 
 if [ -n "$is_linux" ]; then
 	mke2fs -O none $img
@@ -133,6 +142,8 @@ elif [ -n "$is_freebsd" ]; then
 	newfs -o time -O2 /dev/${vnd}
 	mount -o noatime /dev/${vnd} $mnt
 	mountfs="ffs"
+elif [ -n "$is_darwin" ]; then
+	mountfs="staged"  # Special flag for macOS staging mode
 else # NetBSD (and probably OpenBSD)
 	vnd=$(vndconfig -l|grep -m1 'not'|cut -f1 -d:)
 	vndconfig $vnd $img
@@ -155,7 +166,7 @@ else
 	do
 		# don't prepend sets path if this is a full path
 		case $s in */*) ;; *) s="sets/${arch}/${s}" ;; esac
-		echo -n "extracting ${s}.. "
+		printf "extracting ${s}.. "
 		$TAR xfp ${s} -C ${mnt}/ || exit 1
 		echo done
 	done
@@ -164,7 +175,7 @@ fi
 # additional packages
 [ -n "$ADDPKGS" ] && for pkg in ${ADDPKGS}; do
 		eval $($TAR xfp $pkg -O +BUILD_INFO|grep ^LOCALBASE)
-		echo -n "extracting $pkg to ${LOCALBASE}.. "
+		printf "extracting $pkg to ${LOCALBASE}.. "
 		mkdir -p ${mnt}/${LOCALBASE}
 		$TAR xfp ${pkg} -C ${mnt}/${LOCALBASE} || exit 1
 		echo done
@@ -181,6 +192,7 @@ rsynclite service/common/ ${mnt}/etc/include/
 
 [ -n "$kernel" ] && cp -f $kernel ${mnt}/
 
+BACK=$PWD
 cd $mnt
 
 if [ "$svc" = "rescue" ]; then
@@ -207,20 +219,37 @@ fi
 
 # newer NetBSD versions use tmpfs for /dev, sailor copies MAKEDEV from /dev
 # backup MAKEDEV so imgbuilder rc can copy it
-cp dev/MAKEDEV etc/
-# unionfs with ext2 leads to i/o error
-sed -ie 's/-o union//g' dev/MAKEDEV
+if [ -f dev/MAKEDEV ]; then
+	cp -f dev/MAKEDEV etc/
+	# unionfs with ext2 leads to i/o error
+	# Use portable sed approach that works with both GNU and BSD sed
+	sed 's/-o union//g' dev/MAKEDEV > dev/MAKEDEV.tmp && rm -f dev/MAKEDEV && mv dev/MAKEDEV.tmp dev/MAKEDEV
+fi
 # record wanted pkgsrc version
 echo "PKGVERS=$PKGVERS" > etc/pkgvers
 
 # proceed with caution
 [ -n "$curlsh" ] && curl -sSL "$CURLSH" | /bin/sh
 
-cd ..
+cd $BACK
 
-umount $mnt
+if [ -n "$is_darwin" ]; then
+	# macOS: Convert staged files to qemu image
+	(cd $mnt && $TAR cf - .) > ${img}.tar
+	echo "Created ${img}.tar"
 
-[ -n "$is_freebsd" ] && mdconfig -d -u $vnd
-[ -z "$is_linux" ] && [ -z "$is_freebsd" ] && vndconfig -u $vnd
+	# Clean up staging directory
+	rm -rf $mnt
+
+	echo "macOS build complete!"
+	if [ -f "$qcow_img" ]; then
+		echo "Created qemu image: $qcow_img"
+	fi
+else
+	umount $mnt
+	[ -z "$is_linux" ] && vndconfig -u $vnd
+	[ -n "$is_freebsd" ] && mdconfig -d -u $vnd
+	[ -z "$is_linux" ] && [ -z "$is_freebsd" ] && vndconfig -u $vnd
+fi
 
 exit 0
