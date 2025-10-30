@@ -83,7 +83,7 @@ echo "Difference: $diff seconds"
 
 ## Requirements
 
-- `qemu-system-x86_64` with KVM support
+- `qemu` with KVM support
 - `socat` for Unix socket communication
 - `bc` for floating-point arithmetic
 
