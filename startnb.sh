@@ -46,6 +46,56 @@ export CHOUPI=y
 
 uuid="$(LC_ALL=C tr -dc 'A-Za-z0-9' < /dev/urandom | head -c8)"
 
+
+OS=$(uname -s)
+MACHINE=$(uname -m) # Linux and macos x86
+cputype="host"
+
+case $OS in
+NetBSD)
+	MACHINE=$(uname -p)
+	ACCEL=",accel=nvmm"
+	;;
+Linux)
+	ACCEL=",accel=kvm"
+	# Some weird Ryzen CPUs
+	[ "$MACHINE" = "AMD" ] && MACHINE="x86_64"
+	;;
+Darwin)
+	ACCEL=",accel=hvf"
+	# Mac M1
+	[ "$MACHINE" = "arm64" ] && MACHINE="aarch64" cputype="cortex-a710"
+	;;
+OpenBSD)
+	MACHINE=$(uname -p)
+	ACCEL=",accel=tcg"
+	# uname -m == "amd64" but qemu-system is "qemu-system-x86_64"
+	if [ "$MACHINE" = "amd64" ]; then
+		MACHINE="x86_64"
+	fi
+	cputype="qemu64"
+	;;
+FreeBSD)
+	MACHINE=$(uname -p)
+	ACCEL=",accel=tcg"
+	# uname -m == "amd64" but qemu-system is "qemu-system-x86_64"
+	if [ "$MACHINE" = "amd64" ]; then
+		MACHINE="x86_64"
+	fi
+	cputype="qemu64"
+	;;
+*)
+	echo "Unknown hypervisor, no acceleration"
+esac
+
+if [ "$MACHINE" = "x86_64" ]; then
+    img_arch=amd64
+    kernel_name=netbsd-SMOL
+else
+    img_arch=evbarm-aarch64
+    kernel_name=netbsd-GENERIC64.img
+fi
+
 # and possibly override its values
 while getopts "$options" opt
 do
@@ -123,47 +173,7 @@ else
 fi
 echo "${ARROW} using console: $console"
 
-OS=$(uname -s)
-MACHINE=$(uname -m) # Linux and macos x86
 
-cputype="host"
-
-case $OS in
-NetBSD)
-	MACHINE=$(uname -p)
-	ACCEL=",accel=nvmm"
-	;;
-Linux)
-	ACCEL=",accel=kvm"
-	# Some weird Ryzen CPUs
-	[ "$MACHINE" = "AMD" ] && MACHINE="x86_64"
-	;;
-Darwin)
-	ACCEL=",accel=hvf"
-	# Mac M1
-	[ "$MACHINE" = "arm64" ] && MACHINE="aarch64" cputype="cortex-a710"
-	;;
-OpenBSD)
-	MACHINE=$(uname -p)
-	ACCEL=",accel=tcg"
-	# uname -m == "amd64" but qemu-system is "qemu-system-x86_64"
-	if [ "$MACHINE" = "amd64" ]; then
-		MACHINE="x86_64"
-	fi
-	cputype="qemu64"
-	;;
-FreeBSD)
-	MACHINE=$(uname -p)
-	ACCEL=",accel=tcg"
-	# uname -m == "amd64" but qemu-system is "qemu-system-x86_64"
-	if [ "$MACHINE" = "amd64" ]; then
-		MACHINE="x86_64"
-	fi
-	cputype="qemu64"
-	;;
-*)
-	echo "Unknown hypervisor, no acceleration"
-esac
 
 QEMU=${QEMU:-qemu-system-${MACHINE}}
 printf "${ARROW} using QEMU "

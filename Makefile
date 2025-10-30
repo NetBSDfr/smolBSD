@@ -66,7 +66,7 @@ KDIST=		https://smolbsd.org/assets
 LIVEIMGGZ=	https://nycdn.netbsd.org/pub/NetBSD-daily/HEAD/latest/images/NetBSD-11.99.3-amd64-live.img.gz
 .endif
 
-LIVEIMG=	NetBSD-${ARCH}-live.img
+LIVEIMG=	images/NetBSD-${ARCH}-live.img
 
 # sets to fetch, defaults to base
 SETS?=		base.${SETSEXT} etc.${SETSEXT}
