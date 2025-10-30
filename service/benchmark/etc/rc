@@ -1,0 +1,12 @@
+#!/bin/sh
+
+. /etc/include/basicrc
+
+cd /dev && /bin/sh /etc/MAKEDEV ttyVI01
+
+# Send boot complete immediately
+echo "BOOT_COMPLETE" > /dev/ttyVI01
+
+ksh
+
+. /etc/include/shutdown
