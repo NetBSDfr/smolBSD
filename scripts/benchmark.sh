@@ -12,6 +12,13 @@ while [[ "$1" == -* ]]; do
   esac
 done
 
+# Define echo function based on quiet flag
+if [ "$QUIET" = true ]; then
+  log() { :; }  # No-op function
+else
+  log() { echo "$@"; }
+fi
+
 # Default paths (can be overridden via command-line arguments)
 KERNEL_PATH="${1:-kernels/netbsd-SMOL}"
 DRIVE_PATH="${2:-images/benchmark-amd64.img}"
@@ -22,26 +29,20 @@ MESSAGE_FILE="/tmp/boot_msg.txt"
 rm -f "$MESSAGE_FILE" "./$SOCKET"
 touch "$MESSAGE_FILE"
 
-if [ "$QUIET" = false ]; then
-  echo "Kernel: $KERNEL_PATH"
-  echo "Drive: $DRIVE_PATH"
-fi
+log "Kernel: $KERNEL_PATH"
+log "Drive: $DRIVE_PATH"
 
 # Generate unique network ID
 uuid="$(LC_ALL=C tr -dc 'A-Za-z0-9' < /dev/urandom | head -c8)"
 
 START_TIME=$(date +%s.%N)
-if [ "$QUIET" = false ]; then
-  echo "Starting VM at $(date)"
-fi
+log "Starting VM at $(date)"
 
 # Start socat server FIRST - listening and ready before QEMU starts
 socat UNIX-LISTEN:"./$SOCKET" - > "$MESSAGE_FILE" 2>/dev/null &
 SOCAT_PID=$!
 
-if [ "$QUIET" = false ]; then
-  echo "Socket ready: $SOCKET"
-fi
+log "Socket ready: $SOCKET"
 
 # Start file watcher in parallel BEFORE launching QEMU
 if command -v inotifywait >/dev/null 2>&1; then
@@ -73,10 +74,8 @@ qemu-system-x86_64 \
   > /dev/null 2>&1 &
 VM_PID=$!
 
-if [ "$QUIET" = false ]; then
-  echo "VM PID: $VM_PID"
-  echo "Waiting for boot message..."
-fi
+log "VM PID: $VM_PID"
+log "Waiting for boot message..."
 
 # Wait for the file watcher to complete
 wait $WATCH_PID 2>/dev/null
@@ -87,14 +86,14 @@ BOOT_TIME=$(printf "%.9f" $(echo "$END_TIME - $START_TIME" | bc))
 if [ "$QUIET" = true ]; then
   echo "$BOOT_TIME"
 else
-  echo ""
-  echo "========================================="
-  echo "Boot time: ${BOOT_TIME} seconds"
-  echo "========================================="
-  echo ""
-  echo "Message received:"
-  cat "$MESSAGE_FILE" 2>/dev/null || echo "(none)"
-  echo ""
+  log ""
+  log "========================================="
+  log "Boot time: ${BOOT_TIME} seconds"
+  log "========================================="
+  log ""
+  log "Message received:"
+  cat "$MESSAGE_FILE" 2>/dev/null || log "(none)"
+  log ""
 fi
 
 # Cleanup
