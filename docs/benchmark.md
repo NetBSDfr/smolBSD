@@ -86,8 +86,6 @@ echo "Difference: $diff seconds"
 - `qemu-system-x86_64` with KVM support
 - `socat` for Unix socket communication
 - `bc` for floating-point arithmetic
-- `inotifywait` (optional, falls back to `tail -f` if unavailable)
-- `uuidgen` or `/dev/urandom` for generating unique network IDs
 
 ## How It Works
 
@@ -104,8 +102,3 @@ The benchmark uses QEMU's microvm machine type with:
 - KVM acceleration
 - 1 CPU core
 - 256MB RAM
-
-## TODO
-
-- Add support for aarch64
-- Test compatibility with MacOS

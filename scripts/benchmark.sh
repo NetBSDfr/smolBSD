@@ -8,7 +8,33 @@ QUIET=false
 while [[ "$1" == -* ]]; do
   case "$1" in
     -q|--quiet) QUIET=true; shift ;;
-    *) echo "Unknown option: $1" >&2; exit 1 ;;
+    -c|--cores) cores="$2"; shift 2 ;;
+    -m|--mem) mem="$2"; shift 2 ;;
+    -h|--help)
+      cat << EOF
+Usage: $0 [OPTIONS] [KERNEL_PATH] [DRIVE_PATH]
+
+Measures VM boot time by capturing boot completion message via Unix socket.
+
+Options:
+  -q, --quiet       Quiet mode - output only boot time in seconds
+  -c, --cores NUM   Number of CPU cores (default: 1)
+  -m, --mem SIZE    Memory in MB (default: 256)
+  -h, --help        Show this help message
+
+Arguments:
+  KERNEL_PATH       Path to kernel (default: arch-specific)
+  DRIVE_PATH        Path to disk image (default: arch-specific)
+
+Examples:
+  $0                                    # Use defaults
+  $0 -q                                 # Quiet mode
+  $0 -c 2 -m 512                        # 2 cores, 512MB RAM
+  $0 kernels/custom images/custom.img   # Custom paths
+EOF
+      exit 0
+      ;;
+    *) echo "Unknown option: $1" >&2; echo "Use -h for help" >&2; exit 1 ;;
   esac
 done
 
@@ -19,16 +45,96 @@ else
   log() { echo "$@"; }
 fi
 
+# Detect OS and architecture
+OS=$(uname -s)
+MACHINE=$(uname -m)
+
+cputype="host"
+
+case $OS in
+NetBSD)
+	MACHINE=$(uname -p)
+	ACCEL=",accel=nvmm"
+	;;
+Linux)
+	ACCEL=",accel=kvm"
+	# Some weird Ryzen CPUs
+	[ "$MACHINE" = "AMD" ] && MACHINE="x86_64"
+	;;
+Darwin)
+	ACCEL=",accel=hvf"
+	# Mac M1
+	[ "$MACHINE" = "arm64" ] && MACHINE="aarch64" cputype="cortex-a710"
+	;;
+OpenBSD)
+	MACHINE=$(uname -p)
+	ACCEL=",accel=tcg"
+	# uname -m == "amd64" but qemu-system is "qemu-system-x86_64"
+	if [ "$MACHINE" = "amd64" ]; then
+		MACHINE="x86_64"
+	fi
+	cputype="qemu64"
+	;;
+FreeBSD)
+	MACHINE=$(uname -p)
+	ACCEL=",accel=tcg"
+	# uname -m == "amd64" but qemu-system is "qemu-system-x86_64"
+	if [ "$MACHINE" = "amd64" ]; then
+		MACHINE="x86_64"
+	fi
+	cputype="qemu64"
+	;;
+*)
+	echo "Unknown hypervisor, no acceleration" >&2
+esac
+
+QEMU=${QEMU:-qemu-system-${MACHINE}}
+
+# Set architecture-specific defaults
+case $MACHINE in
+x86_64|i386)
+	mflags="-M microvm,rtc=on,acpi=off,pic=off${ACCEL}"
+	cpuflags="-cpu ${cputype},+invtsc"
+	mem=${mem:-"256"}
+	cores=${cores:-"1"}
+	case $MACHINE in
+	i386)
+		default_kernel="kernels/netbsd-SMOL386"
+		default_drive="images/benchmark-i386.img"
+		;;
+	x86_64)
+		default_kernel="kernels/netbsd-SMOL"
+		default_drive="images/benchmark-amd64.img"
+		;;
+	esac
+	;;
+aarch64)
+	mflags="-M virt${ACCEL},highmem=off,gic-version=3"
+	cpuflags="-cpu ${cputype}"
+	mem=${mem:-"256"}
+	cores=${cores:-"1"}
+	default_kernel="kernels/netbsd-GENERIC64.img"
+	default_drive="images/benchmark-evbarm-aarch64.img"
+	;;
+*)
+	echo "Unknown architecture: $MACHINE" >&2
+	exit 1
+esac
+
 # Default paths (can be overridden via command-line arguments)
-KERNEL_PATH="${1:-kernels/netbsd-SMOL}"
-DRIVE_PATH="${2:-images/benchmark-amd64.img}"
+KERNEL_PATH="${1:-$default_kernel}"
+DRIVE_PATH="${2:-$default_drive}"
 
 SOCKET="measure_boot.sock"
-MESSAGE_FILE="/tmp/boot_msg.txt"
+FIFO="/tmp/boot_fifo_$$"
 
-rm -f "$MESSAGE_FILE" "./$SOCKET"
-touch "$MESSAGE_FILE"
+rm -f "./$SOCKET" "$FIFO"
+mkfifo "$FIFO"
 
+log "Architecture: $MACHINE"
+log "QEMU: $QEMU"
+log "CPU cores: $cores"
+log "Memory: ${mem}MB"
 log "Kernel: $KERNEL_PATH"
 log "Drive: $DRIVE_PATH"
 
@@ -39,25 +145,16 @@ START_TIME=$(date +%s.%N)
 log "Starting VM at $(date)"
 
 # Start socat server FIRST - listening and ready before QEMU starts
-socat UNIX-LISTEN:"./$SOCKET" - > "$MESSAGE_FILE" 2>/dev/null &
+timeout 10 socat UNIX-LISTEN:"./$SOCKET" - 2>/dev/null > "$FIFO" &
 SOCAT_PID=$!
 
 log "Socket ready: $SOCKET"
 
-# Start file watcher in parallel BEFORE launching QEMU
-if command -v inotifywait >/dev/null 2>&1; then
-    timeout 10 inotifywait -e modify -e close_write "$MESSAGE_FILE" >/dev/null 2>&1 &
-    WATCH_PID=$!
-else
-    timeout 10 tail -f "$MESSAGE_FILE" 2>/dev/null | head -1 >/dev/null &
-    WATCH_PID=$!
-fi
-
 # Launch QEMU directly with our pre-created socket
-qemu-system-x86_64 \
-  -M microvm,rtc=on,acpi=off,pic=off,accel=kvm \
-  -cpu host,+invtsc \
-  -smp 1 -m 256 \
+$QEMU \
+  $mflags \
+  $cpuflags \
+  -smp $cores -m $mem \
   -kernel "$KERNEL_PATH" \
   -append "console=viocon root=ld0a -z" \
   -global virtio-mmio.force-legacy=false \
@@ -77,8 +174,8 @@ VM_PID=$!
 log "VM PID: $VM_PID"
 log "Waiting for boot message..."
 
-# Wait for the file watcher to complete
-wait $WATCH_PID 2>/dev/null
+# Read from FIFO (blocks until data arrives)
+head -1 < "$FIFO" > /dev/null
 
 END_TIME=$(date +%s.%N)
 BOOT_TIME=$(printf "%.9f" $(echo "$END_TIME - $START_TIME" | bc))
@@ -91,13 +188,10 @@ else
   log "Boot time: ${BOOT_TIME} seconds"
   log "========================================="
   log ""
-  log "Message received:"
-  cat "$MESSAGE_FILE" 2>/dev/null || log "(none)"
-  log ""
 fi
 
 # Cleanup
 kill $SOCAT_PID $VM_PID 2>/dev/null || true
-rm -f "$MESSAGE_FILE" "./$SOCKET"
+rm -f "./$SOCKET" "$FIFO"
 
 exit 0
