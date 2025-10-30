@@ -11,6 +11,8 @@ The benchmark script measures VM boot time by capturing a boot completion messag
 ### Options
 
 - `-q, --quiet`: Quiet mode - outputs only the boot time in seconds (useful for scripting)
+- `-c, --cores NUM`: Number of CPU cores to allocate to the VM (default: 1)
+- `-m, --mem SIZE`: Memory size in MB to allocate to the VM (default: 256)
 
 ### Arguments
 
@@ -56,6 +58,12 @@ $ ./scripts/benchmark.sh kernels/custom-kernel images/custom.img
 
 # Quiet mode with custom paths
 $ ./scripts/benchmark.sh -q kernels/custom-kernel images/custom.img
+
+# With custom CPU and RAM
+$ ./scripts/benchmark.sh -c 2 -m 512
+
+# Combining options
+$ ./scripts/benchmark.sh -q -c 4 -m 1024 kernels/custom-kernel
 ```
 
 ### Scripting Examples
@@ -95,10 +103,3 @@ echo "Difference: $diff seconds"
 4. The VM sends "BOOT_COMPLETE" message via virtio console to the socket
 5. Measures the time between VM launch and message receipt
 6. Cleans up processes and temporary files
-
-## VM Configuration
-
-The benchmark uses QEMU's microvm machine type with:
-- KVM acceleration
-- 1 CPU core
-- 256MB RAM
