@@ -1,11 +1,12 @@
 # smolBSD
 
-This project aims at creating a minimal _NetBSD_ 🚩 virtual machine that's able to boot and
-start a service in a couple milliseconds.  
+This project aims at creating a minimal _NetBSD_ 🚩 based _BSD UNIX_ virtual machine that's able to boot and start a service in a couple milliseconds.  
 Previous _NetBSD_ installation is not required, using the provided tools the _microvm_ can be
 created and started from any _NetBSD_, _GNU/Linux_, _macOS_ system and probably more.
 
-[PVH][4] boot and various optimizations enable _NetBSD/amd64_ and _NetBSD/i386_ to directly boot from a [PVH][4] capable VMM (QEMU or Firecracker) in about 10 **milliseconds** on 2025 mid-end x86 CPUs. 
+## Kernel
+
+[PVH][4] boot and various optimizations enable _NetBSD/amd64_ and _NetBSD/i386_ to directly boot from a [PVH][4] capable VMM ([QEMU][8] or [Firecracker][9]) in about 10 **milliseconds** on 2025 mid-end x86 CPUs. 
 
 As of June 2025, most of these features are integrated in [NetBSD's current kernel][6], and [NetBSD 11 releases][7] those still pending are available in my [NetBSD development branch][5].
 
@@ -19,7 +20,7 @@ In any case, the `bmake kernfetch` will take care of downloading the correct ker
 
 ## Requirements
 
-- A _GNU/Linux_, _NetBSD_ or _macOS_ operating system
+- A _GNU/Linux_, _NetBSD_ or _macOS_ operating system (might work on more systems, but not CPU accelerated)
 - The following tools installed
   - `curl`
   - `git`
@@ -33,7 +34,7 @@ In any case, the `bmake kernfetch` will take care of downloading the correct ker
 ## Project structure
 
 - `mkimg.sh` creates a root filesystem image
-```text
+```sh
 $ ./mkimg.sh -h
 Usage: mkimg.sh [-s service] [-m megabytes] [-i image] [-x set]
        [-k kernel] [-o] [-c URL]
@@ -50,7 +51,7 @@ Usage: mkimg.sh [-s service] [-m megabytes] [-i image] [-x set]
         -u              non-colorful output
 ```
 - `startnb.sh` starts a _NetBSD_ virtual machine using `qemu-system-x86_64` or `qemu-system-aarch64`
-```text
+```sh
 $ ./startnb.sh -h
 Usage:  startnb.sh -f conffile | -k kernel -i image [-c CPUs] [-m memory]
         [-a kernel parameters] [-r root disk] [-h drive2] [-p port]
@@ -79,7 +80,7 @@ Usage:  startnb.sh -f conffile | -k kernel -i image [-c CPUs] [-m memory]
         -h              this help
 ```
 - `sets` contains _NetBSD_ "sets" by architecture, i.e. `amd64/base.tgz`, `evbarm-aarch64/rescue.tgz`...
-- `pkgs` holds optional packages to add to an microvm, it has the same format as `sets`.
+- `pkgs` holds optional packages to add to a microvm, it has the same format as `sets`.
 
 A `service` is the base unit of a _smolBSD_ microvm, it holds the necesary pieces to build a _BSD_ system from scratch.  
 - `service` structure:
@@ -206,7 +207,7 @@ Will create a `rescue-amd64.img` file for use with an _amd64_ kernel.
 ```sh
 $ bmake SERVICE=rescue MOUNTRO=y build
 ```
-Will also create a `rescue-amd64.img` file but with read-only root filesystem so the _VM_ can be stopped without graceful shutdow
+Will also create a `rescue-amd64.img` file but with read-only root filesystem so the _VM_ can be stopped without graceful shutdow. Note this is the default for `rescue` as set in `service/rescue/options.mk`
 ```sh
 $ bmake SERVICE=rescue ARCH=i386 build
 ```
@@ -319,3 +320,5 @@ the following should be available at `http://localhost:5000`:
 [5]: https://github.com/NetBSDfr/NetBSD-src/tree/nbfr_master
 [6]: https://github.com/NetBSD/src
 [7]: https://nycdn.netbsd.org/pub/NetBSD-daily/netbsd-11/latest
+[8]: https://www.qemu.org/docs/master/system/i386/microvm.html
+[9]: https://firecracker-microvm.github.io/
