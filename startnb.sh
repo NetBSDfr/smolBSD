@@ -209,7 +209,14 @@ if [ -z "$img" ]; then
 	usage
 fi
 
-d="-display none"
+# svc *must* be defined to be able to store qemu PID in a unique filename
+if [ -z "$svc" ]; then
+	svc=${uuid}
+	echo "${ARROW} no service name, using UUID ($uuid)"
+fi
+
+d="-display none -pidfile qemu-${svc}.pid"
+
 if [ -n "$DAEMON" ]; then
 	# a TCP port is specified
 	[ -n "${serial_port}" ] && \

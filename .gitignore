@@ -4,3 +4,6 @@ tmp/
 *.img
 sets/
 netbsd-*
+app/bin/
+app/lib/
+app/pyvenv.cfg
