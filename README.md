@@ -231,7 +231,7 @@ $ ./startnb.sh -k kernels/netbsd-SMOL -i images/base-amd64.img
 
 ## Example of an image running the `bozohttpd` web server on an `aarch64` CPU
 
-Services are build on top of the `base` image, this can be overriden with the `BASE` `make(1)` variable.  
+Services are build on top of the `base` set, this can be overriden with the `SETS` `make(1)` variable.  
 Service name is specified with the `SERVICE` `make(1)` variable.
 
 ```sh
@@ -287,12 +287,13 @@ $ dd if=/dev/zero bs=1M count=4000 >> NetBSD-amd64-live.img
 ```
 And reboot.
 
-## Environment variables
+## Customization
 
 The following `Makefile` variables change `mkimg.sh` behavior:
 
 * `ADDPKGS` will fetch and **untar** the packages paths listed in the variable, this is done in `postinst` stage, on the build host, where `pkgin` might not be available
 * `ADDSETS` will add the sets paths listed in the variable
+* `MOUNTRO` if set to `y`, the microvm will mount its root filesystem as read-only
 * `MINIMIZE` if set to `y`, will invoke [sailor][3] in order to minimize the produced image
 
 The following environment variables change `startnb.sh` behavior:
