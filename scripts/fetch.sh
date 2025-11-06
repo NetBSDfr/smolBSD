@@ -14,7 +14,7 @@ case $fullurl in
 	fetchurl=${fullurl%/*} 
 	matchfile=${fullurl##*/}
 	matchfile=${matchfile%\*}
-	curl -L -s "$fetchurl" | grep -oE "\"${matchfile}\-[^\"]*(xz|gz)" | \
+	curl -L -s "$fetchurl" | grep -oE "\"${matchfile}-[^\"]*(xz|gz)" | \
 		while read f; do
 			f=${f#\"}
 			# mimic NetBSD's ftp parameters
