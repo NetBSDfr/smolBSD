@@ -14,7 +14,7 @@ ARCH=	${UNAME_M}
 .-include "service/${SERVICE}/own.mk"
 
 VERS?=		11
-PKGVERS?=	11.0_2025Q3
+PKGVERS?=	11.0
 # for an obscure reason, packages path use uname -m...
 DIST?=		https://nycdn.netbsd.org/pub/NetBSD-daily/netbsd-${VERS}/latest/${ARCH}/binary
 PKGSITE?=	https://cdn.netbsd.org/pub/pkgsrc/packages/NetBSD/${UNAME_M}/${PKGVERS}/All
@@ -85,6 +85,7 @@ UNAME_S!=	uname
 DDUNIT=		M
 .endif
 FETCH=		scripts/fetch.sh
+FRESHCHK=	scripts/freshchk.sh
 
 # extra remote script
 .if defined(CURLSH) && !empty(CURLSH)
@@ -110,39 +111,34 @@ help:	# This help you are reading
 
 kernfetch:
 	$Qmkdir -p kernels
-	$Qif [ ! -f kernels/${KERNEL} ]; then \
-		echo "${ARROW} fetching kernel"; \
-		if [ "${ARCH}" = "amd64" ] || [ "${ARCH}" = "i386" ]; then \
+	$Qif [ "${ARCH}" = "amd64" ] || [ "${ARCH}" = "i386" ]; then \
+		${FRESHCHK} ${KDIST}/${KERNEL} kernels/${KERNEL} || \
 			${FETCH} -o kernels/${KERNEL} ${KDIST}/${KERNEL}; \
-		else \
+	else \
+		${FRESHCHK} ${KDIST}/kernel/${KERNEL}.gz kernels/${KERNEL} || \
 			curl -L -o- ${KDIST}/kernel/${KERNEL}.gz | \
 				gzip -dc > kernels/${KERNEL}; \
-		fi; \
 	fi
 
 setfetch:
 	@[ -d ${SETSDIR} ] || mkdir -p ${SETSDIR}
 	$Qfor s in ${SETS}; do \
-		[ -f ${SETSDIR}/$${s} ] || \
-		( \
-			echo "${ARROW} fetching set $${s}"; \
+		${FRESHCHK} ${DIST}/sets/$${s} ${SETSDIR}/$${s} || \
 			${FETCH} -o ${SETSDIR}/$${s} ${DIST}/sets/$${s}; \
-		) \
 	done
 
 pkgfetch:
 	@[ -d ${PKGSDIR} ] || mkdir -p ${PKGSDIR}
 	$Qfor p in ${ADDPKGS};do \
-		[ -f ${PKGSDIR}/$${p}* ] || \
-		( \
-			echo "${ARROW} fetching package $${p}"; \
+		${FRESHCHK} ${PKGSITE}/$${p}* ${PKGSDIR}/$${p}.tgz || \
 			${FETCH} -o ${PKGSDIR}/$${p}.tgz ${PKGSITE}/$${p}*; \
-		) \
 	done
 
 fetchall: kernfetch setfetch pkgfetch
 
-base: fetchall
+base:
+	# if we are on the builder vm, don't fetchall again
+	$Q[ -f tmp/build-${SERVICE} ] || ${MAKE} fetchall
 	$Qecho "${ARROW} creating root filesystem (${IMGSIZE}M)"
 	$Qmkdir -p images
 	$Q${SUDO} ./mkimg.sh -i ${DSTIMG} -s ${SERVICE} \
@@ -150,18 +146,17 @@ base: fetchall
 	$Q${SUDO} chown ${USER}:${GROUP} ${DSTIMG}
 	$Qecho "${CHECK} image ready: ${DSTIMG}"
 
-buildimg: fetchall
+buildimg:
 	$Qecho "${ARROW} building the builder image"
 	$Q${MAKE} SERVICE=build base
 
-fetchimg: fetchall
+fetchimg:
 	$Qmkdir -p images
 	$Qecho "${ARROW} fetching builder image"
-	$Qif [ ! -f ${BUILDIMGPATH} ]; then \
-		curl -L -o- ${BUILDIMGURL}.xz | xz -dc > ${BUILDIMGPATH}; \
-	fi
+	$Q${FRESHCHK} ${BUILDIMGURL}.xz || \
+		curl -L -o- ${BUILDIMGURL}.xz | xz -dc > ${BUILDIMGPATH}
 
-build: fetchall
+build: fetchall # Build an image (with SERVICE=$SERVICE from service/)
 	$Qif [ ! -f ${BUILDIMGPATH} ]; then \
 		${MAKE} buildimg; \
 	fi
@@ -180,10 +175,9 @@ build: fetchall
 	$Qkill $$(cat qemu-${.TARGET}.pid)
 	$Q${SUDO} chown ${USER}:${GROUP} ${DSTIMG}
 
-rescue:
+rescue: # Build a rescue image
 	${MAKE} SERVICE=rescue build
 
-live: kernfetch
+live: kernfetch # Build a live image
 	$Qecho "fetching ${LIVEIMG}"
 	[ -f ${LIVEIMG} ] || curl -L -o- ${LIVEIMGGZ}|gzip -dc > ${LIVEIMG}
-

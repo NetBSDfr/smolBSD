@@ -23,7 +23,7 @@ def get_vmlist():
     vmlist.clear()
     for filename in os.listdir(f'{cwd}/etc'):
         if filename.endswith('.conf'):
-            vmname = None
+            vmname = filename.split(".conf")[0]
             config_data = {}
             with open(f'{cwd}/etc/{filename}', 'r') as f:
                 lines = f.readlines()
@@ -31,17 +31,11 @@ def get_vmlist():
                     line = line.strip()
                     if not line:
                         continue
-                    elif line.startswith('vm='):
-                        vmname = line.split('=')[1].strip()
-                        continue
                     elif line.startswith('#') or line.startswith('extra'):
                         continue
                     elif '=' in line:
                         key, value = line.split('=', 1)
                         config_data[key.strip()] = value.strip()
-
-            if vmname is None:
-                sys.exit(f"no vm field in {filename}")
 
             # Check if QEMU process is running
             status = 'running' if get_pid(vmname) > 0 else 'stopped'

@@ -9,6 +9,7 @@ usage()
 	cat 1>&2 << _USAGE_
 Usage: $progname [-s service] [-m megabytes] [-i image] [-x set]
        [-k kernel] [-o] [-c URL]
+
 	Create a root image
 	-s service	service name, default "rescue"
 	-r rootdir	hand crafted root directory to use
@@ -244,7 +245,7 @@ if [ -z "$is_netbsd" ]; then
 	# backup MAKEDEV so imgbuilder rc can copy it
 	cp dev/MAKEDEV etc/
 	# unionfs with ext2 leads to i/o error
-	sed -i 's/-o union//g' dev/MAKEDEV
+	sed -i'' 's/-o union//g' dev/MAKEDEV
 fi
 # record wanted pkgsrc version
 echo "PKGVERS=$PKGVERS" > etc/pkgvers

@@ -34,7 +34,8 @@ if [ -n "$MINIMIZE" -a -f service/${SERVICE}/sailor.conf ]; then
 fi
 
 echo "${ARROW} building $SERVICE image"
-cat tmp/build*|xargs
+echo "${INFO} exported variables"
+cat tmp/build*|sed "s/^/${WHITEBULLET} /"
 make $(grep -v ADDPKGS tmp/build*|xargs) base
 echo "${CHECK} build finished, Ctrl-A X to exit"
 rm -f tmp/build*

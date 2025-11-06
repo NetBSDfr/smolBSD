@@ -1,43 +1,44 @@
 # smolBSD
 
-This project aims at creating a minimal _NetBSD_ 🚩 virtual machine that's able to boot and
-start a service in less than a second.  
+This project aims at creating a minimal _NetBSD_ 🚩 based _BSD UNIX_ virtual machine that's able to boot and start a service in a couple milliseconds.  
 Previous _NetBSD_ installation is not required, using the provided tools the _microvm_ can be
-created from any _NetBSD_, _GNU/Linux_, macOS system and probably more.
+created and started from any _NetBSD_, _GNU/Linux_, _macOS_ system and probably more.
 
-When creating the image on a _NetBSD_ system, the image will be formatted using FFS, when
-creating the image on a _GNU/Linux_ system, the image will be formatted using _ext2_.
+## Kernel
 
-[PVH][4] boot and various optimizations enable _NetBSD/amd64_ and _NetBSD/i386_ to directly boot from a [PVH][4] capable VMM (QEMU or Firecracker) in a couple **milliseconds**.  
+[PVH][4] boot and various optimizations enable _NetBSD/amd64_ and _NetBSD/i386_ to directly boot from a [PVH][4] capable VMM ([QEMU][8] or [Firecracker][9]) in about 10 **milliseconds** on 2025 mid-end x86 CPUs. 
 
 As of June 2025, most of these features are integrated in [NetBSD's current kernel][6], and [NetBSD 11 releases][7] those still pending are available in my [NetBSD development branch][5].
 
-You can fetch a pre-built 64 bits kernel at https://smolbsd.org/assets/netbsd-SMOL and a 32 bits kernel at https://smolbsd.org/assets/netbsd-SMOL386  
-Warning those are _NetBSD-current_ kernels!
+Pre-built 64 bits kernel at https://smolbsd.org/assets/netbsd-SMOL and a 32 bits kernel at https://smolbsd.org/assets/netbsd-SMOL386  
 
 `aarch64` `netbsd-GENERIC64` kernels are able to boot directly to the kernel with no modification
+
+In any case, the `bmake kernfetch` will take care of downloading the correct kernel.
 
 # Usage
 
 ## Requirements
 
-- A GNU/Linux, NetBSD or macOS operating system
+- A _GNU/Linux_, _NetBSD_ or _macOS_ operating system (might work on more systems, but not CPU accelerated)
 - The following tools installed
   - `curl`
   - `git`
-  - `make` (`bmake` if running on Linux or macOS)
+  - `bmake` if running on _Linux_ or _macOS_, `make` on _NetBSD_
   - `qemu-system-x86_64`, `qemu-system-i386` or `qemu-system-aarch64`
   - `sudo` or `doas`
-  - `nm`
+  - `nm` (not used on _macOS_)
   - `bsdtar` on Linux (install with `libarchive-tools` on Debian and derivatives, `libarchive` on Arch)
 - A x86 VT-capable, or ARM64 CPU is recommended
 
 ## Project structure
 
 - `mkimg.sh` creates a root filesystem image
-```text
+```sh
+$ ./mkimg.sh -h
 Usage: mkimg.sh [-s service] [-m megabytes] [-i image] [-x set]
        [-k kernel] [-o] [-c URL]
+
         Create a root image
         -s service      service name, default "rescue"
         -r rootdir      hand crafted root directory to use
@@ -47,13 +48,15 @@ Usage: mkimg.sh [-s service] [-m megabytes] [-i image] [-x set]
         -k kernel       kernel to copy in the image
         -c URL          URL to a script to execute as finalizer
         -o              read-only root filesystem
+        -u              non-colorful output
 ```
 - `startnb.sh` starts a _NetBSD_ virtual machine using `qemu-system-x86_64` or `qemu-system-aarch64`
-```text
+```sh
+$ ./startnb.sh -h
 Usage:  startnb.sh -f conffile | -k kernel -i image [-c CPUs] [-m memory]
         [-a kernel parameters] [-r root disk] [-h drive2] [-p port]
         [-t tcp serial port] [-w path] [-x qemu extra args]
-        [-b] [-n] [-s] [-d] [-v]
+        [-b] [-n] [-s] [-d] [-v] [-u]
 
         Boot a microvm
         -f conffile     vm config file
@@ -73,10 +76,13 @@ Usage:  startnb.sh -f conffile | -k kernel -i image [-c CPUs] [-m memory]
         -s              don't lock image file
         -d              daemonize
         -v              verbose
-        -h              this help
+        -u              non-colorful output
+        -h              this hel
 ```
 - `sets` contains _NetBSD_ "sets" by architecture, i.e. `amd64/base.tgz`, `evbarm-aarch64/rescue.tgz`...
-- `etc` holds common `/etc` files to be installed in the root filesystem
+- `pkgs` holds optional packages to add to a microvm, it has the same format as `sets`.
+
+A `service` is the base unit of a _smolBSD_ microvm, it holds the necesary pieces to build a _BSD_ system from scratch.  
 - `service` structure:
 
 ```sh
@@ -84,8 +90,10 @@ service
 ├── base
 │   ├── etc
 │   │   └── rc
-│   └── postinst
-│       └── dostuff.sh
+│   ├── postinst
+│   │   └── dostuff.sh
+│   ├── options.mk       # Service-specific defaults
+│   └── own.mk           # User-specific overrides (not in git)
 ├── common
 │   └── basicrc
 └── rescue
@@ -106,6 +114,7 @@ IMGSIZE=1024
 PKGVERS=10.1
 .endif
 ```
+- User-specific overrides **COULD** be added in `own.mk` for personal development settings  (not committed to repository)
 
 In the `service` directory, `common/` contains scripts that will be bundled in the
 `/etc/include` directory of the microvm, this would be a perfect place to have something like:
@@ -137,8 +146,15 @@ And then add this to your `rc`:
 
 ## Considerations
 
+You can build a system using 2 methods:
+
+- using the `base` `Makefile` target, this will build directly on the host, it will use `ext2` as the filesystem if building on a _Linux_ host, and `ffs` if building on a _NetBSD_ host
+- using the recommended `build` `Makefile` target, this will fire up a _NetBSD_ builder microvm that will use its own root filesystem and will format the image using `ffs`.
+
 >[!WARNING]
-> If you directly use your host to build images, `postinst` operations are run as `root` **in the build host: only use relative paths** in order **not** to impair your host's filesystem.
+> When using the `base` target, `bmake(1)` will directly use your host to build images, and as `postinst` operations are run as `root` **in the build host: only use relative paths** in order **not** to impair your host's filesystem.
+
+Again, it is **highly recommended** to use the `build` target for any other service than the builder image.
 
 ## Prerequisite
 
@@ -160,22 +176,22 @@ Download a regular `netbsd-GENERIC64.img` kernel
 $ bmake ARCH=evbarm-aarch64 kernfetch
 ```
 
-## Notes on image building
+## Image building
 
-* If you are running NetBSD or GNU/Linux, you can build most images using respectively `make` or `bmake`
-* If you are not running NetBSD, a safer, cleaner way of building images is to use the `build` image builder:
-  * either by building it if you are running GNU/Linux
+In the following examples, replace `bmake` by `make` if you are using _NetBSD_ as the host.
+
+* Either create the builder image if you are running _GNU/Linux_ or _NetBSD_
 ```sh
 $ bmake buildimg
 ```
-  * or by simply fetching it if you are running other systems such as macOS
+* Or by simply fetch it if you are running systems that do not support `ext2` or `ffs` such as _macOS_
 ```sh
-$ bmake ARCH=evbarm-aarch64 fetchimg
+$ bmake fetchimg
 ```
 Both methods will create an `images/build-<arch>.img` disk image that you'll be able to use to build services.  
-To do so, in the following examples commands, replace `base` with `build`, i.e.:
+To create a service image using the builder, execute the following:
 ```sh
-$ bmake SERVICE=nitro build # instead of bmake SERVICE=nitro base
+$ bmake SERVICE=nitro build
 ```
 This will spawn a microvm running the build image, and will in turn build the requested service.
 
@@ -185,42 +201,42 @@ This will spawn a microvm running the build image, and will in turn build the re
 > You can use the ARCH variable to specify an architecture to build your image for, default is amd64.
 
 ```sh
-$ bmake rescue
+$ bmake SERVICE=rescue build
 ```
 Will create a `rescue-amd64.img` file for use with an _amd64_ kernel.
 ```sh
-$ bmake MOUNTRO=y rescue
+$ bmake SERVICE=rescue MOUNTRO=y build
 ```
-Will also create a `rescue-amd64.img` file but with read-only root filesystem so the _VM_ can be stopped without graceful shutdow
+Will also create a `rescue-amd64.img` file but with read-only root filesystem so the _VM_ can be stopped without graceful shutdow. Note this is the default for `rescue` as set in `service/rescue/options.mk`
 ```sh
-$ bmake ARCH=i386 rescue
+$ bmake SERVICE=rescue ARCH=i386 build
 ```
 Will create a `rescue-i386.img` file for use with an _i386_ kernel.
 ```sh
-$ bmake ARCH=evbarm-aarch64 rescue
+$ bmake SERVICE=rescue ARCH=evbarm-aarch64 build
 ```
 Will create a `rescue-evbarm-aarch64.img` file for use with an _aarch64_ kernel.
 
 Start the microvm
 ```sh
-$ ./startnb.sh -k netbsd-SMOL -i rescue-amd64.img
+$ ./startnb.sh -k kernels/netbsd-SMOL -i images/rescue-amd64.img
 ```
 
 ## Example of an image filled with the `base` set on an `x86_64` CPU
 
 ```sh
-$ bmake base
-$ ./startnb.sh -k netbsd-SMOL -i base-amd64.img
+$ bmake SERVICE=base build
+$ ./startnb.sh -k kernels/netbsd-SMOL -i images/base-amd64.img
 ```
 
 ## Example of an image running the `bozohttpd` web server on an `aarch64` CPU
 
-Services are build on top of the `base` image, this can be overriden with the `BASE` `make(1)` variable.  
+Services are build on top of the `base` set, this can be overriden with the `SETS` `make(1)` variable.  
 Service name is specified with the `SERVICE` `make(1)` variable.
 
 ```sh
-$ make ARCH=evbarm-aarch64 SERVICE=bozohttpd base
-$ ./startnb.sh -k netbsd-GENERIC64.img -i bozohttpd-evbarm-aarch64.img -p ::8080-:80
+$ make ARCH=evbarm-aarch64 SERVICE=bozohttpd build
+$ ./startnb.sh -k kernels/netbsd-GENERIC64.img -i images/bozohttpd-evbarm-aarch64.img -p ::8080-:80
 [   1.0000000] NetBSD/evbarm (fdt) booting ...
 [   1.0000000] NetBSD 10.99.11 (GENERIC64)     Notice: this software is protected by copyright
 [   1.0000000] Detecting hardware...[   1.0000040] entropy: ready
@@ -246,8 +262,8 @@ Connection: close
 ## Example of starting a _VM_ with bi-directionnal socket to _host_
 
 ```sh
-$ bmake SERVICE=mport MOUNTRO=y base
-$ ./startnb.sh -n 1 -i mport-amd64.img 
+$ bmake SERVICE=mport MOUNTRO=y build
+$ ./startnb.sh -n 1 -i images/mport-amd64.img 
 host socket 1: s885f756bp1.sock
 ```
 On the guest, the corresponding socket is `/dev/ttyVI0<port number>`, here `/dev/ttyVI01`
@@ -271,12 +287,13 @@ $ dd if=/dev/zero bs=1M count=4000 >> NetBSD-amd64-live.img
 ```
 And reboot.
 
-## Environment variables
+## Customization
 
-The following environment variables change `mkimg.sh` behavior:
+The following `Makefile` variables change `mkimg.sh` behavior:
 
-* `ADDPKGS` will **untar** the packages paths listed in the variable, this is done in `postinst` stage, on the build host, where `pkgin` might not be available
+* `ADDPKGS` will fetch and **untar** the packages paths listed in the variable, this is done in `postinst` stage, on the build host, where `pkgin` might not be available
 * `ADDSETS` will add the sets paths listed in the variable
+* `MOUNTRO` if set to `y`, the microvm will mount its root filesystem as read-only
 * `MINIMIZE` if set to `y`, will invoke [sailor][3] in order to minimize the produced image
 
 The following environment variables change `startnb.sh` behavior:
@@ -304,3 +321,5 @@ the following should be available at `http://localhost:5000`:
 [5]: https://github.com/NetBSDfr/NetBSD-src/tree/nbfr_master
 [6]: https://github.com/NetBSD/src
 [7]: https://nycdn.netbsd.org/pub/NetBSD-daily/netbsd-11/latest
+[8]: https://www.qemu.org/docs/master/system/i386/microvm.html
+[9]: https://firecracker-microvm.github.io/

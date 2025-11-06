@@ -58,7 +58,12 @@ do
 	c) cores="$OPTARG";;
 	d) DAEMON=yes;;
 	# first load vm config file
-	f) . $OPTARG;;
+	f)
+		. $OPTARG
+		# extract service from file name
+		svc=${OPTARG%.conf}
+		svc=${svc##*/}
+		;;
 	h) usage;;
 	i) img="$OPTARG";;
 	# and possibly override values
@@ -92,31 +97,23 @@ fi
 kernel=${kernel:-$KERNEL}
 img=${img:-$NBIMG}
 
-if [ -z "$kernel" -o -z "$img" ]; then
-	echo "" 1>&2
-	[ -z "$kernel" ] && echo "'kernel' is not defined" 1>&2
-	[ -z "$img" ] && echo "'image' is not defined" 1>&2
-	echo "" 1>&2
-	usage
-fi
-
 [ -n "$hostfwd" ] && network="\
--device virtio-net-device,netdev=net${uuid}0 \
--netdev user,id=net${uuid}0,ipv6=off,$(echo "$hostfwd"|sed -E 's/(udp|tcp)?::/hostfwd=\1::/g')"
+-device virtio-net-device,netdev=net-${uuid}0 \
+-netdev user,id=net-${uuid}0,ipv6=off,$(echo "$hostfwd"|sed -E 's/(udp|tcp)?::/hostfwd=\1::/g')"
 
 [ -n "$hostfwd" ] && echo "${ARROW} port forward set: $hostfwd"
 
 [ -n "$bridgenet" ] && network="$network \
--device virtio-net-device,netdev=net${uuid}1 \
--netdev type=tap,id=net${uuid}1"
+-device virtio-net-device,netdev=net-${uuid}1 \
+-netdev type=tap,id=net-${uuid}1"
 
 [ -n "$drive2" ] && drive2="\
--device virtio-blk-device,drive=hd${uuid}1 \
--drive if=none,file=${drive2},format=raw,id=hd${uuid}1"
+-device virtio-blk-device,drive=hd-${uuid}1 \
+-drive if=none,file=${drive2},format=raw,id=hd-${uuid}1"
 
 [ -n "$share" ] && share="\
--fsdev local,path=${share},security_model=none,id=shar${uuid}0 \
--device virtio-9p-device,fsdev=shar${uuid}0,mount_tag=shar${uuid}0"
+-fsdev local,path=${share},security_model=none,id=shar-${uuid}0 \
+-device virtio-9p-device,fsdev=shar-${uuid}0,mount_tag=shar-${uuid}0"
 
 [ -n "$sharerw" ] && sharerw=",share-rw=on"
 
@@ -190,16 +187,16 @@ x86_64|i386)
 	cpuflags="-cpu ${cputype},+invtsc"
 	root=${root:-"ld0a"}
 	# stack smashing with version 9.0 and 9.1
-	${QEMU} --version|egrep -q '9\.[01]' && \
+	${QEMU} --version|grep -q -E '9\.[01]' && \
 		extra="$extra -L bios -bios bios-microvm.bin"
 	case $MACHINE in
 	i386)
 		kernel=${kernel:-kernels/netbsd-SMOL386}
-		img=${img:-${vm}-i386.img}
+		arch=i386
 		;;
 	x86_64)
 		kernel=${kernel:-kernels/netbsd-SMOL}
-		img=${img:-${vm}-amd64.img}
+		arch=amd64
 		;;
 	esac
 	;;
@@ -209,18 +206,37 @@ aarch64)
 	root=${root:-"ld4a"}
 	extra="$extra -device virtio-rng-pci"
 	kernel=${kernel:-kernels/netbsd-GENERIC64.img}
-	img=${img:-${vm}-evbarm-aarch64.img}
+	arch=evbarm-aarch64
 	;;
 *)
 	echo "${WARN} Unknown architecture"
 esac
 
-d="-display none"
+# conf file was given
+[ -z "$img" ] && [ -n "$svc" ] && img=images/${svc}-${arch}.img
+
+if [ -z "$img" ]; then
+	printf "'image' is not defined\n\n" 1>&2
+	usage
+fi
+
+# svc *must* be defined to be able to store qemu PID in a unique filename
+if [ -z "$svc" ]; then
+	svc=${uuid}
+	echo "${ARROW} no service name, using UUID ($uuid)"
+fi
+
+d="-display none -pidfile qemu-${svc}.pid"
+
 if [ -n "$DAEMON" ]; then
+	[ -z "$max_ports" ] && max_ports=1
 	# a TCP port is specified
-	[ -n "${serial_port}" ] && \
-		serial="-serial telnet:localhost:${serial_port},server,nowait"
-	d="$d -daemonize $serial"
+	if [ -n "${serial_port}" ]; then
+        serial="-serial telnet:localhost:${serial_port},server,nowait"
+        echo "* using serial: localhost:${serial_port}"
+    fi
+
+    d="$d -daemonize $serial"
 else
 	# console output
 	d="$d $consdev"
@@ -228,9 +244,9 @@ fi
 if [ -n "$max_ports" ]; then
 	for v in $(seq $((max_ports - 1)))
 	do
-		sockid="${uuid}p${v}"
-		sockname="sock${sockid}"
-		sockpath="s${sockid}.sock"
+		sockid="${uuid}-p${v}"
+		sockname="sock-${sockid}"
+		sockpath="s-${sockid}.sock"
 		viosock="$viosock \
 -chardev socket,path=${sockpath},server=on,wait=off,id=${sockname} \
 -device virtconsole,chardev=${sockname},name=${sockname}"
@@ -248,8 +264,8 @@ cmd="${QEMU} -smp $cores \
 	$mflags -m $mem $cpuflags \
 	-kernel $kernel -append \"console=${console} root=${root} ${append}\" \
 	-global virtio-mmio.force-legacy=false ${share} \
-	-device virtio-blk-device,drive=hd${uuid}0${sharerw} \
-	-drive if=none,file=${img},format=raw,id=hd${uuid}0 \
+	-device virtio-blk-device,drive=hd-${uuid}0${sharerw} \
+	-drive if=none,file=${img},format=raw,id=hd-${uuid}0 \
 	${drive2} ${network} ${d} ${viosock} ${extra}"
 
 [ -n "$VERBOSE" ] && echo "$cmd" && exit

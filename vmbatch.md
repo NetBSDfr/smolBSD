@@ -7,14 +7,12 @@ You need [smolBSD](https://github.com/NetBSDfr/smolBSD) to test the following
 * Create the base image
 
 ```sh
-$ make MOUNTRO=y bozohttpd
+$ make MOUNTRO=y SERVICE=bozohttpd build
 ```
 * Create a config file template
 
 ```sh
-$ cat etc/bozohttpd.conf 
-# optional vm name, used in pidfile
-vm=bozohttpd
+$ cat etc/bozohttpd.conf
 # mandatory
 img=bozohttpd-amd64.img
 # mandatory
@@ -24,9 +22,9 @@ mem=128m
 # optional
 cores=1
 # optional port forward
-hostfwd=::4280-:80
+hostfwd=::8180-:80
 # optional extra parameters
-extra="-pidfile qemu-${vm}.pid"
+extra=""
 # don't lock the disk image
 sharerw="y"
 ```
@@ -46,16 +44,11 @@ Just play with the `num` variable
 #!/bin/sh
 
 vmname=bozohttpd
-num=10
-KERNEL=netbsd-SMOL
+num=9
 
 for i in $(seq 1 $num)
 do
-        sed "
-                s/vm=${vmname}/vm=${vmname}${i}/
-                s/4280/428$i/
-                s,kernel=.*,kernel=$KERNEL,
-        " etc/${vmname}.conf > etc/${vmname}${i}.conf
+        sed "s/8180/818$i/" etc/${vmname}.conf > etc/${vmname}${i}.conf
 done
 
 for f in etc/${vmname}[0-9]*.conf; do
@@ -66,13 +59,13 @@ done
 
 for i in $(seq 1 $num)
 do
-        while ! curl -s -I --max-time 0.01 localhost:428${i}
+        while ! curl -s -I --max-time 0.01 localhost:818${i}
         do
                 true
         done
 done
 
-for i in $(seq 1 $num); do curl -I http://localhost:428${i}; done
+for i in $(seq 1 $num); do curl -I http://localhost:818${i}; done
 
 for i in $(seq 1 $num); do kill $(cat qemu-${vmname}${i}.pid); done
 

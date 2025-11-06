@@ -84,7 +84,7 @@
                 @click="deleteVM(vmName)">🗑️</button>
               <button class="btn btn-sm btn-light me-2"
                 :disabled="!vm.serial_port"
-                @click="copySerialPort(vmName)">💻</button>
+                @click="openSerialPort(vmName)">💻</button>
             </div>
           </li>
 
@@ -355,6 +355,15 @@
 
           if (!this.showInputs) {
             this.toggleInputs(this.Action.EDIT);
+          }
+        },
+        openSerialPort(vmName) {
+          const serialPort = this.vmList[vmName]?.serial_port;
+          if (serialPort) {
+            const serialurl = `telnet://localhost:${this.vmList[vmName]?.serial_port}`
+            const telnetwin = window.open(serialurl, '', 'width=,height=,resizable=no');
+            telnetwin.blur();
+            telnetwin.close();
           }
         },
         copySerialPort(vmName) {

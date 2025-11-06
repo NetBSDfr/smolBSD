@@ -95,6 +95,7 @@ stty speed 115200 >/dev/null
 		nvim --headless +PlugInstall +qall 2>/dev/null
 
 if [ -d /tmp/tmux* -a ! -f /tmp/greetings ]; then
+    [ -f /etc/smol.ansi ] && cat /etc/smol.ansi
 	echo -e "
 Welcome to the (n)bakery! 🧁
 

@@ -1,16 +1,20 @@
 case $CHOUPI in
-[yY]*)
+*)
 	STAR="⭐"
 	ARROW="➡️"
 	CHECK="✅"
 	WARN="⚠️"
+	INFO="ℹ️"
+	WHITEBULLET="⚪"
+	ERROR="❌"
 	OUT="/dev/null"
 	;;
-*)
+[nN])
 	STAR="*"
 	ARROW=">"
 	CHECK='\'
 	WARN='!'
+	ERROR="X"
 	OUT="/dev/stdout"
 	;;
 esac
