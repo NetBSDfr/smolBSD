@@ -4,5 +4,5 @@ if dmesg |grep -q vio9; then
 	cd /dev && sh MAKEDEV vio9p0
 	cd -
         mount_9p -cu /dev/vio9p0 $MOUNT9P
-        echo "➡️  host filesystem mounted on $MOUNT9P"
+        echo "➡️ host filesystem mounted on $MOUNT9P"
 fi

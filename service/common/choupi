@@ -7,6 +7,8 @@ case $CHOUPI in
 	INFO="ℹ️"
 	WHITEBULLET="⚪"
 	ERROR="❌"
+	CPU="🔲"
+	FREEZE="🧊"
 	OUT="/dev/null"
 	;;
 [nN])
@@ -14,7 +16,11 @@ case $CHOUPI in
 	ARROW=">"
 	CHECK='\'
 	WARN='!'
+	INFO='i'
+	WHITEBULLET="o"
 	ERROR="X"
+	CPU="[]"
+	FREEZE="="
 	OUT="/dev/stdout"
 	;;
 esac

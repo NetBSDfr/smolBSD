@@ -132,48 +132,32 @@ fi
 echo "${ARROW} using console: $console"
 
 OS=$(uname -s)
-MACHINE=$(uname -m) # Linux and macos x86
+arch=$(scripts/uname.sh -m)
+machine=$(scripts/uname.sh -p)
 
 cputype="host"
 
 case $OS in
 NetBSD)
-	MACHINE=$(uname -p)
 	ACCEL=",accel=nvmm"
 	;;
 Linux)
 	ACCEL=",accel=kvm"
-	# Some weird Ryzen CPUs
-	[ "$MACHINE" = "AMD" ] && MACHINE="x86_64"
 	;;
 Darwin)
 	ACCEL=",accel=hvf"
-	# Mac M1
-	[ "$MACHINE" = "arm64" ] && MACHINE="aarch64" cputype="cortex-a710"
+	# Mac M1, M2, M3, M4
+	cputype="cortex-a710"
 	;;
-OpenBSD)
-	MACHINE=$(uname -p)
-	ACCEL=",accel=tcg"
-	# uname -m == "amd64" but qemu-system is "qemu-system-x86_64"
-	if [ "$MACHINE" = "amd64" ]; then
-		MACHINE="x86_64"
-	fi
-	cputype="qemu64"
-	;;
-FreeBSD)
-	MACHINE=$(uname -p)
-	ACCEL=",accel=tcg"
-	# uname -m == "amd64" but qemu-system is "qemu-system-x86_64"
-	if [ "$MACHINE" = "amd64" ]; then
-		MACHINE="x86_64"
-	fi
+OpenBSD|FreeBSD)
+	ACCEL=",accel=tcg" # unaccelerated
 	cputype="qemu64"
 	;;
 *)
 	echo "Unknown hypervisor, no acceleration"
 esac
 
-QEMU=${QEMU:-qemu-system-${MACHINE}}
+QEMU=${QEMU:-qemu-system-${machine}}
 printf "${ARROW} using QEMU "
 $QEMU --version|grep -oE 'version .*'
 
@@ -181,7 +165,7 @@ mem=${mem:-"256"}
 cores=${cores:-"1"}
 append=${append:-"-z"}
 
-case $MACHINE in
+case $machine in
 x86_64|i386)
 	mflags="-M microvm,rtc=on,acpi=off,pic=off${ACCEL}"
 	cpuflags="-cpu ${cputype},+invtsc"
@@ -189,14 +173,12 @@ x86_64|i386)
 	# stack smashing with version 9.0 and 9.1
 	${QEMU} --version|grep -q -E '9\.[01]' && \
 		extra="$extra -L bios -bios bios-microvm.bin"
-	case $MACHINE in
+	case $machine in
 	i386)
 		kernel=${kernel:-kernels/netbsd-SMOL386}
-		arch=i386
 		;;
 	x86_64)
 		kernel=${kernel:-kernels/netbsd-SMOL}
-		arch=amd64
 		;;
 	esac
 	;;
@@ -206,7 +188,6 @@ aarch64)
 	root=${root:-"ld4a"}
 	extra="$extra -device virtio-rng-pci"
 	kernel=${kernel:-kernels/netbsd-GENERIC64.img}
-	arch=evbarm-aarch64
 	;;
 *)
 	echo "${WARN} Unknown architecture"

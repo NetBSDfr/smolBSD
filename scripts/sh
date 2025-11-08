@@ -1,0 +1,71 @@
+#!/bin/sh
+# smolBSD quick bootstrapper
+# Usage: curl -fsSL https://smolbsd.org/sh | sh
+
+set -eu
+
+VERS="11"
+CURL="curl -fsSL"
+KERNEL=smol
+SMOLBSD_BASE="https://smolbsd.org"
+GH_BASE="https://github.com/NetBSDfr/smolBSD/releases/download/latest"
+RAWGH="https://raw.githubusercontent.com/NetBSDfr/smolBSD/refs/heads/main"
+START_URL="${RAWGH}/startnb.sh"
+UNAME="scripts/uname.sh"
+CHOUPI="service/common/choupi"
+
+TMPDIR="$(mktemp -d -t smolbsd.XXXXXX)"
+cleanup() { rm -rf "$TMPDIR"; }
+trap cleanup EXIT INT TERM
+
+cd "$TMPDIR"
+
+mkdir -p ${CHOUPI%/*}
+${CURL} "${RAWGH}/${CHOUPI}" -o ${CHOUPI}
+CHOUPI=y . ${CHOUPI}
+
+echo "${ARROW} using temporary directory: $PWD"
+
+mkdir -p scripts
+${CURL} "${RAWGH}/${UNAME}" -o ${UNAME}
+chmod +x ${UNAME}
+ARCH=$(${UNAME} -m)
+MACHINE=$(${UNAME} -p)
+
+if ! command -v qemu-system-${MACHINE} >/dev/null 2>&1; then
+	echo "${ERROR} qemu-system-${MACHINE} is needed to run smolBSD" >&2
+	exit 1
+fi
+
+OS=$(uname -s)
+echo "${ARROW} checking virtualization capability"
+if [ ! -e /dev/kvm ] && [ ! "$OS" = "Darwin" ] ; then
+	echo "${WARN} hardware virtualization (KVM/HVF) not detected — performance may be limited." >&2
+fi
+
+echo "${ARROW} downloading kernel"
+case "$ARCH" in
+	amd64)
+		KERNEL_URL="$SMOLBSD_BASE/assets/netbsd-SMOL"
+		${CURL} ${KERNEL_URL} -o $KERNEL
+		;;
+	evbarm-aarch64)
+		KERNEL_URL="https://nycdn.netbsd.org/pub/NetBSD-daily/netbsd-${VERS}/latest/evbarm-aarch64/binary/kernel/netbsd-GENERIC64.img.gz"
+		${CURL} -o- ${KERNEL_URL} | gzip -d > $KERNEL
+		;;
+	*)
+		echo "${ERROR} Unsupported architecture: $ARCH" >&2
+		exit 1
+		;;
+esac
+
+RESCUE_URL="$GH_BASE/rescue-${ARCH}.img.xz"
+
+echo "${ARROW} downloading rescue image"
+${CURL} "$RESCUE_URL" | xz -d > rescue.img
+${CURL} "$START_URL" -o smol.sh
+chmod +x smol.sh
+
+echo "${ARROW} launching smolBSD, Ctrl-A X to exit"
+exec </dev/tty
+exec ./smol.sh -k $KERNEL -i rescue.img

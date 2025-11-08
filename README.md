@@ -77,7 +77,7 @@ Usage:  startnb.sh -f conffile | -k kernel -i image [-c CPUs] [-m memory]
         -d              daemonize
         -v              verbose
         -u              non-colorful output
-        -h              this hel
+        -h              this help
 ```
 - `sets` contains _NetBSD_ "sets" by architecture, i.e. `amd64/base.tgz`, `evbarm-aarch64/rescue.tgz`...
 - `pkgs` holds optional packages to add to a microvm, it has the same format as `sets`.
