@@ -17,3 +17,4 @@ netbsd-*
 /sailor/
 # personal keys
 /service/sshd/etc/*.pub
+/service/nitrosshd/etc/*.pub
