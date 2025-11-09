@@ -8,6 +8,7 @@
 /sets/**/*.xz
 /images/*
 /pkgs/**/*.tgz
+/db/**
 netbsd-*
 # app build & env
 /app/bin/
