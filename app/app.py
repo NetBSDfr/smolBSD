@@ -48,7 +48,7 @@ def get_vmlist():
 
 def list_files(path):
     try:
-        items = os.listdir(path)
+        items = [f for f in os.listdir(path) if not f.startswith(".")]
         return jsonify(items)
     except FileNotFoundError:
         return jsonify({"error": "Directory not found"}), 404
