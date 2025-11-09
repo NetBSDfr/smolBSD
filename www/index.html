@@ -4,6 +4,7 @@
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
   <title>smolBSD — build your own minimal BSD system</title>
+  <link rel="icon" href="smol.ico">
   <script src="https://cdn.tailwindcss.com"></script>
   <link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;600&display=swap" rel="stylesheet">
   <style>
@@ -38,7 +39,7 @@ style="animation-delay: .2s">
     </p>
 
     <div class="space-x-4 fade-up" style="animation-delay: .4s">
-      <a href="https://github.com/NetBSDfr/smolBSD" class="px-6 py-3
+      <a href="https://github.com/NetBSDfr/smolBSD" target="_blank" class="px-6 py-3
 bg-amber-500 text-black font-semibold rounded-lg hover:bg-amber-400
 transition">GitHub</a>
       <a href="#about" class="px-6 py-3 border border-amber-400 text-amber-400
@@ -119,7 +120,8 @@ Server listening on 0.0.0.0 port 22.
 
 $ ssh -p 2022 ssh@localhost
     </pre>
-    <a href="https://github.com/NetBSDfr/smolBSD/releases" class="inline-block mt-6 px-6 py-3 bg-amber-500 text-black font-semibold rounded-lg hover:bg-amber-400 transition">
+    <a href="https://github.com/NetBSDfr/smolBSD/releases" target="_blank"
+       class="inline-block mt-6 px-6 py-3 bg-amber-500 text-black font-semibold rounded-lg hover:bg-amber-400 transition">
       Download
     </a>
   </section>
@@ -179,7 +181,7 @@ $ ./startnb.sh -f etc/nbakery.conf
 
 Welcome to the (n)bakery! 🧁
 
-💪 doas <command> to run command as root
+💪 doas &lt;command&gt; to run command as root
 📦 pkgin to manage packages
 🚪 exit to cleanly shutdown, ^a-x to exit qemu
 🪟 you are inside a tmux with prefix ^q
@@ -226,8 +228,8 @@ Server listening on 0.0.0.0 port 22.
       Join us, share your micro-systems, or contribute new services and build recipes.
     </p>
     <div class="space-x-6 text-amber-400 text-2xl">
-      <a href="https://github.com/NetBSDfr/smolBSD" class="hover:text-amber-300">GitHub</a>
-      <a href="https://mastodon.bsd.cafe/@imil" class="hover:text-amber-300">Mastodon</a>
+      <a href="https://github.com/NetBSDfr/smolBSD" class="hover:text-amber-300" target="_blank">GitHub</a>
+      <a href="https://mastodon.bsd.cafe/@imil" class="hover:text-amber-300" target="_blank">Mastodon</a>
       <a href="mailto:contact@smolbsd.org" class="hover:text-amber-300">Email</a>
     </div>
   </section>
