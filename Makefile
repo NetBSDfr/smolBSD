@@ -104,7 +104,6 @@ help:	# This help you are reading
 	$Qgrep '^[a-z]\+:.*#' Makefile
 
 kernfetch:
-	$Qmkdir -p kernels
 	$Qif [ "${ARCH}" = "amd64" ] || [ "${ARCH}" = "i386" ]; then \
 		${FRESHCHK} ${KDIST}/${KERNEL} kernels/${KERNEL} || \
 			${FETCH} -o kernels/${KERNEL} ${KDIST}/${KERNEL}; \
@@ -135,7 +134,6 @@ base:
 	# if we are on the builder vm, don't fetchall again
 	$Q[ -f tmp/build-${SERVICE} ] || ${MAKE} fetchall
 	$Qecho "${ARROW} creating root filesystem (${IMGSIZE}M)"
-	$Qmkdir -p images
 	$Q${SUDO} ./mkimg.sh -i ${DSTIMG} -s ${SERVICE} \
 		-m ${IMGSIZE} -x "${SETS}" ${EXTRAS}
 	$Q${SUDO} chown ${USER}:${GROUP} ${DSTIMG}
@@ -148,7 +146,6 @@ buildimg:
 	$Q${MAKE} SERVICE=build base
 
 fetchimg:
-	$Qmkdir -p images
 	$Qecho "${ARROW} fetching builder image"
 	$Q${FRESHCHK} ${BUILDIMGURL}.xz || \
 		curl -L -o- ${BUILDIMGURL}.xz | xz -dc > ${BUILDIMGPATH}
