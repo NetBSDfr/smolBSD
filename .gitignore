@@ -5,9 +5,9 @@
 /tmp/
 *.img
 /kernels/*
-/sets/**/*.xz
+/sets/**
 /images/*
-/pkgs/**/*.tgz
+/pkgs/**
 /db/**
 netbsd-*
 # app build & env
