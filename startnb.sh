@@ -6,7 +6,7 @@ usage()
 Usage:	${0##*/} -f conffile | -k kernel -i image [-c CPUs] [-m memory]
 	[-a kernel parameters] [-r root disk] [-h drive2] [-p port]
 	[-t tcp serial port] [-w path] [-x qemu extra args]
-	[-b] [-n] [-s] [-d] [-v] [-u]
+	[-b] [-n] [-s] [-d] [-v] [-u] [-B] [-q]
 
 	Boot a microvm
 	-f conffile	vm config file
@@ -27,6 +27,8 @@ Usage:	${0##*/} -f conffile | -k kernel -i image [-c CPUs] [-m memory]
 	-d		daemonize
 	-v		verbose
 	-u		non-colorful output
+	-B		benchmark mode (measure boot time)
+	-q		quiet mode (with -B, output only boot time)
 	-h		this help
 _USAGE_
 	# as per https://www.qemu.org/docs/master/system/invocation.html
@@ -40,7 +42,7 @@ if pgrep VirtualBoxVM >/dev/null 2>&1; then
 	exit 1
 fi
 
-options="f:k:a:p:i:m:n:c:r:l:p:uw:x:t:hbdsv"
+options="f:k:a:p:i:m:n:c:r:l:p:uw:x:t:hbdsvBq"
 
 export CHOUPI=y
 
@@ -52,6 +54,7 @@ do
 	case $opt in
 	a) append="$OPTARG";;
 	b) bridgenet=yes;;
+	B) BENCHMARK=yes;;
 	c) cores="$OPTARG";;
 	d) DAEMON=yes;;
 	# first load vm config file
@@ -69,6 +72,7 @@ do
 	m) mem="$OPTARG";;
 	n) max_ports=$(($OPTARG + 1));;
 	p) hostfwd=$OPTARG;;
+	q) QUIET=true;;
 	r) root="$OPTARG";;
 	s) sharerw=yes;;
 	t) serial_port=$OPTARG;;
@@ -81,6 +85,13 @@ do
 done
 
 . service/common/choupi
+
+# Benchmark mode setup
+if [ -n "$BENCHMARK" ]; then
+	. scripts/benchmark.sh
+	setup_benchmark
+	max_ports=2
+fi
 
 # envvars override
 kernel=${kernel:-$KERNEL}
@@ -226,6 +237,8 @@ if [ -n "$max_ports" ]; then
 		echo "${INFO} host socket ${v}: ${sockpath}"
 	done
 fi
+# Benchmark mode: add measurement socket
+[ -n "$BENCHMARK" ] && viosock="$viosock $(benchmark_extra_chardev)"
 # QMP is available
 [ -n "${qmp_port}" ] && extra="$extra -qmp tcp:localhost:${qmp_port},server,wait=off"
 
@@ -241,4 +254,11 @@ cmd="${QEMU} -smp $cores \
 
 [ -n "$VERBOSE" ] && echo "$cmd" && exit
 
-eval $cmd
+if [ -n "$BENCHMARK" ]; then
+	eval $cmd > /dev/null 2>&1 &
+	BENCHMARK_VM_PID=$!
+	export BENCHMARK_VM_PID
+	finish_benchmark
+else
+	eval $cmd
+fi
