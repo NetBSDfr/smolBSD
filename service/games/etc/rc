@@ -1,0 +1,18 @@
+#!/bin/sh
+
+export PATH=/sbin:/bin:/usr/sbin:/usr/bin:/usr/pkg/bin:/usr/pkg/sbin
+. /etc/include/choupi
+
+if [ ! -f /usr/pkg/bin/nbsdgames ]; then 
+	echo -e "${ARROW} nbsdgames prerequisites installation ..."
+	. /etc/include/basicrc > /dev/null 2>&1
+	. /etc/include/pkgin > /dev/null 2>&1
+	pkgin -y install nbsdgames > /dev/null 2>&1
+fi
+
+export TERM=xterm-256color
+clear
+echo -e "\n\n${ROCKET} nbsdgames launching !\n\n"
+sleep 1
+nbsdgames
+. /etc/include/shutdown
