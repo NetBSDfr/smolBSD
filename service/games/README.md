@@ -18,10 +18,11 @@ Building on NetBSD
 ```sh
 $ make SERVICE=games base
 ```
-Start the service:
+Edit `etc/games.conf` file as needed (example values in this files are a joke 🤡, leave it commented. Default smolBSD values will be used.), then, start the service:
 ```sh
 ./starnb.sh -f etc/games.conf
 ```
+
 ![First screen](first_screen.png)
 
 Enter your name for high scores records and `Enter`.
