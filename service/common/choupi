@@ -10,6 +10,7 @@ case $CHOUPI in
 	CPU="🔲"
 	FREEZE="🧊"
 	OUT="/dev/null"
+	ROCKET="🚀"
 	;;
 [nN])
 	STAR="*"
@@ -22,5 +23,6 @@ case $CHOUPI in
 	CPU="[]"
 	FREEZE="="
 	OUT="/dev/stdout"
+	ROCKET="&>"
 	;;
 esac

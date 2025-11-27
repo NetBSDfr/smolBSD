@@ -6,7 +6,7 @@ usage()
 Usage:	${0##*/} -f conffile | -k kernel -i image [-c CPUs] [-m memory]
 	[-a kernel parameters] [-r root disk] [-h drive2] [-p port]
 	[-t tcp serial port] [-w path] [-x qemu extra args]
-	[-b] [-n] [-s] [-d] [-v] [-u]
+	[-N] [-b] [-n] [-s] [-d] [-v] [-u]
 
 	Boot a microvm
 	-f conffile	vm config file
@@ -22,6 +22,7 @@ Usage:	${0##*/} -f conffile | -k kernel -i image [-c CPUs] [-m memory]
 	-p ports	[tcp|udp]:[hostaddr]:hostport-[guestaddr]:guestport
 	-w path		host path to share with guest (9p)
 	-x arguments	extra qemu arguments
+	-N		disable networking
 	-b		bridge mode
 	-s		don't lock image file
 	-d		daemonize
@@ -74,6 +75,7 @@ do
 	t) serial_port=$OPTARG;;
 	u) CHOUPI="";;
 	v) VERBOSE=yes;;
+	N) nonet=yes;;
 	w) share=$OPTARG;;
 	x) extra=$OPTARG;;
 	*) usage;;
@@ -86,11 +88,15 @@ done
 kernel=${kernel:-$KERNEL}
 img=${img:-$NBIMG}
 
-[ -n "$hostfwd" ] && network="\
+# enable QEMU user network by default
+[ -z "$nonet" ] && network="\
 -device virtio-net-device,netdev=net-${uuid}0 \
--netdev user,id=net-${uuid}0,ipv6=off,$(echo "$hostfwd"|sed -E 's/(udp|tcp)?::/hostfwd=\1::/g')"
+-netdev user,id=net-${uuid}0,ipv6=off"
 
-[ -n "$hostfwd" ] && echo "${ARROW} port forward set: $hostfwd"
+if [ -n "$hostfwd" ]; then
+	network="${network},$(echo "$hostfwd"|sed -E 's/(udp|tcp)?::/hostfwd=\1::/g')"
+	echo "${ARROW} port forward set: $hostfwd"
+fi
 
 [ -n "$bridgenet" ] && network="$network \
 -device virtio-net-device,netdev=net-${uuid}1 \
