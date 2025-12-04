@@ -115,7 +115,7 @@ done
 
 export TAR FETCH
 
-if [ -z "$is_netbsd" -a -f "service/${svc}/NETBSD_ONLY" ]; then
+if [ -z "$is_netbsd" ] && [ -n "$MINIMIZE" ] || [ -f "service/${svc}/NETBSD_ONLY" ]; then
 	printf "\nThis image must be built on NetBSD!\n"
 	printf "Use the image builder instead: make SERVICE=$svc build\n"
 	exit 1
@@ -141,13 +141,13 @@ if [ -n "$is_linux" ]; then
 	mountfs="ext2fs"
 elif [ -n "$is_freebsd" ]; then
 	vnd=$(mdconfig -l -f $img || mdconfig -f $img)
-	newfs -o time -O2 /dev/${vnd}
+	newfs -o time -O1 -m0 /dev/${vnd}
 	mount -o noatime /dev/${vnd} $mnt
 	mountfs="ffs"
 else # NetBSD (and probably OpenBSD)
 	vnd=$(vndconfig -l|grep -m1 'not'|cut -f1 -d:)
 	vndconfig $vnd $img
-	newfs -o time -O2 /dev/${vnd}a
+	newfs -o time -O1 -m0 /dev/${vnd}a
 	mount -o log,noatime /dev/${vnd}a $mnt
 	mountfs="ffs"
 fi
@@ -176,9 +176,10 @@ for pkg in ${ADDPKGS}; do
 	echo done
 done
 # minimization of the image via sailor is requested
-if [ -n "$MINIMIZE" -a -f service/${svc}/sailor.conf ]; then
-	cd sailor
+if [ -n "$MINIMIZE" ] && [ -f service/${svc}/sailor.conf ]; then
 	echo "${ARROW} minimize image"
+	rm -rf ${mnt}/var/db/pkg*
+	cd sailor
 	export TERM=vt220
 	PKG_RCD_SCRIPTS=YES ./sailor.sh build ../service/${svc}/sailor.conf
 	cd ..
@@ -253,11 +254,25 @@ echo "PKGVERS=$PKGVERS" > etc/pkgvers
 # proceed with caution
 [ -n "$curlsh" ] && curl -sSL "$CURLSH" | /bin/sh
 
+[ -n "$MINIMIZE" ] && \
+	rm -rf var/db/pkgin # wipe pkgin cache and db
+
 cd ..
 
+disksize=$(du -s ${mnt})
 umount $mnt
 
-[ -n "$is_freebsd" ] && mdconfig -d -u $vnd
-[ -z "$is_linux" ] && [ -z "$is_freebsd" ] && vndconfig -u $vnd
+if [ -n "$MINIMIZE" ]; then
+	disksize=$(echo "${disksize%%/*} + 8000"|bc) # give a couple MB more
+	echo "${ARROW} resizing image to $disksize"
+	resize_ffs -y -s ${disksize} /dev/${vnd}a
+fi
 
+[ -n "$is_freebsd" ] && mdconfig -d -u $vnd
+[ -n "$is_netbsd" ] || [ -n "$is_openbsd" ] && vndconfig -u $vnd
+
+if [ -n "$MINIMIZE" ]; then
+	echo "${ARROW} truncating image to new size"
+	dd if=/dev/zero of=${img} bs=1 count=1 seek=$((${disksize} * 512))
+fi
 exit 0

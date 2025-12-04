@@ -12,6 +12,7 @@ Usage:	${0##*/} -f conffile | -k kernel -i image [-c CPUs] [-m memory]
 	-f conffile	vm config file
 	-k kernel	kernel to boot on
 	-i image	image to use as root filesystem
+	-I		load image as initrd
 	-c cores	number of CPUs
 	-m memory	memory in MB
 	-a parameters	append kernel parameters
@@ -41,7 +42,7 @@ if pgrep VirtualBoxVM >/dev/null 2>&1; then
 	exit 1
 fi
 
-options="f:k:a:p:i:m:n:c:r:l:p:uw:x:t:hbdsv"
+options="f:k:a:p:i:Im:n:c:r:l:p:uw:x:t:hbdsv"
 
 export CHOUPI=y
 
@@ -64,6 +65,7 @@ do
 		;;
 	h) usage;;
 	i) img="$OPTARG";;
+	I) initrd="-initrd";;
 	# and possibly override values
 	k) kernel="$OPTARG";;
 	l) drive2=$OPTARG;;
@@ -174,6 +176,8 @@ aarch64)
 	echo "${WARN} Unknown architecture"
 esac
 
+echo "${ARROW} using kernel $kernel"
+
 # use VirtIO console when available, if not, emulated ISA serial console
 if nm $kernel 2>&1 | grep -q viocon_earlyinit; then
 	console=viocon
@@ -192,8 +196,18 @@ echo "${ARROW} using console: $console"
 [ -z "$img" ] && [ -n "$svc" ] && img=images/${svc}-${arch}.img
 
 if [ -z "$img" ]; then
-	printf "'image' is not defined\n\n" 1>&2
+	printf "no 'image' defined\n\n" 1>&2
 	usage
+fi
+
+if [ -z "${initrd}" ]; then
+	echo "${ARROW} using disk image $img"
+	img="-drive if=none,file=${img},format=raw,id=hd-${uuid}0 \
+-device virtio-blk-device,drive=hd-${uuid}0${sharerw}"
+	root="root=${root}"
+else
+	echo "${ARROW} loading $img as initrd"
+	root=""
 fi
 
 # svc *must* be defined to be able to store qemu PID in a unique filename
@@ -220,7 +234,7 @@ else
 	d="$d $consdev"
 fi
 
-if [ -n "$max_ports" ]; then
+if [ -n "$max_ports" ] && [ $max_ports -gt 1 ]; then
 	for v in $(seq $((max_ports - 1)))
 	do
 		sockid="${uuid}-p${v}"
@@ -235,14 +249,11 @@ fi
 # QMP is available
 [ -n "${qmp_port}" ] && extra="$extra -qmp tcp:localhost:${qmp_port},server,wait=off"
 
-echo "${ARROW} booting image $img with kernel $kernel"
-
 cmd="${QEMU} -smp $cores \
 	$mflags -m $mem $cpuflags \
-	-kernel $kernel -append \"console=${console} root=${root} ${append}\" \
+	-kernel $kernel $initrd ${img} \
+	-append \"console=${console} ${root} ${append}\" \
 	-global virtio-mmio.force-legacy=false ${share} \
-	-device virtio-blk-device,drive=hd-${uuid}0${sharerw} \
-	-drive if=none,file=${img},format=raw,id=hd-${uuid}0 \
 	${drive2} ${network} ${d} ${viosock} ${extra}"
 
 [ -n "$VERBOSE" ] && echo "$cmd" && exit

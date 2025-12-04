@@ -18,10 +18,11 @@ cd $BASEPATH
 export ADDPKGS
 
 # MIMINIZE this image with sailor
-if [ -n "$MINIMIZE" -a -f service/${SERVICE}/sailor.conf ]; then
+if [ -n "$MINIMIZE" ] && [ -f service/${SERVICE}/sailor.conf ]; then
 	if [ ! -d sailor ]; then
 		echo "${WARN} minimization asked but sailor not available"
 		echo "${WARN} git clone https://github.com/NetBSDfr/sailor first!"
+		echo "${WARN} the image will be build UNminimized"
 		sed -i'' 's/MINIMIZE/NOMINIMIZE/' tmp/build*
 	else
 		echo "${ARROW} preparing env for sailor"

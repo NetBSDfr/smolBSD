@@ -1,0 +1,8 @@
+#!/bin/sh
+
+. /etc/include/basicrc
+
+hostname shell
+su bsd -c "ksh -l"
+
+. /etc/include/shutdown
