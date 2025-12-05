@@ -1,6 +1,6 @@
 #!/bin/sh
 
-set -euf
+set -e
 
 progname=${0##*/}
 

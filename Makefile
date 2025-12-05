@@ -17,6 +17,8 @@ GROUP!= 	id -gn
 BUILDIMG=	build-${ARCH}.img
 BUILDIMGPATH=	images/${BUILDIMG}
 BUILDIMGURL=	https://github.com/NetBSDfr/smolBSD/releases/download/latest/${BUILDIMG}
+BUILDCPUS?=	2
+BUILDMEM?=	1024
 
 SERVICE?=	${.TARGET}
 # guest root filesystem will be read-only
@@ -166,7 +168,8 @@ build: fetchall # Build an image (with SERVICE=$SERVICE from service/)
 		sed -E 's/[[:blank:]]+([A-Z_]+)/\n\1/g;s/=[[:blank:]]*([[:print:]]+)/="\1"/g' > \
 		tmp/build-${SERVICE}
 	$Qecho "${ARROW} starting the builder microvm"
-	$Q./startnb.sh -k kernels/${KERNEL} -i ${BUILDIMGPATH} -c 2 -m 1024 \
+	$Q./startnb.sh -k kernels/${KERNEL} -i ${BUILDIMGPATH} \
+		-c ${BUILDCPUS} -m ${BUILDMEM} \
 		-p ${PORT} -w . -x "-pidfile qemu-${.TARGET}.pid" &
 	# wait till the build is finished, guest removes the lock
 	$Qwhile [ -f tmp/build-${SERVICE} ]; do sleep 0.2; done
