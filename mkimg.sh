@@ -19,6 +19,7 @@ Usage: $progname [-s service] [-m megabytes] [-i image] [-x set]
 	-k kernel	kernel to copy in the image
 	-c URL		URL to a script to execute as finalizer
 	-o		read-only root filesystem
+	-b		make image BIOS bootable
 	-u		non-colorful output
 _USAGE_
 	exit 1
@@ -30,7 +31,7 @@ rsynclite()
 	(cd $1 && tar cfp - .)|(cd $2 && tar xfp -)
 }
 
-options="s:m:i:r:x:k:c:ouh"
+options="s:m:i:r:x:k:c:bouh"
 
 [ -f tmp/build* ] && . tmp/build*
 
@@ -48,6 +49,7 @@ do
 	x) sets="$OPTARG";;
 	k) kernel="$OPTARG";;
 	c) curlsh="$OPTARG";;
+	b) biosboot=y;;
 	o) rofs=y;;
 	u) CHOUPI="";;
 	h) usage;;
@@ -214,7 +216,7 @@ rsynclite service/common/ ${mnt}/etc/include/
 [ -d service/${svc}/packages ]  && \
 	rsynclite service/${svc}/packages ${mnt}/
 
-[ -n "$kernel" ] && cp -f $kernel ${mnt}/
+[ -n "$kernel" ] && cp -f $kernel ${mnt}/netbsd
 
 cd $mnt
 
@@ -259,6 +261,14 @@ echo "PKGVERS=$PKGVERS" > etc/pkgvers
 
 cd ..
 
+if [ -n "$biosboot" ]; then
+	cp /usr/mdec/boot ${mnt}
+	cat >${mnt}/boot.cfg<<EOF
+timeout=0
+consdev=com0
+EOF
+fi
+
 disksize=$(du -s ${mnt})
 umount $mnt
 
@@ -269,7 +279,16 @@ if [ -n "$MINIMIZE" ]; then
 fi
 
 [ -n "$is_freebsd" ] && mdconfig -d -u $vnd
-[ -n "$is_netbsd" ] || [ -n "$is_openbsd" ] && vndconfig -u $vnd
+if [ -n "$is_netbsd" ] || [ -n "$is_openbsd" ]; then
+	if [ -n "$biosboot" ]; then
+		disklabel ${vnd} | sed 's/vnd/ld/' > ${mnt}/f
+		disklabel -R ${vnd} ${mnt}/f
+		rm -f ${mnt}/f
+		installboot -v /dev/r${vnd}a /usr/mdec/bootxx_ffsv1
+	fi
+
+	vndconfig -u $vnd
+fi
 
 if [ -n "$MINIMIZE" ]; then
 	echo "${ARROW} truncating image to new size"

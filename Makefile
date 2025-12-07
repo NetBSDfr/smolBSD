@@ -25,12 +25,18 @@ SERVICE?=	${.TARGET}
 .if defined(MOUNTRO) && ${MOUNTRO} == "y"
 EXTRAS+=	-o
 .endif
+# enable BIOS boot
+.if defined(BIOSBOOT) && ${BIOSBOOT} == "y"
+BIOSKERNEL?=	kernels/netbsd-GENERIC
+EXTRAS+=	-b -k ${BIOSKERNEL}
+.endif
 
 # variables to transfer to mkimg.sh
 ENVVARS=	SERVICE=${SERVICE} \
 		ARCH=${ARCH} \
 		PKGVERS=${PKGVERS} \
 		MOUNTRO=${MOUNTRO} \
+		BIOSBOOT=${BIOSBOOT} \
 		PKGSITE=${PKGSITE} \
 		ADDPKGS="${ADDPKGS}" \
 		MINIMIZE=${MINIMIZE}

@@ -1,0 +1,8 @@
+#!/bin/sh
+
+. /etc/include/basicrc
+. /etc/include/mount9p
+
+ksh
+
+. /etc/include/shutdown

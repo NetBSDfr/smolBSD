@@ -1,0 +1,1 @@
+BIOSBOOT=y
