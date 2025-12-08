@@ -265,7 +265,7 @@ if [ -n "$biosboot" ]; then
 	cp /usr/mdec/boot ${mnt}
 	cat >${mnt}/boot.cfg<<EOF
 timeout=0
-consdev=com0
+consdev=${BIOSCONSOLE}
 EOF
 fi
 
@@ -281,7 +281,7 @@ fi
 [ -n "$is_freebsd" ] && mdconfig -d -u $vnd
 if [ -n "$is_netbsd" ] || [ -n "$is_openbsd" ]; then
 	if [ -n "$biosboot" ]; then
-		disklabel ${vnd} | sed "s/vnd/${DRIVE}/" > ${mnt}/p
+		disklabel ${vnd} >${mnt}/p || true
 		disklabel -R ${vnd} ${mnt}/p
 		rm -f ${mnt}/p
 		installboot -v /dev/r${vnd}a /usr/mdec/bootxx_ffsv1

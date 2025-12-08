@@ -19,7 +19,8 @@ BUILDIMGPATH=	images/${BUILDIMG}
 BUILDIMGURL=	https://github.com/NetBSDfr/smolBSD/releases/download/latest/${BUILDIMG}
 BUILDCPUS?=	2
 BUILDMEM?=	1024
-DRIVE?=		ld
+# used to set console in boot.cfg for BIOS boot
+BIOSCONSOLE?=	com0
 
 SERVICE?=	${.TARGET}
 # guest root filesystem will be read-only
@@ -41,7 +42,7 @@ ENVVARS=	SERVICE=${SERVICE} \
 		PKGSITE=${PKGSITE} \
 		ADDPKGS="${ADDPKGS}" \
 		MINIMIZE=${MINIMIZE} \
-		DRIVE=${DRIVE}
+		BIOSCONSOLE=${BIOSCONSOLE}
 
 .if ${WHOAMI} != "root" && !defined(NOSUDO) # allow non root builds
 SUDO!=		command -v doas >/dev/null && \
