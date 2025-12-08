@@ -19,6 +19,7 @@ BUILDIMGPATH=	images/${BUILDIMG}
 BUILDIMGURL=	https://github.com/NetBSDfr/smolBSD/releases/download/latest/${BUILDIMG}
 BUILDCPUS?=	2
 BUILDMEM?=	1024
+DRIVE?=		ld
 
 SERVICE?=	${.TARGET}
 # guest root filesystem will be read-only
@@ -39,7 +40,8 @@ ENVVARS=	SERVICE=${SERVICE} \
 		BIOSBOOT=${BIOSBOOT} \
 		PKGSITE=${PKGSITE} \
 		ADDPKGS="${ADDPKGS}" \
-		MINIMIZE=${MINIMIZE}
+		MINIMIZE=${MINIMIZE} \
+		DRIVE=${DRIVE}
 
 .if ${WHOAMI} != "root" && !defined(NOSUDO) # allow non root builds
 SUDO!=		command -v doas >/dev/null && \

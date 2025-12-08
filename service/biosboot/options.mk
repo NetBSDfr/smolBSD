@@ -1,1 +1,2 @@
 BIOSBOOT=y
+DRIVE=ld

@@ -281,9 +281,9 @@ fi
 [ -n "$is_freebsd" ] && mdconfig -d -u $vnd
 if [ -n "$is_netbsd" ] || [ -n "$is_openbsd" ]; then
 	if [ -n "$biosboot" ]; then
-		disklabel ${vnd} | sed 's/vnd/ld/' > ${mnt}/f
-		disklabel -R ${vnd} ${mnt}/f
-		rm -f ${mnt}/f
+		disklabel ${vnd} | sed "s/vnd/${DRIVE}/" > ${mnt}/p
+		disklabel -R ${vnd} ${mnt}/p
+		rm -f ${mnt}/p
 		installboot -v /dev/r${vnd}a /usr/mdec/bootxx_ffsv1
 	fi
 
