@@ -72,13 +72,18 @@ ROOTFS?=	-r ld0a
 ROOTFS?=	-r ld5a
 .endif
 
-# any BSD variant including MacOS
-DDUNIT=		m
-CKSUMQ=		-q
 .if ${OS} == "Linux"
 DDUNIT=		M
-CKSUMQ=		--quiet
+CKSUM=		cksum -a sha256 -c --quiet
+.elif ${OS} == "Darwin"
+DDUNIT=		m
+CKSUM=		shasum -a 256 -c -q
+.else
+# any BSD variant (except MacOS)
+DDUNIT=		m
+CKSUM=		cksum -a sha256 -c -q
 .endif
+
 FETCH=		scripts/fetch.sh
 FRESHCHK=	scripts/freshchk.sh
 
@@ -111,9 +116,8 @@ kernfetch:
 	$Qif [ "${ARCH}" = "amd64" ] || [ "${ARCH}" = "i386" ]; then \
 		${FRESHCHK} ${KDIST}/${KERNEL} kernels/${KERNEL} || \
 			${FETCH} -o kernels/${KERNEL} ${KDIST}/${KERNEL}; \
-		cd kernels && curl -L -s -o- ${KDIST}/${KERNEL}.sha256 | \
-			cksum -a sha256 -c ${CKSUMQ} && \
-				echo "${CHECK} ${KERNEL} sha256 checks out"; \
+		cd kernels && true || curl -L -s -o- ${KDIST}/${KERNEL}.sha256 | \
+			${CKSUM} && echo "${CHECK} ${KERNEL} sha256 checks out"; \
 	else \
 		${FRESHCHK} ${KDIST}/kernel/${KERNEL}.gz kernels/${KERNEL} || \
 			curl -L -o- ${KDIST}/kernel/${KERNEL}.gz | \

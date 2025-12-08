@@ -129,8 +129,13 @@ Linux)
 	;;
 Darwin)
 	ACCEL=",accel=hvf"
-	# Mac M1, M2, M3, M4
-	cputype="cortex-a710"
+	if [ "$arch" = "aarch64" ]; then
+		# Mac M1, M2, M3, M4
+		cputype="cortex-a710"
+	else
+		# Mac Intel
+		cputype="qemu64"
+	fi
 	;;
 OpenBSD|FreeBSD)
 	ACCEL=",accel=tcg" # unaccelerated
