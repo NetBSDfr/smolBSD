@@ -2,7 +2,7 @@
 
 ## About
 
-This image is meant to build a BIOS bootable image, for use with Virtual Machine Managers that does not support PXE, it can also be used in a bootable device like an USB key.
+This image is meant to build a _BIOS_ bootable image, for use with _Virtual Machine Managers (VMM)_ that does not support _PXE boot_. It can also be used to setup a bootable device like an _USB_ key.
 
 ## Usage
 
@@ -19,17 +19,18 @@ $ bmake SERVICE=biosboot BIOSCONSOLE=com0 build
 
 **Run**
 
-- QEMU example
+- _QEMU_ example
 
 ```sh
 $ qemu-system-x86_64 -accel kvm -m 256 -cpu host -hda images/biosboot-amd64.img
 ```
 
-- USB key example
+- _USB_ key example
+
 ```sh
 $ [ "$(uname -s)" = "Linux" ] && unit=M || unit=m
 $ dd if=images/biosboot-amd64.img of=/dev/keydevice bs=1${unit}
 ```
 
-And legacy boot on the USB device.
+And legacy boot on the _USB_ device.
 
