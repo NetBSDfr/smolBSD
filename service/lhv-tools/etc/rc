@@ -1,0 +1,11 @@
+#!/bin/sh
+
+export PATH=/sbin:/bin:/usr/sbin:/usr/bin:/usr/pkg/bin:/usr/pkg/sbin
+. /etc/include/choupi
+. /etc/include/basicrc > /dev/null 2>&1
+
+
+echo "${ROCKET} bozohttpd launch ..."
+/usr/libexec/bozohttpd -x index.php -f -C .php /usr/pkg/libexec/cgi-bin/php84  /var/www/
+
+. /etc/include/shutdown
