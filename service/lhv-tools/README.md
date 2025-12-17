@@ -14,12 +14,14 @@ This smolBSD service downloads and installs these tools during postinstall stage
 
 Building on GNU/Linux or MacOS
 ```sh
-$ bmake SERVICE=lhv-tools build
+$ bmake SERVICE=lhv-tools BUILDMEM=2048 build
 ```
 Building on NetBSD
 ```sh
-$ make SERVICE=lhv-tools base
+$ make SERVICE=lhv-tools BUILDMEM=2048 base
 ```
+Use `BUILDMEM=2048`, otherwise, the `tar` command could hang during postinstall.
+
 Edit `etc/lhv-tools.conf` file as needed, then, start the service:
 ```sh
 ./startnb.sh -f etc/lhv-tools.conf
