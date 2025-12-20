@@ -20,7 +20,7 @@ Building on NetBSD
 ```sh
 $ make SERVICE=lhv-tools BUILDMEM=2048 base
 ```
-Use `BUILDMEM=2048`, otherwise, the `tar` command could hang during postinstall.
+Use `BUILDMEM=2048` at least, otherwise, the `tar` command could hang during postinstall.
 
 Edit `etc/lhv-tools.conf` file as needed, then, start the service:
 ```sh
