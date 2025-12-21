@@ -10,7 +10,8 @@ echo "${INFO} \"LHV tools\" prerequisites installation ..."
 if [ -d ${toolsdir} ]; then rm -fr ${toolsdir}; fi
 mkdir ${toolsdir}
 
-link="https://lehollandaisvolant.net/tout/tools/tools.tar.7z"
+#link="https://lehollandaisvolant.net/tout/tools/tools.tar.7z"
+link="http://192.168.1.17:8000/tools.tar.7z"
 ${FETCH} -o ${toolsdir}/$(basename ${link}) ${link} 
 if [ $? -ne 0 ]; then
 	echo -e "${ERROR} \"LHV tools\" download failed.\nExit."
@@ -37,21 +38,11 @@ else
 fi
 
 echo -n "${ARROW} un-taring |"
-tar -xvf ${toolsdir}/$(basename ${link%.7z}) -C ${wwwroot} 2>&1 | awk '{printf "*"; fflush()}'
+tar -xvf ${toolsdir}/$(basename ${link%.7z}) --strip-components=1 -C ${wwwroot} 2>&1 | awk '{printf "*"; fflush()}'
 if [ $? -eq 0 ]; then
 	echo "| done"
 else
 	echo -e "| ${ERROR} failed.\nExit"
-	. etc/include/shutdown
-fi
-
-echo -n "${ARROW} fix for icon in the header "
-find ${wwwroot} -name index.php -exec sed -i 's#/index/logo-no-border.png#../0common/lhv-384x384.png#g' {} \; 2>&1 | awk '{printf "*"; fflush()}'
-if [ $? -eq 0 ]; then
-	echo ""
-	break
-else
-	echo -e "${ERROR} failed.\nExit"
 	. etc/include/shutdown
 fi
 
