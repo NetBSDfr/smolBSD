@@ -1,11 +1,23 @@
 #!/bin/sh
-
 # To avoid "warning: TERM is not set" message and be able to vi files if needed.
 echo 'export TERM="vt100"' > etc/profile
 . /etc/include/choupi
 wwwroot="var/www"
 toolsdir="../tmp/lhv-tools"
 
+echo "${ARROW} PHP settings ..."
+mkdir -p usr/pkg/etc/php/8.4/
+cp usr/pkg/share/examples/php/8.4/php.ini-production usr/pkg/etc/php/8.4/php.ini
+sed -i'' 's/;extension=curl/extension=curl/g' usr/pkg/etc/php/8.4/php.ini
+
+# Some .php files are not interpeted by bozohttpd. The content of the file
+# is sent as is to the browser. The .bzremap file acts as rewriting rules to
+# force the call of the index.php file present into each tool's folder.
+echo "${ARROW} fix some .php files"
+cat >${wwwroot}/.bzremap<<EOF
+/browser/:/browser/index.php
+/htmlol/:/htmlol/index.php
+EOF
 
 echo "${INFO} \"LHV tools\" prerequisites installation ..."
 if [ -d ${toolsdir} ]; then rm -fr ${toolsdir}; fi
@@ -47,22 +59,13 @@ else
 	. etc/include/shutdown
 fi
 
-# Some .php files are not interpeted by bozohttpd. The content of the file
-# is sent as is to the browser. The .bzremap file acts as rewriting rules to
-# force the call of the index.php file present into each tool's folder.
-echo "${ARROW} fix some .php files"
-cat > ${wwwroot}/.bzremap  <<EOF
-/browser/:/browser/index.php
-/htmlol/:/htmlol/index.php
-EOF
-
 echo "${ARROW} fix footer"
 sed -i'' 's,</section>,</section>\n<footer id="footer"><a href="//lehollandaisvolant.net">by <em>Timo Van Neerden</em></a></footer>,g'  ${wwwroot}/barcode/index.php
 
 echo "${ARROW} fix archive link"
 sed -i'' 's,href="tools.tar.7z,href="https://lehollandaisvolant.net/tout/tools/tools.tar.7z,g' ${wwwroot}/cgu.php
 
-# Cleanup.
+# Cleanup
 if [ -d ${toolsdir} ]; then rm -fr ${toolsdir}; fi
 
 echo "${STAR} Enjoy !"
