@@ -1,12 +1,34 @@
+<div align="center" markdown="1">
+<img src="logo.svg" height="150px">
+</div>
+
 # lhv-tools
 
-"lhv" stands for "Le Holandais Volant" aka [Timo VAN NEERDEN](https://lehollandaisvolant.net/tout/apropos.php).
+## Introduction
+
+"lhv" stands for "Le Holandais Volant" aka [Timo VAN NEERDEN](https://lehollandaisvolant.net/tout/apropos.php) an IT guy.
 
 Here is a free translation from his site:
 
 >These online tools are intended to be useful and are for free use. They are without advertising and without trackers. No information entered in pages is recorded by the site; most scripts that do not transmit information to the site and work autonomously in your browser. Most of the tools are made by myself. Otherwise, the author or scripts used are mentioned on their page.`
 
-Go to the [tools's page](https://lehollandaisvolant.net/tout/tools/) to get more information about it.
+
+You can find tools to:
+- create QR-codes,
+- convert dates into several formats,
+- convert temperatures units,
+- generate passwords,
+- calculate checksums,
+- play 2048, Tetris, mahjong, etc...,
+- learn kanas,
+- see spectrum of an audio file,
+- find the RSS link of a youtube channel,
+- edit images,
+- etc... in your browser.
+
+More than 150 tools for multiple activities. 
+
+Go to the [tools's page](https://lehollandaisvolant.net/tout/tools/) to get more information.
 
 This smolBSD service downloads and installs these tools during postinstall stage with bozohttp and php.
 
@@ -16,7 +38,7 @@ Many tools from Le Hollandais Volant work with php. Essential/minimal packages t
 
 For now, it's `php84`, `php84-curl`, etc...
 
-Edit `etc/lhv-tools.conf` file as needed.
+Also, feel free to edit `etc/lhv-tools.conf` file as needed.
 
 ## Usage
 
@@ -38,7 +60,7 @@ Start the service:
 Finally, go to [http://localhost:8180](http://localhost:8180) and enjoy:
 
 ![homepage](capture.png)
-The number of tools differes between this outdated screenshot and reality. It came from the archive and just stand for illustration.
+*The number of tools differes between this outdated screenshot and reality. It came from the archive and just stand for illustration.*
 
 Press `Ctrl+a x` to quit and close the microvm.
 

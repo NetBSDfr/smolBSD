@@ -1,0 +1,156 @@
+<?xml version="1.0" encoding="UTF-8" standalone="no" ?>
+<!DOCTYPE svg PUBLIC "-//W3C//DTD SVG 1.1//EN" "http://www.w3.org/Graphics/SVG/1.1/DTD/svg11.dtd">
+<svg width="512" height="512" version="1.1" xmlns="http://www.w3.org/2000/svg">
+<title>Le Hollandais Volant</title>
+<defs>
+<style type="text/css"><![CDATA[
+#bgsky {
+	fill: url(#skygradient);
+	fill-opacity:1;
+}
+#sun-layer {
+	fill: url(#sungradient);
+	stroke: #000000;
+	fill-opacity:1;
+	stroke-opacity:1;
+	stroke-width: 0px;
+}
+
+#sea-layer {
+	stroke-opacity:1;
+	stroke-width: 0px;
+	stroke: black;
+	fill: url(#seagradient);
+}
+
+#navire {
+	stroke-opacity:1;
+	stroke-width: 4px;
+	stroke: black;
+	fill: red;
+	fill: black;
+}
+
+#navire-mat-flag,
+#navire-proue,
+#navire-voile1,
+#navire-voile2,
+#navire-voile3,
+#navire-voile4,
+#navire-voile5-arriere {
+	filter: url(#dropshadow);
+}
+]]></style>
+
+<linearGradient id="skygradient" x1="0%" y1="0%" x2="100%" y2="100%">
+	<stop offset="0%" style="stop-color:#ffc000; stop-opacity:1" />
+	<stop offset="100%" style="stop-color:#FFFF3F; stop-opacity:1" />
+</linearGradient>
+
+<linearGradient id="seagradient" x1="0%" y1="0%" x2="0%" y2="100%">
+	<stop offset="0%" style="stop-color:#003772; stop-opacity:1" />
+	<stop offset="50%" style="stop-color:#015CBD; stop-opacity:1" />
+	<stop offset="75%" style="stop-color:#0091d3; stop-opacity:1" />
+	<stop offset="100%" style="stop-color:#01F1F4; stop-opacity:1" />
+</linearGradient>
+
+<radialGradient id="sungradient" fx="0%" fy="5%" cx="35%" cy="35%" r="100%">
+	<stop offset="0%" style="stop-color:#bb0000; stop-opacity:1" />
+	<stop offset="15%" style="stop-color:#ff0000; stop-opacity:1" />
+	<stop offset="30%" style="stop-color:#ff6600; stop-opacity:1" />
+	<stop offset="40%" style="stop-color:#ffff00; stop-opacity:0" />
+</radialGradient>
+
+<filter id="dropshadow" width="1.5" height="1.5" x="-.25" y="-.25">
+	<feGaussianBlur in="SourceAlpha" stdDeviation="7" result="blur"/>
+	<feColorMatrix result="bluralpha" type="matrix" values="-1  0  0  0  1
+		 0 -1  0  0  1
+		 0  0 -1  0  1
+		 0  0  0  1  0 "/>
+	<feOffset in="bluralpha" dx="7" dy="-7" result="offsetBlur"/>
+	<feMerge>
+		<feMergeNode in="offsetBlur"/>
+		<feMergeNode in="SourceGraphic"/>
+	</feMerge>
+</filter>
+
+</defs>
+
+
+<rect id="bgsky" x="0" y="0" width="512" height="512" />
+
+<rect id="sun-layer" x="0" y="0" width="512" height="512" />
+
+<path id="sea-layer" d="M0,452 c50,20 200,-100 250,-80 c50,0 200,100 262,80 v60 h-512 z" />
+
+<g id="navire">
+	<g id="navire-mat-flag">
+
+		<path id="navire-flag" d="M260,23
+			c50,20 90,10 90,20
+			c-40,30 30,10 50,40
+			c3,50 4,70 10,80
+			c-30,-30 -100,-30 -100,-60
+			c-10,5 -50,10 -50,10
+			z" fill="#000000"/>
+
+		<path id="navire-flag-3" d="M260,63
+			c50,20 90,10 90,20
+			c-40,30 30,10 50,40
+			c3,50 8,34 10,40
+			c-30,-30 -100,-30 -100,-60
+			c -10,5 -50,10 -50,10
+		z" fill="#000000"/>
+
+		<path id="navire-mat" d="M240,20
+			c0,0 20,-5 20,-5
+			c0,0 2,6 2,6
+			c0,0 -5,2 -5,2
+			c5,5 20,300 30,350
+			h-20
+			c-5,0 0,5 -18,-348
+			c0,0 0,0 -7,2
+			z" />
+	</g>
+
+	<path id="navire-voile5-arriere" d="M210,290
+		c10,-5 150,10 200,-5
+		c-10,50 -30,110 -10,130
+		c0,0 0,0 -200,0
+		z" />
+
+	<path id="navire-voile4" d="M210,80
+		c15,-15 10,-25 5,-40
+		c10,-5 60,-10 75,-5
+		c-10,20 -10,20 -5,40
+		c-40,-15 -50,-10 -75,5
+		z" />
+
+	<path id="navire-voile3" d="M190,160
+		c0,0 -30,-30 -20,-60
+		c10,-5 120,-10 150,-5
+		c-15,30 -15,50 -5,60
+		c-40,-20 -110,-15 -125,5
+		z" />
+
+	<path id="navire-voile2" d="M170,260
+		c0,0 -30,-30 -30,-90
+		c10,-5 150,-10 220,-5
+		c-20,30 -30,60 -30,100
+		z" />
+
+	<path id="navire-voile1" d="M250,370
+		c-140,60 -150,-70 -160,-110
+		c200,-5 250,-10 320,-10
+		c-80,100 -60,150 -60,150
+		z" />
+
+	<path id="navire-proue" d="M180,512
+		c-30,0 -55,-80 -60,-110
+		c0,-10 110,-65 130,-70
+		c10,10 80,90 150,100
+		c-3,10 -25,20 -50,80
+		z" />
+</g>
+
+</svg>
