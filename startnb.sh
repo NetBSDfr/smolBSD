@@ -130,7 +130,7 @@ Linux)
 Darwin)
 	accel="-accel hvf"
 	# Mac M1, M2, M3, M4
-	cputype="cortex-a710"
+	cputype="cortex-a57"
 	;;
 OpenBSD|FreeBSD)
 	accel="-accel tcg" # unaccelerated
