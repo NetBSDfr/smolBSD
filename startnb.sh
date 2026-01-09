@@ -122,18 +122,18 @@ cputype="host"
 
 case $OS in
 NetBSD)
-	ACCEL=",accel=nvmm"
+	accel="-accel nvmm"
 	;;
 Linux)
-	ACCEL=",accel=kvm"
+	accel="-accel kvm"
 	;;
 Darwin)
-	ACCEL=",accel=hvf"
+	accel="-accel hvf"
 	# Mac M1, M2, M3, M4
-	cputype="cortex-a710"
+	cputype="cortex-a57"
 	;;
 OpenBSD|FreeBSD)
-	ACCEL=",accel=tcg" # unaccelerated
+	accel="-accel tcg" # unaccelerated
 	cputype="qemu64"
 	;;
 *)
@@ -150,7 +150,7 @@ append=${append:-"-z"}
 
 case $machine in
 x86_64|i386)
-	mflags="-M microvm,rtc=on,acpi=off,pic=off${ACCEL}"
+	mflags="-M microvm,rtc=on,acpi=off,pic=off"
 	cpuflags="-cpu ${cputype},+invtsc"
 	root=${root:-"ld0a"}
 	# stack smashing with version 9.0 and 9.1
@@ -166,7 +166,7 @@ x86_64|i386)
 	esac
 	;;
 aarch64)
-	mflags="-M virt${ACCEL},highmem=off,gic-version=3"
+	mflags="-M virt,highmem=off,gic-version=3"
 	cpuflags="-cpu ${cputype}"
 	root=${root:-"ld4a"}
 	extra="$extra -device virtio-rng-pci"
@@ -250,7 +250,7 @@ fi
 [ -n "${qmp_port}" ] && extra="$extra -qmp tcp:localhost:${qmp_port},server,wait=off"
 
 cmd="${QEMU} -smp $cores \
-	$mflags -m $mem $cpuflags \
+	$accel $mflags -m $mem $cpuflags \
 	-kernel $kernel $initrd ${img} \
 	-append \"console=${console} ${root} ${append}\" \
 	-global virtio-mmio.force-legacy=false ${share} \
