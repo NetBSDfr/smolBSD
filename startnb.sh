@@ -249,6 +249,9 @@ fi
 # QMP is available
 [ -n "${qmp_port}" ] && extra="$extra -qmp tcp:localhost:${qmp_port},server,wait=off"
 
+# Use localtime for RTC instead of UTC by default
+extra="$extra -rtc base=localtime"
+
 cmd="${QEMU} -smp $cores \
 	$accel $mflags -m $mem $cpuflags \
 	-kernel $kernel $initrd ${img} \
