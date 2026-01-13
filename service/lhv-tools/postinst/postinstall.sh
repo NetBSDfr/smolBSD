@@ -53,7 +53,7 @@ else
 fi
 
 echo -n "${ARROW} un-taring |"
-tar -xvf ${toolsdir}/$(basename ${link%.7z}) --strip-components=1 -C ${wwwroot} 2>&1 | awk '{printf "*"; fflush()}'
+tar -xvf ${toolsdir}/$(basename ${link%.7z}) -C ${wwwroot} 2>&1 | awk '{printf "*"; fflush()}'
 if [ $? -eq 0 ]; then
 	echo "| done"
 else
@@ -61,17 +61,21 @@ else
 	. etc/include/shutdown
 fi
 
-echo "${ARROW} fix footer"
-sed -i'' 's,</section>,</section>\n<footer id="footer"><a href="//lehollandaisvolant.net">by <em>Timo Van Neerden</em></a></footer>,g' ${wwwroot}/barcode/index.php
-sed -i'' 's,<a href="/">by <em>Timo Van Neerden,<a href="//lehollandaisvolant.net">by <em>Timo Van Neerden,g' ${wwwroot}/*/index.php
-sed -i'' 's,<a href="/">Timo Van Neerden,<a href="//lehollandaisvolant.net">Timo Van Neerden,g' ${wwwroot}/index.php ${wwwroot}/cgu.php
-
 echo "${ARROW} fix favicon"
 # -k because no certificates stuff used by curl is installed.
 ${FETCH} -o ${wwwroot}/favicon.ico https://lehollandaisvolant.net/index/icons/favicon-32x32.png -k
 
+echo "${ARROW} fix logo"
+sed -i'' 's,/index/logo-no-border.png,0common/lhv-384x384.png,g' ${wwwroot}/index.php
+sed -i'' 's,/index/logo-no-border.png,../0common/lhv-384x384.png,g' ${wwwroot}/*/index.php ${wwwroot}/cgu.php
+
 echo "${ARROW} fix archive link"
 sed -i'' 's,href="tools.tar.7z,href="https://lehollandaisvolant.net/tout/tools/tools.tar.7z,g' ${wwwroot}/cgu.php ${wwwroot}/index.php
+
+echo "${ARROW} fix footer"
+sed -i'' 's,</section>,</section>\n<footer id="footer"><a href="//lehollandaisvolant.net">by <em>Timo Van Neerden</em></a></footer>,g' ${wwwroot}/barcode/index.php
+sed -i'' 's,<a href="/">by <em>Timo Van Neerden,<a href="//lehollandaisvolant.net">by <em>Timo Van Neerden,g' ${wwwroot}/*/index.php
+sed -i'' 's,<a href="/">Timo Van Neerden,<a href="//lehollandaisvolant.net">Timo Van Neerden,g' ${wwwroot}/index.php ${wwwroot}/cgu.php
 
 
 # Cleanup
