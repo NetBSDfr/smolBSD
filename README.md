@@ -321,7 +321,7 @@ In any case, the `bmake kernfetch` will take care of downloading the correct ker
 [1]: https://man.netbsd.org/x86/multiboot.8
 [2]: https://www.linux-kvm.org/page/Main_Page
 [3]: https://github.com/NetBSDfr/sailor
-[4]: https://xenbits.xen.org/docs/4.6-testing/misc/pvh.html
+[4]: https://xenbits.xen.org/docs/unstable/misc/pvh.html
 [5]: https://github.com/NetBSDfr/NetBSD-src/tree/nbfr_master
 [6]: https://github.com/NetBSD/src
 [7]: https://nycdn.netbsd.org/pub/NetBSD-daily/netbsd-11/latest
