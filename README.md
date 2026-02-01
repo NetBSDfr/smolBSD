@@ -163,7 +163,7 @@ And then add this to your `rc(8)`:
 
 ## Dockerfile
 
-If you are more experienced with `Dockerfile`s, _smolBSD_ services can be generated using such configuration files; while it does not support the entierty of the [Dockerfile reference][10], the well known verbs are implemented and you can generate services configuration files using the `docker2svc.sh` script:
+If you are more experienced with `Dockerfile`s, _smolBSD_ services can be generated using such configuration files; while it does not support the entirety of the [Dockerfile reference][10], the well known verbs are implemented and you can generate services configuration files using the `docker2svc.sh` script:
 
 ```sh
 $ cat dockerfiles/Dockerfile.myservice
