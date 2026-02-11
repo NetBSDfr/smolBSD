@@ -38,7 +38,11 @@ servicedir="service/${SERVICE}"
 
 if [ -d "$servicedir" ]; then
 	echo "${INFO} $SERVICE already exists, recreating"
-	rm -rf "$servicedir" etc/${SERVICE}.conf
+	for f in etc options.mk postinst
+	do
+		rm -rf "${servicedir}/${f}"
+	done
+	rm -f etc/${SERVICE}.conf
 fi
 
 for d in etc postinst
@@ -77,6 +81,7 @@ cat >${etcrc}<<_EOF
 #!/bin/sh
 
 . /etc/include/basicrc
+. /etc/include/mount9p
 
 _EOF
 echo "ADDPKGS=pkgin pkg_tarup pkg_install sqlite3" \

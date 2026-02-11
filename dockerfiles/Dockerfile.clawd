@@ -5,7 +5,7 @@
 # build this service:
 # $ ./docker2svc.sh dockerfiles/Dockerfile.clawd
 # run this service:
-# $ ./startnb.sh -c 4 -m 4096 -f etc/clawd.conf
+# $ ./startnb.sh -c 4 -m 3072 -f etc/clawd.conf
 # As no NetBSD service is implemented to run the
 # gateway, you must ^C at the end of the onboarding
 # and start the gateway: openclaw gateway --port 18789
@@ -18,7 +18,7 @@ LABEL smolbsd.imgsize=4096
 # cores used to build the image
 LABEL smolbsd.buildcpus=4
 # memory used to build the image
-LABEL smolbsd.buildmem=4096
+LABEL smolbsd.buildmem=3072
 # default openclaw gateway port
 LABEL smolbsd.publish="18789:18789"
 
@@ -64,6 +64,7 @@ RUN useradd -m -s /bin/ksh ${NBUSER} && \
 	echo 'PS1=\\"${NBUSER}🦞 \\"' >>${NBHOME}/.bash_profile && \
 	echo 'export LANG=\\"${LANG}\\"' >>${NBHOME}/.bash_profile && \
 	echo 'export TERM=\\"${TERM}\\"' >>${NBHOME}/.bash_profile && \
+	echo 'cd \\$HOME' >>${NBHOME}/.bash_profile && \
 	echo '➡️  setup openclaw: openclaw onboard --skip-daemon' \
 		>>${NBHOME}/.banner && \
 	echo '➡️  start openclaw gateway: openclaw gateway --bind lan --port 18789' \
@@ -78,5 +79,5 @@ RUN echo 'eval \\$(resize)' >>/etc/rc.local
 
 EXPOSE 18789
 
-CMD ["su - ${NBUSER} -c \\"tmux -u new\\" || bash"]
+CMD ["su ${NBUSER} -c \\"tmux -u new\\" || bash"]
 

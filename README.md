@@ -46,8 +46,14 @@ smolBSD helps you create a minimal _NetBSD_ 🚩 based _BSD UNIX_ virtual machin
 
 ### Lazy copypasta
 
+Debian, Ubuntu and the like
 ```sh
 $ sudo apt install curl jq git bmake qemu-system-x86_64 sudo binutils libarchive-tools gdisk socat
+```
+
+macOS
+```sh
+$ brew install curl jq git bmake qemu binutils libarchive
 ```
 
 ## Quickstart
