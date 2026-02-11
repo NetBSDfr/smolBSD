@@ -38,8 +38,10 @@ ENV LANG=en_US.UTF-8
 ENV TERM=tmux-256color
 # IPv6 makes this gigantic pile of shit crash
 ENV NODE_OPTIONS="--dns-result-order=ipv4first"
+# Raise the file descriptor limit to prevent "EMFILE: too many open files" npm failure
+ENV ULIMIT=4096
 # Unknown platform on NetBSD
-RUN npm pack openclaw@latest && tar -xf openclaw-*.tgz && \
+RUN ulimit -n ${ULIMIT} && npm pack openclaw@latest && tar -xf openclaw-*.tgz && \
 	cd package && npm install --ignore-scripts && \
 	cd node_modules/node-llama-cpp && \
 	echo \\"find . -type f -name '*.cpp' -exec sed -i'' 's/__OpenBSD__/__NetBSD__/g' {} \\;\\" > post.sh && \
