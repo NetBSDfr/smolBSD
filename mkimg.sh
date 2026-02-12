@@ -152,7 +152,8 @@ wedgename="${svc}root"
 if [ -n "$is_linux" ]; then
 	# no other image than builder image are ext2, don't check for FROMIMG
 	sgdisk --zap-all ${img} || true
-	sgdisk --new=1:0:0 --typecode=1:8300 --change-name=1:"$wedgename" ${img}
+	sgdisk --new=1:0:0 --typecode=1:8300 --change-name=1:"$wedgename" \
+		--attributes=1:set:2 ${img}
 	# GitHub actions can't create loopXpY, use an offset
 	offset=$(sgdisk -i 1 ${img} | awk '/First sector/ {print $3}')
 	vnd=$(losetup -f --show -o $((offset * 512)) ${img})
@@ -185,6 +186,7 @@ else # NetBSD
 	if [ -z "$FROMIMG" ]; then
 		gpt create ${imgdev}
 		gpt add -a 512k -l "$wedgename" -t ${mountfs} ${imgdev}
+		gpt set -a bootme -i 1 ${imgdev}
 		eval $(gpt show ${imgdev}|awk '/NetBSD/ {print "startblk="$1; print "blkcnt="$2}')
 		mountdev=$(getwedge ${imgdev})
 		newfs -O1 -m0 /dev/${mountdev}
