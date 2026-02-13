@@ -80,6 +80,10 @@ bind - split-window -v
 run \\"~/.tmux/tmux-power.tmux\\"
 EOF
 
+ARG LIGHTGREEN="\\\\033[92m"
+ARG BOLD="\\\\033[1m"
+ARG NORMAL="\\\\033[0m"
+
 RUN cat <<EOF >${NBHOME}/.bash_profile
 PS1=\\"${NBUSER}🦞 \\"
 export LANG=\\"${LANG}\\"
@@ -89,19 +93,14 @@ alias vi=vim
 alias vim=nvim
 export EDITOR=vim
 
-lightgreen=\\"\\033[92m\\"
-bold=\\"\\033[1m\\"
-normal=\\"\\033[0m\\"
+printf \\"
 
-cat ${NBHOME}/.banner
-EOF
+📝 the ${LIGHTGREEN}nvim${NORMAL} editor is available
+🪟 you are in a ${LIGHTGREEN}tmux${NORMAL} multiplexer
+➡️  ${BOLD}setup openclaw${NORMAL}: ${LIGHTGREEN}openclaw onboard --skip-daemon${NORMAL}
+➡️  ${BOLD}start openclaw gateway${NORMAL}: ${LIGHTGREEN}openclaw gateway --bind lan --port 18789${NORMAL}
 
-RUN cat <<EOF >${NBHOME}/.banner
-
-📝 the ${lightgreen}nvim${normal} editor is available
-🪟 you are in a ${lightgreen}tmux${normal} multiplexer
-➡️  ${bold}setup openclaw${normal}: ${lightgreen}openclaw onboard --skip-daemon${normal}
-➡️  ${bold}start openclaw gateway${normal}: ${light}openclaw gateway --bind lan --port 18789${normal}
+\\"
 
 EOF
 
