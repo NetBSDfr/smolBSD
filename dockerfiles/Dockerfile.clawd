@@ -89,12 +89,13 @@ alias vi=vim
 alias vim=nvim
 export EDITOR=vim
 
-lightgreen="\033[92m"
-bold="\033[1m"
-normal="\033[0m"
+lightgreen=\\"\\033[92m\\"
+bold=\\"\\033[1m\\"
+normal=\\"\\033[0m\\"
 
 cat ${NBHOME}/.banner
 EOF
+
 RUN cat <<EOF >${NBHOME}/.banner
 
 📝 the ${lightgreen}nvim${normal} editor is available
@@ -116,6 +117,7 @@ hostname ${NBUSER}
 chmod 666 /dev/null
 ulimit -n ${MAXFILES}
 EOF
+
 # avoid escape hell
 RUN echo 'eval \\$(resize)' >>/etc/rc.local
 
