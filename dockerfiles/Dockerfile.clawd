@@ -1,6 +1,4 @@
-# BETA BETA BETA BETA
-# DID I MENTION THIS IS BETA?
-# THIS MIGH MELT YOUR WHOLE BUILDING
+# smolClaw: run an OpenClaw instance in a microVM
 #
 # build this service:
 # $ ./docker2svc.sh dockerfiles/Dockerfile.clawd
@@ -22,7 +20,6 @@ LABEL smolbsd.buildmem=3072
 # default openclaw gateway port
 LABEL smolbsd.publish="18789:18789"
 
-# all the shit needed for a node package
 RUN pkgin up && pkgin -y in \
 	bash curl nodejs git-base cmake openmp gmake jq neovim
 # smolBSD is unknown to cmake ;_;
@@ -36,58 +33,92 @@ ENV NBUSER=clawd
 ENV NBHOME=/home/${NBUSER}
 ENV LANG=en_US.UTF-8
 ENV TERM=tmux-256color
-# IPv6 makes this gigantic pile of shit crash
+# IPv6 makes it crash crash
 ENV NODE_OPTIONS="--dns-result-order=ipv4first"
 # Raise the file descriptor limit to prevent "EMFILE: too many open files" npm failure
 ENV MAXFILES=4096
 # Unknown platform on NetBSD
-RUN ulimit -n ${MAXFILES} && npm pack openclaw@latest && tar -xf openclaw-*.tgz && \
-	cd package && npm install --ignore-scripts && \
-	cd node_modules/node-llama-cpp && \
-	echo \\"find . -type f -name '*.cpp' -exec sed -i'' 's/__OpenBSD__/__NetBSD__/g' {} \\;\\" > post.sh && \
-	jq \'.scripts.\\"prebuild:netbsd\\" = \\"sh ./post.sh\\"\' package.json > package.json.new && \
-	mv package.json.new package.json && cd ../.. && \
-	npm install -g .
+RUN <<EOF
+ulimit -n ${MAXFILES}
+npm pack openclaw@latest
+tar -xf openclaw-*.tgz
+cd package
+npm install --ignore-scripts
+cd node_modules/node-llama-cpp
+# needed for now, upstream patch in progress
+echo \\"find . -type f -name '*.cpp' -exec sed -i'' 's/__OpenBSD__/__NetBSD__/g' {} \\;\\" > post.sh
+jq \'.scripts.\\"prebuild:netbsd\\" = \\"sh ./post.sh\\"\' package.json > package.json.new
+mv package.json.new package.json
+cd ../..
+npm install -g .
+EOF
 
-RUN echo 'mount -t ptyfs ptyfs /dev/pts' >> /etc/rc.pre && \
-	echo 'cd /dev && sh MAKEDEV fd && cd -' >> /etc/rc.pre
+RUN cat <<EOF >/etc/rc.pre
+mount -t ptyfs ptyfs /dev/pts
+cd /dev && sh MAKEDEV fd && cd -
+EOF
 
-RUN useradd -m ${NBUSER} && \
-	chsh -s /usr/pkg/bin/bash ${NBUSER} && \
-	mkdir -p ${NBHOME}/.tmux && \
-	curl -s -Lo ${NBHOME}/.tmux/tmux-power.tmux \
-		https://raw.githubusercontent.com/wfxr/tmux-power/master/tmux-power.tmux && \
-	sed -i'' 's/status-right \\"\\$RS\\"/status-right \\":: powered by 🚩 + smolBSD \\"/' \
-		${NBHOME}/.tmux/tmux-power.tmux && \
-	chmod +x ${NBHOME}/.tmux/tmux-power.tmux && \
-	echo 'set -g default-terminal \\"tmux-256color\\"' >>${NBHOME}/.tmux.conf && \
-	echo 'set -g @tmux_power_theme \\"coral\\"' >>${NBHOME}/.tmux.conf && \
-	echo 'run \\"~/.tmux/tmux-power.tmux\\"' >>${NBHOME}/.tmux.conf && \
-	echo 'PS1=\\"${NBUSER}🦞 \\"' >>${NBHOME}/.bash_profile && \
-	echo 'export LANG=\\"${LANG}\\"' >>${NBHOME}/.bash_profile && \
-	echo 'export TERM=\\"${TERM}\\"' >>${NBHOME}/.bash_profile && \
-	echo 'export NODE_OPTIONS=\\"${NODE_OPTIONS}\\"' >>${NBHOME}/.bash_profile && \
-	echo >${NBHOME}/.banner && \
-	echo '📝 the nvim editor is available' >>${NBHOME}/.banner && \
-	echo '🪟 you are in a tmux multiplexer' >>${NBHOME}/.banner && \
-	echo '➡️  setup openclaw: openclaw onboard --skip-daemon' \
-		>>${NBHOME}/.banner && \
-	echo '➡️  start openclaw gateway: openclaw gateway --bind lan --port 18789' \
-		>>${NBHOME}/.banner && \
-	echo >>${NBHOME}/.banner && \
-	echo 'cat ${NBHOME}/.banner' >>${NBHOME}/.bash_profile && \
-	chown -R ${NBUSER} ${NBHOME}
+RUN <<EOF
+useradd -m ${NBUSER}
+chsh -s /usr/pkg/bin/bash ${NBUSER}
+mkdir -p ${NBHOME}/.tmux
+curl -s -Lo ${NBHOME}/.tmux/tmux-power.tmux \
+	https://raw.githubusercontent.com/wfxr/tmux-power/master/tmux-power.tmux
+sed -i'' 's/status-right \\"\\$RS\\"/status-right \\":: powered by 🚩 + smolBSD \\"/' \
+	${NBHOME}/.tmux/tmux-power.tmux
+chmod +x ${NBHOME}/.tmux/tmux-power.tmux
+EOF
 
-RUN echo 'sysctl -w net.inet.tcp.sendbuf_max=16777216' >>/etc/rc.local && \
-	echo 'sysctl -w net.inet.tcp.recvbuf_max=16777216' >>/etc/rc.local && \
-	echo 'sysctl -w kern.sbmax=16777216' >>/etc/rc.local
-RUN echo 'hostname ${NBUSER}' >>/etc/rc.local
-RUN echo '/etc/rc.d/ttys start' >>/etc/rc.local
-RUN echo 'chmod 666 /dev/null' >>/etc/rc.local
-RUN echo 'ulimit -n ${MAXFILES}' >>/etc/rc.local
+RUN cat <<EOF >${NBHOME}/.tmux.conf
+set -g default-terminal \\"tmux-256color\\"
+set -g @tmux_power_theme \\"coral\\"
+set-option -g repeat-time 0
+unbind |
+bind | split-window -h
+unbind -
+bind - split-window -v
+run \\"~/.tmux/tmux-power.tmux\\"
+EOF
+
+RUN cat <<EOF >${NBHOME}/.bash_profile
+PS1=\\"${NBUSER}🦞 \\"
+export LANG=\\"${LANG}\\"
+export TERM=\\"${TERM}\\"
+export NODE_OPTIONS=\\"${NODE_OPTIONS}\\"
+alias vi=vim
+alias vim=nvim
+export EDITOR=vim
+
+lightgreen="\033[92m"
+bold="\033[1m"
+normal="\033[0m"
+
+cat ${NBHOME}/.banner
+EOF
+RUN cat <<EOF >${NBHOME}/.banner
+
+📝 the ${lightgreen}nvim${normal} editor is available
+🪟 you are in a ${lightgreen}tmux${normal} multiplexer
+➡️  ${bold}setup openclaw${normal}: ${lightgreen}openclaw onboard --skip-daemon${normal}
+➡️  ${bold}start openclaw gateway${normal}: ${light}openclaw gateway --bind lan --port 18789${normal}
+
+EOF
+
+RUN chown -R ${NBUSER} ${NBHOME}
+
+RUN cat <<EOF >/etc/rc.local
+sysctl -w net.inet.tcp.sendbuf_max=16777216
+sysctl -w net.inet.tcp.recvbuf_max=16777216
+sysctl -w kern.sbmax=16777216
+
+hostname ${NBUSER}
+/etc/rc.d/ttys start
+chmod 666 /dev/null
+ulimit -n ${MAXFILES}
+EOF
+# avoid escape hell
 RUN echo 'eval \\$(resize)' >>/etc/rc.local
 
 EXPOSE 18789
 
 CMD ["su - ${NBUSER} -c \\"tmux -u new\\" || bash"]
-
