@@ -152,8 +152,9 @@ wedgename="${svc}root"
 if [ -n "$is_linux" ]; then
 	# no other image than builder image are ext2, don't check for FROMIMG
 	sgdisk --zap-all ${img} || true
+	# atribute 59 is "bootme" from /usr/include/sys/disklabel_gpt.h
 	sgdisk --new=1:0:0 --typecode=1:8300 --change-name=1:"$wedgename" \
-		--attributes=1:set:2 ${img}
+		--attributes=1:set:59 ${img}
 	# GitHub actions can't create loopXpY, use an offset
 	offset=$(sgdisk -i 1 ${img} | awk '/First sector/ {print $3}')
 	vnd=$(losetup -f --show -o $((offset * 512)) ${img})
