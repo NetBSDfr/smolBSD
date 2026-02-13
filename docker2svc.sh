@@ -89,7 +89,7 @@ echo "ADDPKGS=pkgin pkg_tarup pkg_install sqlite3" \
 
 USER=root
 
-grep -v '^$' $dockerfile|while read key val
+while read key val
 do
 	if [ -n "$heretag" ]; then
 		# in heredoc, append until tag
@@ -104,6 +104,8 @@ do
 		fi
 		continue
 	fi
+
+	[ -z "${key}" ] && continue
 
 	# normalize to single spaces
 	val=$(printf '%s' "$val" | tr -s '\t ' ' ')
@@ -236,7 +238,7 @@ do
 		;;
 	*)
 	esac
-done
+done < $dockerfile
 
 cat >>${etcrc}<<_ETCRC
 
