@@ -1,8 +1,10 @@
 <div align="center" markdown="1">
 
-<img src="smolClaw.png" width=500px>
+<img src="images/smolClaw.png" width=500px>
 
 # smolClaw
+
+<img src="images/smolcap.jpg" width=500px>
 
 [OpenClaw][1] running on a microVM!
 
