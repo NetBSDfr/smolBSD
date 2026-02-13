@@ -39,9 +39,9 @@ ENV TERM=tmux-256color
 # IPv6 makes this gigantic pile of shit crash
 ENV NODE_OPTIONS="--dns-result-order=ipv4first"
 # Raise the file descriptor limit to prevent "EMFILE: too many open files" npm failure
-ENV ULIMIT=4096
+ENV MAXFILES=4096
 # Unknown platform on NetBSD
-RUN ulimit -n ${ULIMIT} && npm pack openclaw@latest && tar -xf openclaw-*.tgz && \
+RUN ulimit -n ${MAXFILES} && npm pack openclaw@latest && tar -xf openclaw-*.tgz && \
 	cd package && npm install --ignore-scripts && \
 	cd node_modules/node-llama-cpp && \
 	echo \\"find . -type f -name '*.cpp' -exec sed -i'' 's/__OpenBSD__/__NetBSD__/g' {} \\;\\" > post.sh && \
@@ -52,34 +52,42 @@ RUN ulimit -n ${ULIMIT} && npm pack openclaw@latest && tar -xf openclaw-*.tgz &&
 RUN echo 'mount -t ptyfs ptyfs /dev/pts' >> /etc/rc.pre && \
 	echo 'cd /dev && sh MAKEDEV fd && cd -' >> /etc/rc.pre
 
-RUN useradd -m -s /bin/ksh ${NBUSER} && \
+RUN useradd -m ${NBUSER} && \
+	chsh -s /usr/pkg/bin/bash ${NBUSER} && \
 	mkdir -p ${NBHOME}/.tmux && \
 	curl -s -Lo ${NBHOME}/.tmux/tmux-power.tmux \
 		https://raw.githubusercontent.com/wfxr/tmux-power/master/tmux-power.tmux && \
 	sed -i'' 's/status-right \\"\\$RS\\"/status-right \\":: powered by 🚩 + smolBSD \\"/' \
 		${NBHOME}/.tmux/tmux-power.tmux && \
 	chmod +x ${NBHOME}/.tmux/tmux-power.tmux && \
-	echo 'set-option -g default-command \\"bash -l\\"' >>${NBHOME}/.tmux.conf && \
 	echo 'set -g default-terminal \\"tmux-256color\\"' >>${NBHOME}/.tmux.conf && \
 	echo 'set -g @tmux_power_theme \\"coral\\"' >>${NBHOME}/.tmux.conf && \
 	echo 'run \\"~/.tmux/tmux-power.tmux\\"' >>${NBHOME}/.tmux.conf && \
 	echo 'PS1=\\"${NBUSER}🦞 \\"' >>${NBHOME}/.bash_profile && \
 	echo 'export LANG=\\"${LANG}\\"' >>${NBHOME}/.bash_profile && \
 	echo 'export TERM=\\"${TERM}\\"' >>${NBHOME}/.bash_profile && \
-	echo 'cd \\$HOME' >>${NBHOME}/.bash_profile && \
+	echo 'export NODE_OPTIONS=\\"${NODE_OPTIONS}\\"' >>${NBHOME}/.bash_profile && \
+	echo >${NBHOME}/.banner && \
+	echo '📝 the nvim editor is available' >>${NBHOME}/.banner && \
+	echo '🪟 you are in a tmux multiplexer' >>${NBHOME}/.banner && \
 	echo '➡️  setup openclaw: openclaw onboard --skip-daemon' \
 		>>${NBHOME}/.banner && \
 	echo '➡️  start openclaw gateway: openclaw gateway --bind lan --port 18789' \
 		>>${NBHOME}/.banner && \
-	echo 'cat ${NBHOME}/.banner' >>${NBHOME}/.bash_profile
+	echo >>${NBHOME}/.banner && \
+	echo 'cat ${NBHOME}/.banner' >>${NBHOME}/.bash_profile && \
+	chown -R ${NBUSER} ${NBHOME}
 
-RUN echo 'sysctl -w kern.sbmax=16777216' >>/etc/rc.local
+RUN echo 'sysctl -w net.inet.tcp.sendbuf_max=16777216' >>/etc/rc.local && \
+	echo 'sysctl -w net.inet.tcp.recvbuf_max=16777216' >>/etc/rc.local && \
+	echo 'sysctl -w kern.sbmax=16777216' >>/etc/rc.local
 RUN echo 'hostname ${NBUSER}' >>/etc/rc.local
 RUN echo '/etc/rc.d/ttys start' >>/etc/rc.local
 RUN echo 'chmod 666 /dev/null' >>/etc/rc.local
+RUN echo 'ulimit -n ${MAXFILES}' >>/etc/rc.local
 RUN echo 'eval \\$(resize)' >>/etc/rc.local
 
 EXPOSE 18789
 
-CMD ["su ${NBUSER} -c \\"tmux -u new\\" || bash"]
+CMD ["su - ${NBUSER} -c \\"tmux -u new\\" || bash"]
 
