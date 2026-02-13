@@ -45,7 +45,7 @@ tar -xf openclaw-*.tgz
 cd package
 npm install --ignore-scripts
 cd node_modules/node-llama-cpp
-# needed for now, upstream patch in progress
+# needed for now, upstream patch merged, waiting for release
 echo \\"find . -type f -name '*.cpp' -exec sed -i'' 's/__OpenBSD__/__NetBSD__/g' {} \\;\\" > post.sh
 jq \'.scripts.\\"prebuild:netbsd\\" = \\"sh ./post.sh\\"\' package.json > package.json.new
 mv package.json.new package.json
@@ -85,7 +85,7 @@ ARG BOLD="\\\\033[1m"
 ARG NORMAL="\\\\033[0m"
 
 RUN cat <<EOF >${NBHOME}/.bash_profile
-PS1=\\"${NBUSER}🦞 \\"
+PS1=\\"[\\w]@😈+🦞> \\"
 export LANG=\\"${LANG}\\"
 export TERM=\\"${TERM}\\"
 export NODE_OPTIONS=\\"${NODE_OPTIONS}\\"
