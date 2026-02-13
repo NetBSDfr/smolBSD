@@ -91,6 +91,20 @@ USER=root
 
 grep -v '^$' $dockerfile|while read key val
 do
+	if [ -n "$heretag" ]; then
+		# in heredoc, append until tag
+		if [ "$key" != "$heretag" ]; then
+			echo "$key $val" >>"$postinst"
+		else
+			[ -n "$prehere" ] && echo "$heretag" >>"$postinst"
+			echo \" >>"$postinst"
+			heretag=
+			prehere=
+			posttag=
+		fi
+		continue
+	fi
+
 	# normalize to single spaces
 	val=$(printf '%s' "$val" | tr -s '\t ' ' ')
 
@@ -113,7 +127,25 @@ do
 		echo "export $val" >>"$postinst"
 		;;
 	RUN)
-		echo "chroot . su ${USER} -c \"${val}\"" >>"$postinst"
+		case "$val" in
+			*\<\<*)
+				# worst case: cat   <<EOF     > foo.conf
+				#                     ^^^^^^^^^^^^^^^^^^
+				#                     posthere
+				#             ^^^     ^^^     ^^^^^^^^^^
+				#             prehere heretag   posttag
+				prehere=${val%%<<*} # command before heredoc
+				posthere=${val#*<<} # all after heredoc
+				heretag=${posthere% *} # tag itself
+				posttag=${posthere#${heretag}} # after tag
+				[ -n "$prehere" ] && prehere="$prehere <<$heretag"
+				echo "chroot . su ${USER} -c \"${prehere}${posttag}" \
+					>>"$postinst"
+				;;
+			*)
+				echo "chroot . su ${USER} -c \"${val}\"" >>"$postinst"
+				;;
+		esac
 		;;
 	EXPOSE)
 		if [ -n "$PUBLISH" ]; then
