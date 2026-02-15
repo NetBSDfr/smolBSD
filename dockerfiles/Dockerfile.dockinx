@@ -27,4 +27,4 @@ WORKDIR /var/www
 
 USER root
 
-CMD ["nginx", "-g", "'daemon off;'"]
+CMD nginx -g 'daemon off;'

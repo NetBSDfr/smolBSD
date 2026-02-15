@@ -140,7 +140,7 @@ RUN pkgin up && pkgin -y in caddy
 
 EXPOSE 8881:8880
 
-CMD ["caddy", "respond", "-l", ":8880"]
+CMD caddy respond -l :8880
     </pre>
   </section>
 

@@ -10,7 +10,6 @@ if [ $# -lt 1 ] || [ ! -f "$1" ]; then
 fi
 
 dockerfile=$1
-ECHON="/bin/echo -n"
 
 mkdir -p tmp
 TMPOPTS=$(mktemp tmp/options.mk.XXXXXX)
@@ -27,10 +26,6 @@ export CHOUPI=y
 
 if [ -z "$SERVICE" ];then
 	echo "${ERROR} no service name, exiting"
-	exit 1
-fi
-if ! command -v jq >/dev/null; then
-	echo "${ERROR} missing jq"
 	exit 1
 fi
 
@@ -94,9 +89,11 @@ do
 	if [ -n "$heretag" ]; then
 		# in heredoc, append until tag
 		if [ "$key" != "$heretag" ]; then
-			echo "$key $val" >>"$postinst"
+			echo "$key $val"|sed 's/"/\\"/g' \
+				>>"$postinst"
 		else
 			[ -n "$prehere" ] && echo "$heretag" >>"$postinst"
+
 			echo \" >>"$postinst"
 			heretag=
 			prehere=
@@ -145,7 +142,9 @@ do
 					>>"$postinst"
 				;;
 			*)
-				echo "chroot . su ${USER} -c \"${val}\"" >>"$postinst"
+				escaped=$(printf '%s' "$val" | sed 's/"/\\"/g')
+				echo "chroot . su ${USER} -c \"${escaped}\"" \
+					>>"$postinst"
 				;;
 		esac
 		;;
@@ -228,12 +227,11 @@ do
 	CMD|ENTRYPOINT)
 		printf "\n# entrypoint\n" >>"${etcrc}"
 		if [ "$USER" != "root" ]; then
-			$ECHON "su $USER -c \"" >>"${etcrc}"
+			printf '%s' "su $USER -c \"" >>"${etcrc}"
 			ENDQUOTE="\""
 		fi
-		$ECHON "${val}" | \
-			jq -j 'if length > 1 then join(" ") else .[0] end' \
-			>>"${etcrc}"
+
+		printf '%s' "$val" >>"${etcrc}"
 		echo $ENDQUOTE >>"${etcrc}"
 		;;
 	*)
@@ -246,7 +244,7 @@ cat >>${etcrc}<<_ETCRC
 _ETCRC
 
 echo "${CHECK} ${SERVICE} service files generated"
-$ECHON "${ARROW} press enter to build ${SERVICE} image or ^C to exit"
+printf '%s' "${ARROW} press enter to build ${SERVICE} image or ^C to exit"
 read dum
 
 [ "$(uname -s)" = "NetBSD" ] && MAKE=make || MAKE=bmake

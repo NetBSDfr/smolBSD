@@ -33,7 +33,6 @@ smolBSD helps you create a minimal _NetBSD_ 🚩 based _BSD UNIX_ virtual machin
 - A _GNU/Linux_, _NetBSD_ or _macOS_ operating system (might work on more systems, but not CPU accelerated)
 - The following tools installed
   - `curl`
-  - `jq` (for `docker2svc.sh`)
   - `git`
   - `bmake` if running on _Linux_ or _macOS_, `make` on _NetBSD_
   - `qemu-system-x86_64`, `qemu-system-i386` or `qemu-system-aarch64` depending on destination architecture
@@ -48,12 +47,12 @@ smolBSD helps you create a minimal _NetBSD_ 🚩 based _BSD UNIX_ virtual machin
 
 Debian, Ubuntu and the like
 ```sh
-$ sudo apt install curl jq git bmake qemu-system-x86_64 sudo binutils libarchive-tools gdisk socat
+$ sudo apt install curl git bmake qemu-system-x86_64 sudo binutils libarchive-tools gdisk socat
 ```
 
 macOS
 ```sh
-$ brew install curl jq git bmake qemu binutils libarchive
+$ brew install curl git bmake qemu binutils libarchive
 ```
 
 ## Quickstart
@@ -77,7 +76,7 @@ RUN pkgin up && pkgin -y in caddy
 
 EXPOSE 8880
 
-CMD ["caddy", "respond", "-l", ":8880"]
+CMD caddy respond -l :8880
 ```
 ⚙️ Build:
 ```sh
