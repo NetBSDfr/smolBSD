@@ -4,7 +4,7 @@
 
 # smolClaw
 
-<img src="images/smolcap.jpg" width=500px>
+<img src="images/smolcap.png" width=500px>
 
 [picoclaw][1] running on a microVM!
 
