@@ -1,14 +1,11 @@
-# smolClaw: run an OpenClaw instance in a microVM
+# smolClaw: run an picoclaw instance in a microVM
 #
 # build this service:
 # $ ./docker2svc.sh dockerfiles/Dockerfile.clawd
 # run this service:
-# $ ./startnb.sh -c 4 -m 3072 -f etc/clawd.conf
-# As no NetBSD service is implemented to run the
-# gateway, you must ^C at the end of the onboarding
-# and start the gateway: openclaw gateway --port 18789
+# $ ./startnb.sh -c 2 -m 1024 -f etc/clawd.conf
 
-FROM base,etc,comp
+FROM base,etc
 
 LABEL smolbsd.service=clawd
 # final image size
@@ -16,46 +13,34 @@ LABEL smolbsd.imgsize=4096
 # cores used to build the image
 LABEL smolbsd.buildcpus=4
 # memory used to build the image
-LABEL smolbsd.buildmem=3072
-# default openclaw gateway port
+LABEL smolbsd.buildmem=2048
+# default picoclaw gateway port
 LABEL smolbsd.publish="18789:18789"
 
 RUN pkgin up && pkgin -y in \
-	bash curl nodejs git-base cmake openmp gmake jq neovim
-# smolBSD is unknown to cmake ;_;
-RUN cd /usr/pkg/share/cmake-*/Modules/Platform && \
-	cp NetBSD-Initialize.cmake smolBSD-Initialize.cmake && \
-	cp NetBSD.cmake smolBSD.cmake
+	bash curl git-base go gmake neovim
 
 # needed to build llama.cpp on NetBSD
-ARG NODE_LLAMA_CPP_CMAKE_OPTION_GGML_OPENMP=OFF
 ENV NBUSER=clawd
 ENV NBHOME=/home/${NBUSER}
 ENV LANG=en_US.UTF-8
 ENV TERM=tmux-256color
-# IPv6 makes it crash crash
-ENV NODE_OPTIONS="--dns-result-order=ipv4first"
-# Raise the file descriptor limit to prevent "EMFILE: too many open files" npm failure
 ENV MAXFILES=4096
-# Unknown platform on NetBSD
-RUN <<EOF
-ulimit -n ${MAXFILES}
-npm pack openclaw@latest
-tar -xf openclaw-*.tgz
-cd package
-npm install --ignore-scripts
-cd node_modules/node-llama-cpp
-# needed for now, upstream patch merged, waiting for release
-echo \\"find . -type f -name '*.cpp' -exec sed -i'' 's/__OpenBSD__/__NetBSD__/g' {} \\;\\" > post.sh
-jq \'.scripts.\\"prebuild:netbsd\\" = \\"sh ./post.sh\\"\' package.json > package.json.new
-mv package.json.new package.json
-cd ../..
-npm install -g .
-EOF
 
 RUN cat <<EOF >/etc/rc.pre
 mount -t ptyfs ptyfs /dev/pts
 cd /dev && sh MAKEDEV fd && cd -
+EOF
+
+RUN <<EOF
+ulimit -n ${MAXFILES}
+ln -sf /usr/pkg/bin/go[0-9]* /usr/pkg/bin/go
+git clone https://github.com/sipeed/picoclaw.git
+cd picoclaw
+gmake deps
+gmake INSTALL_PREFIX=/usr/pkg install
+cd .. && rm -rf picoclaw
+pkgin -y rm go
 EOF
 
 RUN <<EOF
@@ -64,20 +49,20 @@ chsh -s /usr/pkg/bin/bash ${NBUSER}
 mkdir -p ${NBHOME}/.tmux
 curl -s -Lo ${NBHOME}/.tmux/tmux-power.tmux \
 	https://raw.githubusercontent.com/wfxr/tmux-power/master/tmux-power.tmux
-sed -i'' 's/status-right \\"\\$RS\\"/status-right \\":: powered by 🚩 + smolBSD \\"/' \
+sed -i'' 's/status-right "\\$RS"/status-right ":: powered by 🚩 + smolBSD "/' \
 	${NBHOME}/.tmux/tmux-power.tmux
 chmod +x ${NBHOME}/.tmux/tmux-power.tmux
 EOF
 
 RUN cat <<EOF >${NBHOME}/.tmux.conf
-set -g default-terminal \\"tmux-256color\\"
-set -g @tmux_power_theme \\"coral\\"
+set -g default-terminal "tmux-256color"
+set -g @tmux_power_theme "coral"
 set-option -g repeat-time 0
 unbind |
 bind | split-window -h
 unbind -
 bind - split-window -v
-run \\"~/.tmux/tmux-power.tmux\\"
+run "~/.tmux/tmux-power.tmux"
 EOF
 
 ARG LIGHTGREEN="\\\\033[92m"
@@ -85,22 +70,22 @@ ARG BOLD="\\\\033[1m"
 ARG NORMAL="\\\\033[0m"
 
 RUN cat <<EOF >${NBHOME}/.bash_profile
-PS1=\\"[\\w]@😈+🦞> \\"
-export LANG=\\"${LANG}\\"
-export TERM=\\"${TERM}\\"
-export NODE_OPTIONS=\\"${NODE_OPTIONS}\\"
+PS1="[\\w]@😈+🦞> "
+export LANG="${LANG}"
+export TERM="${TERM}"
+export NODE_OPTIONS="${NODE_OPTIONS}"
 alias vi=vim
 alias vim=nvim
 export EDITOR=vim
 
-printf \\"
+printf "
 
 📝 the ${LIGHTGREEN}nvim${NORMAL} editor is available
 🪟 you are in a ${LIGHTGREEN}tmux${NORMAL} multiplexer
-➡️  ${BOLD}setup openclaw${NORMAL}: ${LIGHTGREEN}openclaw onboard --skip-daemon${NORMAL}
-➡️  ${BOLD}start openclaw gateway${NORMAL}: ${LIGHTGREEN}openclaw gateway --bind lan --port 18789${NORMAL}
+➡️  ${BOLD}setup picoclaw${NORMAL}: ${LIGHTGREEN}picoclaw onboard${NORMAL}
+➡️  ${BOLD}start picoclaw gateway${NORMAL}: ${LIGHTGREEN}picoclaw gateway${NORMAL}
 
-\\"
+"
 
 EOF
 
@@ -122,4 +107,4 @@ RUN echo 'eval \\$(resize)' >>/etc/rc.local
 
 EXPOSE 18789
 
-CMD ["su - ${NBUSER} -c \\"tmux -u new\\" || bash"]
+CMD su - ${NBUSER} -c "tmux -u new" || bash
