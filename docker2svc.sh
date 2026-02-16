@@ -86,6 +86,8 @@ USER=root
 
 while read key val
 do
+	val=$(printf '%s' "$val"|sed 's/\\\(.*[^[:space:]].*\)/\\\\\1/g')
+
 	if [ -n "$heretag" ]; then
 		# in heredoc, append until tag
 		if [ "$key" != "$heretag" ]; then

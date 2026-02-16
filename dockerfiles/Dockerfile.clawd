@@ -65,9 +65,9 @@ bind - split-window -v
 run "~/.tmux/tmux-power.tmux"
 EOF
 
-ARG LIGHTGREEN="\\\\033[92m"
-ARG BOLD="\\\\033[1m"
-ARG NORMAL="\\\\033[0m"
+ARG LIGHTGREEN="\\033[92m"
+ARG BOLD="\\033[1m"
+ARG NORMAL="\\033[0m"
 
 RUN cat <<EOF >${NBHOME}/.bash_profile
 PS1="[\\w]@😈+🦞> "
