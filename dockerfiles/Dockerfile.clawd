@@ -9,7 +9,7 @@ FROM base,etc
 
 LABEL smolbsd.service=clawd
 # final image size
-LABEL smolbsd.imgsize=4096
+LABEL smolbsd.imgsize=3000
 # cores used to build the image
 LABEL smolbsd.buildcpus=4
 # memory used to build the image
@@ -17,8 +17,9 @@ LABEL smolbsd.buildmem=2048
 # default picoclaw gateway port
 LABEL smolbsd.publish="18789:18789"
 
+# ripgrp, fd, jq and rsync for convenience and tool writing
 RUN pkgin up && pkgin -y in \
-	bash curl git-base go gmake neovim
+	bash curl git-base go gmake neovim jq rsync ripgrep fd-find
 
 # needed to build llama.cpp on NetBSD
 ENV NBUSER=clawd
@@ -52,6 +53,24 @@ curl -s -Lo ${NBHOME}/.tmux/tmux-power.tmux \
 sed -i'' 's/status-right "\\$RS"/status-right ":: powered by 🚩 + smolBSD "/' \
 	${NBHOME}/.tmux/tmux-power.tmux
 chmod +x ${NBHOME}/.tmux/tmux-power.tmux
+
+mkdir -p ${NBHOME}/.config/nvim
+EOF
+
+RUN cat <<EOF >${NBHOME}/.config/nvim/init.lua
+-- no mouse integration
+vim.opt.mouse = ""
+-- show line numbers
+vim.opt.number = false
+-- tab space 8
+vim.opt.ts = 8
+
+-- Ctrl-t - new tab
+vim.keymap.set('n', '<C-t>', ':tabe<CR>', { noremap = true, silent = true })
+-- Ctrl-left - previous tab
+vim.keymap.set('n', '<C-Left>', 'gT', { noremap = true, silent = true })
+-- Ctrl-right - next tab
+vim.keymap.set('n', '<C-Right>', 'gt', { noremap = true, silent = true })
 EOF
 
 RUN cat <<EOF >${NBHOME}/.tmux.conf
@@ -86,7 +105,6 @@ printf "
 ➡️  ${BOLD}start picoclaw gateway${NORMAL}: ${LIGHTGREEN}picoclaw gateway${NORMAL}
 
 "
-
 EOF
 
 RUN chown -R ${NBUSER} ${NBHOME}
