@@ -8,6 +8,7 @@ on:
       - '**.md'
       - 'www/**'
       - 'app/**'
+      - 'service/**'
   workflow_dispatch:
     inputs:
       img:
