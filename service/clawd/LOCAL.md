@@ -2,7 +2,7 @@
 
 **Running smolClaw with ollama**
 
-<img src="www/smolTelegram.png">
+<img src="images/smolTelegram.png">
 
 </div>
 
