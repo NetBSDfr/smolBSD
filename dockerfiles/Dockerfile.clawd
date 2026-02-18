@@ -18,10 +18,12 @@ LABEL smolbsd.buildmem=2048
 LABEL smolbsd.publish="18789:18789"
 
 # ripgrp, fd, jq and rsync for convenience and tool writing
+# w3m for dumping webpages
 RUN pkgin up && pkgin -y in \
-	bash curl git-base go gmake neovim jq rsync ripgrep fd-find
+	bash curl git-base go gmake neovim \
+	jq rsync ripgrep fd-find imapfilter \
+	w3m
 
-# needed to build llama.cpp on NetBSD
 ENV NBUSER=clawd
 ENV NBHOME=/home/${NBUSER}
 ENV LANG=en_US.UTF-8
