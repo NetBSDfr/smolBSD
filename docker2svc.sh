@@ -33,7 +33,7 @@ servicedir="service/${SERVICE}"
 
 if [ -d "$servicedir" ]; then
 	echo "${INFO} $SERVICE already exists, recreating"
-	for f in etc options.mk postinst
+	for f in etc/rc options.mk postinst
 	do
 		rm -rf "${servicedir}/${f}"
 	done
@@ -125,7 +125,9 @@ do
 		echo "export $val" | tee -a "$etcrc" "$postinst" >/dev/null
 		;;
 	ARG)
-		echo "export $val" >>"$postinst"
+		arg=${val%%=*}
+		default=${val#*=}
+		echo "${arg}=\${${arg}:-${default}}; export $arg" >>"$postinst"
 		;;
 	RUN)
 		case "$val" in
