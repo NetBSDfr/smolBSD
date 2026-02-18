@@ -185,6 +185,10 @@ build: fetchall # Build an image (with SERVICE=$SERVICE from service/)
 	$Qecho "${ENVVARS}" | \
 		sed -E 's/[[:blank:]]+([A-Z_]+)/\n\1/g;s/=[[:blank:]]*([[:print:]]+)/="\1"/g' > \
 		tmp/build-${SERVICE}
+	# build args from Dockefile
+	$Q if [ -n "${BUILDARGS}" ]; then \
+		printf '%s\n' "${BUILDARGS}" | tr ',' '\n' >>tmp/build-${SERVICE}; \
+		fi
 	$Qecho "${ARROW} creating the disk image"
 	# generate disk image on the host, faster and avoids layering on 9p
 	$Qdd if=/dev/zero of=${DSTIMG} bs=1${DDUNIT} count=${IMGSIZE}

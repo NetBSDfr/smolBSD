@@ -184,6 +184,12 @@ $ ./docker2svc.sh dockerfiles/Dockerfile.myservice
 ➡️  press enter to build basicdocker image or ^C to exit
 ```
 
+`ARG` parameters can be overriden by setting the `BUILDARGS` shell variable:
+
+```sh
+$ BUILDARGS='FOO=bar,BAZ=blah' ./docker2svc.sh dockerfiles/Dockerfile.myservice
+```
+
 ## Image building
 
 In order to create a _smolBSD_ microvm, you first need to build or fetch a microvm builder.

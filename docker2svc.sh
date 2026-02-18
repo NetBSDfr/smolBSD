@@ -253,4 +253,4 @@ read dum
 
 [ "$(uname -s)" = "NetBSD" ] && MAKE=make || MAKE=bmake
 
-$MAKE SERVICE=${SERVICE} build
+$MAKE SERVICE=${SERVICE} BUILDARGS="${BUILDARGS}" build
