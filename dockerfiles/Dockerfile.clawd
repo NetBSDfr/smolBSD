@@ -100,13 +100,15 @@ alias vim=nvim
 export EDITOR=vim
 
 printf "
-
+---
 📝 the ${LIGHTGREEN}nvim${NORMAL} editor is available
 🪟 you are in a ${LIGHTGREEN}tmux${NORMAL} multiplexer
 ➡️  ${BOLD}setup picoclaw${NORMAL}: ${LIGHTGREEN}picoclaw onboard${NORMAL}
 ➡️  ${BOLD}start picoclaw gateway${NORMAL}: ${LIGHTGREEN}picoclaw gateway${NORMAL}
+---
 
 "
+
 EOF
 
 RUN chown -R ${NBUSER} ${NBHOME}
@@ -127,4 +129,5 @@ RUN echo 'eval \\$(resize)' >>/etc/rc.local
 
 EXPOSE 18789
 
-CMD su - ${NBUSER} -c "tmux -u new" || bash
+# script creates a really usable pty
+CMD script -c "su - ${NBUSER} -c 'tmux -u new'" /dev/null || bash
