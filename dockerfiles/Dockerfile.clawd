@@ -31,12 +31,11 @@ mount -t ptyfs ptyfs /dev/pts
 cd /dev && sh MAKEDEV fd && cd -
 EOF
 
-ARG GHARCH=$(uname -p)
+ARG GHARCH=$(uname -p|sed 's/aarch64/arm64/')
 ARG REPO=https://github.com/iMilnb/picoclaw/releases/download
 ARG RELEASE=0.0.2
 
 RUN <<EOF
-[ "$GHARCH" = "aarch64" ] && GHARCH=arm64
 curl -L -s -o- ${REPO}/${RELEASE}/picoclaw_Netbsd_${GHARCH}.tar.gz | \
 	tar zxf - -C /usr/pkg/bin picoclaw
 EOF
