@@ -35,10 +35,8 @@ ARG GHARCH=$(uname -p|sed 's/aarch64/arm64/')
 ARG REPO=https://github.com/iMilnb/picoclaw/releases/download
 ARG RELEASE=0.0.2
 
-RUN <<EOF
-curl -L -s -o- ${REPO}/${RELEASE}/picoclaw_Netbsd_${GHARCH}.tar.gz | \
+RUN curl -L -s -o- ${REPO}/${RELEASE}/picoclaw_Netbsd_${GHARCH}.tar.gz | \
 	tar zxf - -C /usr/pkg/bin picoclaw
-EOF
 
 RUN <<EOF
 useradd -m ${NBUSER}
