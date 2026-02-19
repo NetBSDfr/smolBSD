@@ -142,7 +142,7 @@ do
 		;;
 	ARG)
 		arg=${val%%=*}
-		default=${val#*=}
+		[ "$arg" != "${val}" ] && default=${val#*=} || default=""
 		echo "${arg}=\${${arg}:-${default}}; export $arg" >>"$postinst"
 		;;
 	RUN)
