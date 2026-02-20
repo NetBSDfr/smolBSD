@@ -184,10 +184,10 @@ $ ./docker2svc.sh dockerfiles/Dockerfile.myservice
 ➡️  press enter to build basicdocker image or ^C to exit
 ```
 
-`ARG` parameters can be overriden by setting the `BUILDARGS` shell variable:
+`ARG` parameters can be overriden using `--build-arg`:
 
 ```sh
-$ BUILDARGS='FOO=bar,BAZ=blah' ./docker2svc.sh dockerfiles/Dockerfile.myservice
+$ ./docker2svc.sh --build-arg FOO=bar --build-arg BAR=baz dockerfiles/Dockerfile.myservice
 ```
 
 ## Image building
