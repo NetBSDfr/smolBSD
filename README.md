@@ -190,7 +190,7 @@ $ ./docker2svc.sh dockerfiles/Dockerfile.myservice
 $ ./docker2svc.sh --build-arg FOO=bar --build-arg BAR=baz dockerfiles/Dockerfile.myservice
 ```
 
-## Image building
+## Building images manually
 
 In order to create a _smolBSD_ microvm, you first need to build or fetch a microvm builder.
 
