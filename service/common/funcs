@@ -11,10 +11,12 @@ rsynclite()
 		toexclude="${toexclude} --exclude=${exclude}"
 	done
 	if [ -f "$src" ]; then
+		# $dst is explicitely a directory
+		[ "${dst%/}/" = "$dst" ] && mkdir -p "$dst"
 		cp -f "$src" "$dst"
 		return
 	fi
 	[ ! -d "$src" ] && return
-	[ ! -d "$dst" ] && mkdir "$dst"
+	[ ! -d "$dst" ] && mkdir -p "$dst"
 	(cd "$src" && tar cfp - ${toexclude} .)|(cd "$dst" && tar xfp -)
 }
