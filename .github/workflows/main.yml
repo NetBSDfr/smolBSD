@@ -6,6 +6,7 @@ on:
       - main
     paths:
       - 'service/common/**'
+      - '.github/workflows/**'
     paths-ignore:
       - '**.md'
       - 'www/**'
