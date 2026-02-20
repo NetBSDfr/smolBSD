@@ -4,9 +4,25 @@
 
 set -e
 
-if [ $# -lt 1 ] || [ ! -f "$1" ]; then
-	echo "usage: $0 <Dockerfile>"
+usage()
+{
+	echo "usage: $0 [--build-arg KEY=val ...] <Dockerfile>"
 	exit 1
+}
+
+while [ $# -gt 1 ]; do
+	case $1 in
+	--build-arg)
+		shift
+		[ "${1#*=}" = "${1}" ] && usage
+		BUILDARGS="${BUILDARGS}${BUILDARGS:+,}${1}"
+		;;
+	esac
+	shift
+done
+
+if [ $# -lt 1 ] || [ ! -f "$1" ]; then
+	usage
 fi
 
 dockerfile=$1
@@ -126,7 +142,7 @@ do
 		;;
 	ARG)
 		arg=${val%%=*}
-		default=${val#*=}
+		[ "$arg" != "${val}" ] && default=${val#*=} || default=""
 		echo "${arg}=\${${arg}:-${default}}; export $arg" >>"$postinst"
 		;;
 	RUN)

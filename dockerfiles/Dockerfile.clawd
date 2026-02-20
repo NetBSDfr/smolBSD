@@ -9,18 +9,14 @@ FROM base,etc
 
 LABEL smolbsd.service=clawd
 # final image size
-LABEL smolbsd.imgsize=3000
-# cores used to build the image
-LABEL smolbsd.buildcpus=4
-# memory used to build the image
-LABEL smolbsd.buildmem=2048
+LABEL smolbsd.imgsize=1024
 # default picoclaw gateway port
 LABEL smolbsd.publish="18789:18789"
 
 # ripgrp, fd, jq and rsync for convenience and tool writing
 # w3m for dumping webpages
 RUN pkgin up && pkgin -y in \
-	bash curl git-base go gmake neovim \
+	bash curl git-base gmake neovim \
 	jq rsync ripgrep fd-find imapfilter \
 	w3m
 
@@ -35,16 +31,12 @@ mount -t ptyfs ptyfs /dev/pts
 cd /dev && sh MAKEDEV fd && cd -
 EOF
 
-RUN <<EOF
-ulimit -n ${MAXFILES}
-ln -sf /usr/pkg/bin/go[0-9]* /usr/pkg/bin/go
-git clone https://github.com/sipeed/picoclaw.git
-cd picoclaw
-gmake deps
-gmake INSTALL_PREFIX=/usr/pkg install
-cd .. && rm -rf picoclaw
-pkgin -y rm go
-EOF
+ARG GHARCH=$(uname -p|sed 's/aarch64/arm64/')
+ARG GHREPO=https://github.com/iMilnb/picoclaw/releases/download
+ARG GHRELEASE=0.0.2
+
+RUN curl -L -s -o- ${GHREPO}/${GHRELEASE}/picoclaw_Netbsd_${GHARCH}.tar.gz | \
+	tar zxf - -C /usr/pkg/bin picoclaw
 
 RUN <<EOF
 useradd -m ${NBUSER}
