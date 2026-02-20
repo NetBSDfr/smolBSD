@@ -55,12 +55,13 @@ LIVEIMG=	images/NetBSD-${ARCH}-live.img
 # sets to fetch, defaults to base
 SETS?=		base.${SETSEXT} etc.${SETSEXT}
 
-# any BSD variant including MacOS
+# Default: BSD
 DDUNIT=		m
 CKSUM=		cksum -a sha256 -c
 CKSUMQ=		-q
 .if ${OS} == "Linux"
 DDUNIT=		M
+CKSUM=		sha256sum -c
 CKSUMQ=		--quiet
 .elif ${OS} == "Darwin"
 CKSUM=		shasum -a 256 -c
