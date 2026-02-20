@@ -4,11 +4,12 @@ on:
   push:
     branches:
       - main
+    paths:
+      - 'service/common/**'
     paths-ignore:
       - '**.md'
       - 'www/**'
       - 'app/**'
-      - 'service/**'
   workflow_dispatch:
     inputs:
       img:
