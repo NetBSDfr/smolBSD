@@ -5,11 +5,11 @@
 # run this service:
 # $ ./startnb.sh -c 2 -m 1024 -f etc/clawd.conf
 
-FROM base,etc
+FROM base,etc,man,comp
 
 LABEL smolbsd.service=clawd
 # final image size
-LABEL smolbsd.imgsize=1024
+LABEL smolbsd.imgsize=2048
 # default picoclaw gateway port
 LABEL smolbsd.publish="18789:18789"
 
@@ -86,7 +86,6 @@ RUN cat <<EOF >${NBHOME}/.bash_profile
 PS1="[\\w]@😈+🦞> "
 export LANG="${LANG}"
 export TERM="${TERM}"
-export NODE_OPTIONS="${NODE_OPTIONS}"
 alias vi=vim
 alias vim=nvim
 export EDITOR=vim
