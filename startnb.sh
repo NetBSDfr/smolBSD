@@ -269,9 +269,9 @@ fi
 
 # export variables or files using QEMU fw_cfg
 [ -n "$fwcfgvar" ] && \
-	extra="$extra $(echo $fwcfgvar | sed -E 's|([[:alnum:]]+)=([^,]+),?|-fw_cfg opt/org.smolbsd.var.\1,string=\2 |g')"
+	extra="$extra $(echo $fwcfgvar | sed -E 's|([[:alnum:]_]+)=([^,]+),?|-fw_cfg opt/org.smolbsd.var.\1,string=\2 |g')"
 [ -n "$fwcfgfile" ] && \
-	extra="$extra $(echo $fwcfgfile | sed -E 's|([[:alnum:]]+)=([^,]+),?|-fw_cfg opt/org.smolbsd.file.\1,file=\2 |g')"
+	extra="$extra $(echo $fwcfgfile | sed -E 's|([[:alnum:]_]+)=([^,]+),?|-fw_cfg opt/org.smolbsd.file.\1,file=\2 |g')"
 
 # Use localtime for RTC instead of UTC by default
 extra="$extra -rtc base=localtime"
