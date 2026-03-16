@@ -197,11 +197,11 @@ smolBSD supports pushing and pulling images to/from an OCI-compliant repository 
 
 You can use the following commands to manage your images:
 
-* **Push an image:** `./smol.sh push <image_file>`
+* **Push an image:** `./smoler.sh push <image_file>`
 ```sh
 $ ./smoler.sh push images/myimage-amd64:latest.img
 ```
-* **Pull an image:** `./smol.sh pull <image_name>`
+* **Pull an image:** `./smoler.sh pull <image_name>`
 ```sh
 $ ./smoler.sh pull images/myimage-amd64:latest
 ```
