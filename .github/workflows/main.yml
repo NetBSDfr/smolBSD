@@ -81,6 +81,8 @@ jobs:
 
   smoler_registry_test:
     runs-on: ubuntu-latest
+    env:
+      QEMU_ACCEL: tcg
     services:
       registry:
         image: registry:2
