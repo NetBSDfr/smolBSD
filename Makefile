@@ -161,7 +161,7 @@ base:
 buildimg:
 	$Qecho "${ARROW} building the builder image"
 	$Qrm -f tmp/*
-	$Q${MAKE} SERVICE=build IMGTAG= base
+	$Q${MAKE} SERVICE=build base
 
 fetchimg:
 	$Qecho "${ARROW} fetching builder image"
