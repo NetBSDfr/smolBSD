@@ -8,6 +8,7 @@ on:
       - '**.md'
       - 'www/**'
       - 'app/**'
+  pull_request:
   workflow_dispatch:
     inputs:
       img:
@@ -33,6 +34,7 @@ on:
 
 jobs:
   build_img:
+    if: github.event_name != 'pull_request'
     runs-on: ubuntu-latest
     container:
       image: debian:latest
@@ -76,4 +78,57 @@ jobs:
           prerelease: true
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+
+  smoler_registry_test:
+    runs-on: ubuntu-latest
+    services:
+      registry:
+        image: registry:2
+        ports:
+          - 5000:5000
+        env:
+          REGISTRY_STORAGE: inmemory
+        options: >-
+          --health-cmd "wget --quiet --spider http://127.0.0.1:5000/v2/ || exit 1"
+          --health-interval 5s
+          --health-timeout 3s
+          --health-retries 20
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Install build dependencies
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y \
+            bmake \
+            curl \
+            gdisk \
+            jq \
+            libarchive-tools \
+            qemu-system-x86 \
+            rsync \
+            socat
+
+      - name: Build Dockerfiles with smoler
+        run: |
+          for dockerfile in dockerfiles/Dockerfile.*; do
+            echo "Building ${dockerfile}"
+            ./smoler.sh build -y "${dockerfile}"
+          done
+
+      - name: Push and pull image through in-memory registry
+        env:
+          SMOLREPO: localhost:5000/smolbsd
+          ORAS_PLAIN_HTTP: "true"
+        run: |
+          image="images/basic-amd64:latest.img"
+          test -f "${image}"
+
+          ./smoler.sh push "${image}"
+
+          rm -f "${image}"
+          ./smoler.sh pull basic-amd64:latest
+
+          test -f "${image}"
 
