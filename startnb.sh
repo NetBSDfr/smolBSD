@@ -58,9 +58,9 @@ while getopts "$options" opt
 do
 	case $opt in
 	a) append="$OPTARG";;
-	b) bridgenet=yes;;
+	b) bridgenet=y;;
 	c) cores="$OPTARG";;
-	d) DAEMON=yes;;
+	d) daemon=y;;
 	e) fwcfgvar=${OPTARG};;
 	E) fwcfgfile=${OPTARG};;
 	# first load vm config file
@@ -80,12 +80,12 @@ do
 	n) max_ports=$(($OPTARG + 1));;
 	p) hostfwd=$OPTARG;;
 	r) root="$OPTARG";;
-	s) sharerw=yes;;
+	s) sharerw=y;;
 	t) serial_port=$OPTARG;;
 	u) CHOUPI="";;
-	v) VERBOSE=yes;;
+	v) VERBOSE=y;;
 	N) nonet=yes;;
-	P) use_pty=yes;;
+	P) use_pty=y;;
 	w) share=$OPTARG;;
 	x) extra=$OPTARG;;
 	*) usage;;
@@ -252,7 +252,7 @@ pidfile="qemu-${svc}.pid"
 
 d="-display none -pidfile ${pidfile}"
 
-if [ -n "$DAEMON" ]; then
+if [ -n "$daemon" ]; then
 	# XXX: daemonize makes viocon crash
 	console=com
 	unset max_ports
