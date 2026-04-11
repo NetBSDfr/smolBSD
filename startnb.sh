@@ -201,8 +201,14 @@ if [ ! -f "$kernel" ]; then
 fi
 echo "${ARROW} using kernel $kernel"
 
-[ -z "$use_pty" ] && pty="stdio,signal=off,mux=on" || \
+if [ -z "$use_pty" ]; then
+	pty="stdio,signal=off,mux=on"
+else
+	# if use_pty is set to a command, use it as pty attachment
+	[ "$use_pty" != "y" ] && ptycmd="$use_pty" || \
+		ptycmd="picocom -q -b 115200"
 	pty="pty"
+fi
 # use VirtIO console when available, if not, emulated ISA serial console
 if nm $kernel 2>&1 | grep -q viocon_earlyinit; then
 	console=viocon
@@ -326,7 +332,7 @@ eval $cmd
 if [ -n "$use_pty" ]; then
 	ptyfile="qemu-${svc}.pty"
 	while [ ! -f "$ptyfile" ]; do sleep 0.2; done
-	picocom -q -b 115200 $(grep -o '/dev/[^ ]*' $ptyfile)
+	${ptycmd} $(grep -o '/dev/[^ ]*' $ptyfile)
 	kill $(cat ${pidfile})
 	rm -f $ptyfile
 fi
