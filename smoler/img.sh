@@ -3,7 +3,7 @@
 OS=$(uname -s|tr 'A-Z' 'a-z')
 
 case $OS in
-linux|darwin) ;;
+linux|darwin|freebsd) ;;
 *)
 	echo "unsupported platform"
 	exit 1
