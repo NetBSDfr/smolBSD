@@ -1,0 +1,11 @@
+export PATH=/sbin:/bin:/usr/sbin:/usr/bin:/usr/pkg/bin:/usr/pkg/sbin
+
+[ ! -f "/dev/MAKEDEV" ] && cp -f /etc/MAKEDEV* /dev
+
+dmesg | grep -q viocon && \
+	(cd /dev && ./MAKEDEV ttyVI01 ttyVI02 && chmod 666 /dev/ttyVI*) || \
+	echo "no viocon(4) support"
+
+while read cmd; do
+	eval "$cmd"
+done < /dev/ttyVI02
