@@ -11,7 +11,7 @@ LABEL smolbsd.service=clawd
 # final image size
 LABEL smolbsd.imgsize=2048
 # default picoclaw gateway port and SSH access
-LABEL smolbsd.publish="18800:18800,2289:22"
+LABEL smolbsd.publish="18789:18789,18800:18800,2289:22"
 # microvm will use a pty as console
 LABEL smolbsd.use_pty="y"
 
