@@ -58,9 +58,9 @@ while getopts "$options" opt
 do
 	case $opt in
 	a) append="$OPTARG";;
-	b) bridgenet=yes;;
+	b) bridgenet=y;;
 	c) cores="$OPTARG";;
-	d) DAEMON=yes;;
+	d) daemon=y;;
 	e) fwcfgvar=${OPTARG};;
 	E) fwcfgfile=${OPTARG};;
 	# first load vm config file
@@ -80,12 +80,12 @@ do
 	n) max_ports=$(($OPTARG + 1));;
 	p) hostfwd=$OPTARG;;
 	r) root="$OPTARG";;
-	s) sharerw=yes;;
+	s) sharerw=y;;
 	t) serial_port=$OPTARG;;
 	u) CHOUPI="";;
-	v) VERBOSE=yes;;
+	v) VERBOSE=y;;
 	N) nonet=yes;;
-	P) use_pty=yes;;
+	P) use_pty=y;;
 	w) share=$OPTARG;;
 	x) extra=$OPTARG;;
 	*) usage;;
@@ -201,8 +201,14 @@ if [ ! -f "$kernel" ]; then
 fi
 echo "${ARROW} using kernel $kernel"
 
-[ -z "$use_pty" ] && pty="stdio,signal=off,mux=on" || \
+if [ -z "$use_pty" ]; then
+	pty="stdio,signal=off,mux=on"
+else
+	# if use_pty is set to a command, use it as pty attachment
+	[ "$use_pty" != "y" ] && ptycmd="$use_pty" || \
+		ptycmd="picocom -q -b 115200"
 	pty="pty"
+fi
 # use VirtIO console when available, if not, emulated ISA serial console
 if nm $kernel 2>&1 | grep -q viocon_earlyinit; then
 	console=viocon
@@ -252,7 +258,7 @@ pidfile="qemu-${svc}.pid"
 
 d="-display none -pidfile ${pidfile}"
 
-if [ -n "$DAEMON" ]; then
+if [ -n "$daemon" ]; then
 	# XXX: daemonize makes viocon crash
 	console=com
 	unset max_ports
@@ -326,7 +332,7 @@ eval $cmd
 if [ -n "$use_pty" ]; then
 	ptyfile="qemu-${svc}.pty"
 	while [ ! -f "$ptyfile" ]; do sleep 0.2; done
-	picocom -q -b 115200 $(grep -o '/dev/[^ ]*' $ptyfile)
+	${ptycmd} $(grep -o '/dev/[^ ]*' $ptyfile)
 	kill $(cat ${pidfile})
 	rm -f $ptyfile
 fi
