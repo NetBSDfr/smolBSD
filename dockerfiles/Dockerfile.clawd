@@ -126,6 +126,6 @@ RUN echo 'eval \$(resize)' >>/etc/rc.local
 
 EXPOSE 18800
 
-# script creates a pty
+# script creates a pty, do not su - in order to get env vars
 CMD /etc/rc.d/sshd onestart && \
-	script -c "su - ${NBUSER} -c 'tmux -u new'" /dev/null || bash
+	script -c "cd ${NBHOME} && su ${NBUSER} -c 'tmux -u new'" /dev/null || bash
