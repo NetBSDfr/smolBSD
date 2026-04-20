@@ -9,7 +9,7 @@ The service mounts your project directory at `/mnt` inside the microvm, allowing
 ## 🎒 Prerequisites
 
 - A `crush.json` configuration file (see [crush docs](https://github.com/charmbracelet/crush))
-- At least 1024MB of memory recommended
+- At least 512MB of memory recommended
 
 ## 🚀 Usage
 
