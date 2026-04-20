@@ -7,13 +7,14 @@
 #
 # /path/to/project will be mounted in /mnt
 #
-FROM base,etc
+FROM base,comp,etc
 
 LABEL smolbsd.service=crush
 LABEL smolbsd.minimize=y
+LABEL smolbsd.imgsize=2048
 LABEL smolbsd.use_pty=y
 
-ARG CRUSH_VERSION="0.55.1"
+ARG CRUSH_VERSION="0.60.0"
 ARG CRUSH_ARCH=$(uname -p|sed 's/aarch64/arm64/')
 
 ENV NBUSER=crush
