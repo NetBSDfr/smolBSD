@@ -41,14 +41,6 @@ $ ./smoler.sh run crush-amd64:latest -E crush=/path/to/crush.json
 
 This passes a `crush.json` file directly into the microvm at `/var/qemufwcfg/opt/org.smolbsd.file.crush`.
 
-### 📂 Run with a project containing crush.json
-
-If your project directory contains a `crush.json`, it will be automatically picked up:
-
-```sh
-$ ./smoler.sh run crush-amd64:latest -m 1024 -w /path/to/project/with/crush.json
-```
-
 ### 🔧 Run with a custom config file
 
 Copy your `crush.json` into the working directory before running:
