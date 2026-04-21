@@ -35,7 +35,7 @@ ulimit -n 4096
 EOF
 
 RUN echo 'eval \$(resize)' >>/etc/rc.local
-RUN echo 'printf "\nℹ️ When shutting down, ${LIGHTGREEN}Ctrl-A Ctrl-X${NORMAL} to exit the microvm\n\n"' >>/etc/rc.local
+RUN echo 'printf "\nℹ️ When shutting down, \033[92mCtrl-A Ctrl-X\033[0m to exit the microvm\n\n"' >>/etc/rc.local
 
 USER $NBUSER
 WORKDIR /home/$NBUSER
@@ -55,8 +55,6 @@ exit
 EOF
 
 RUN cat <<EOF >cmd.sh
-#!/bin/sh
-
 for f in /mnt/crush.json /var/qemufwcfg/opt/org.smolbsd.file.crush
 do
 	if [ -f "\\\$f" ]; then
