@@ -245,10 +245,16 @@ elif [ -n "$rootdir" ]; then
 else
 	for s in ${sets} ${ADDSETS}
 	do
+		partial=
+		# we want to extract only part of the archive
+		if [ "$s" != "${s%:*}" ]; then
+			partial=".${s#*:}"
+			s=${s%:*}
+		fi
 		# don't prepend sets path if this is a full path
 		case $s in */*) ;; *) s="sets/${arch}/${s}" ;; esac
 		echo -n "extracting ${s}.. "
-		$TAR xfp ${s} -C ${mnt}/ || exit 1
+		$TAR xfp ${s} -C ${mnt}/ ${partial} || exit 1
 		echo done
 	done
 

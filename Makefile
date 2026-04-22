@@ -133,7 +133,7 @@ kernfetch:
 setfetch:
 	@[ -d ${SETSDIR} ] || mkdir -p ${SETSDIR}
 	$Qfor s in ${SETS}; do \
-		${FRESHCHK} ${DIST}/sets/$${s} ${SETSDIR}/$${s} || \
+		${FRESHCHK} ${DIST}/sets/$${s%:*} ${SETSDIR}/$${s%:*} || \
 			${FETCH} -o ${SETSDIR}/$${s} ${DIST}/sets/$${s}; \
 	done
 

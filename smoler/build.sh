@@ -182,7 +182,7 @@ do
 			echo "FROMIMG=${val}" >> ${servicedir}/options.mk
 			;;
 		*)
-			echo "SETS=${val}," | sed 's/,/\.${SETSEXT} /g' \
+			echo "SETS=${val}," | sed 's/\(:[^,]*\)*,/\.${SETSEXT}\1 /g' \
 				>> ${servicedir}/options.mk
 			;;
 		esac
