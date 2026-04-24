@@ -31,7 +31,7 @@ ENV MAXFILES=4096
 
 ARG GHARCH=$(uname -p|sed 's/aarch64/arm64/;s/arm$/arm64/')
 ARG GHREPO=https://github.com/sipeed/picoclaw/releases/download
-ARG GHRELEASE=v0.2.6
+ARG GHRELEASE=v0.2.7
 
 RUN curl -L -s -o- ${GHREPO}/${GHRELEASE}/picoclaw_Netbsd_${GHARCH}.tar.gz | \
 	tar zxf - -C /usr/pkg/bin \
