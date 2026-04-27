@@ -175,6 +175,9 @@ And then add this to your `rc(8)`:
 
 If you are more experienced with `Dockerfile`s, _smolBSD_ services can be generated using such configuration files; while it does not support the entirety of the [Dockerfile reference][10], the well known verbs are implemented and you can generate services configuration files using the `smoler.sh` script:
 
+The `FROM` verb is follwed by _NetBSD_ `sets`, you probably want at least `base` and `etc`. It is also possible to only ship part of the set by appending a `tar`-like `glob` to the set name, i.e. `comp:/usr/bin/strip` or `comp:/usr/libexec/*`
+
+The `smolbsd.service` `LABEL` is mandatory, it sets the service name.
 ```sh
 $ cat dockerfiles/Dockerfile.myservice
 FROM base,etc
