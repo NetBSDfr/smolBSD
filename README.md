@@ -109,7 +109,22 @@ Date: Fri, 23 Jan 2026 18:20:42 GMT
 - `sets/` contains _NetBSD_ "sets" by architecture, i.e. `amd64/base.tgz`, `evbarm-aarch64/rescue.tgz`...
 - `pkgs/` holds optional packages to add to a microvm, it has the same format as `sets`.
 
-A `service` is the base unit of a _smolBSD_ microvm, it holds the necessary pieces to build a _BSD_ system from scratch.
+### Two workflows
+
+_smolBSD_ offers two ways to build and run microvms:
+
+| | **`smoler.sh`** (Docker-style) | **`bmake`** (manual) |
+|---|---|---|
+| **Build** | `smoler.sh build Dockerfile.foo` | `bmake SERVICE=foo build` |
+| **Run** | `smoler.sh run foo-amd64:latest` | `startnb.sh -i images/foo-amd64.img` |
+| **Image format** | Tagged name `foo-amd64:latest` stored in `images/` | Raw file `images/foo-amd64.img` |
+
+`smoler.sh` is a high-level wrapper that manages a local image registry (build, run, push, pull). Under the hood it still calls `mkimg.sh` to build and `startnb.sh` to run. Use it if you are familiar with Docker.
+
+`startnb.sh` is the low-level VM launcher, it takes a raw disk image and a kernel, and boots them in QEMU. Use it for direct control over QEMU flags, custom config files (`-f`), or when building services manually with `bmake`.
+
+A `service` is the base unit of a _smolBSD_ microvm, it holds the necesary pieces to build a _BSD_ system from scratch.
+
 - `service` structure:
 
 ```sh
@@ -134,7 +149,7 @@ A microvm is seen as a "service", for each one:
 - Image specifics **COULD**  be added in `make(1)` format in `options.mk`, i.e.
 ```sh
 $ cat service/nbakery/options.mk
-# size of resulting image in megabytes
+# size of resulting inage in megabytes
 IMGSIZE=1024
 # as of 202510, there's no NetBSD 11 packages for !amd64
 .if defined(ARCH) && ${ARCH} != "amd64"
@@ -321,7 +336,7 @@ $ ./startnb.sh -k kernels/netbsd-GENERIC64.img -i images/bozohttpd-evbarm-aarch6
 [   1.0000040]  done.
 Created tmpfs /dev (1359872 byte, 2624 inodes)
 add net default: gateway 10.0.2.2
-started in daemon mode as 'port http root /var/www'
+started in daemon mode as `' port `http' root `/var/www'
 got request ``HEAD / HTTP/1.1'' from host 10.0.2.2 to port 80
 ```
 Try it from the host
@@ -337,7 +352,7 @@ Content-Length: 30
 Connection: close
 ```
 
-## Example of starting a _VM_ with bidirectional socket to _host_
+## Example of starting a _VM_ with bi-directionnal socket to _host_
 
 ```sh
 $ bmake SERVICE=mport MOUNTRO=y build
@@ -352,7 +367,7 @@ guest$ echo "hello there!" >/dev/ttyVI01
 host$ socat ./s885f756bp1.sock -
 hello there!
 ```
-## Example of a full fledged NetBSD Operating System
+## Example of a full fledge NetBSD Operating System
 
 ```sh
 $ bmake live # or make ARCH=evbarm-aarch64 live
@@ -418,4 +433,4 @@ In any case, the `bmake kernfetch` will take care of downloading the correct ker
 [7]: https://nycdn.netbsd.org/pub/NetBSD-daily/netbsd-11/latest
 [8]: https://www.qemu.org/docs/master/system/i386/microvm.html
 [9]: https://firecracker-microvm.github.io/
-[10]: https://docs.docker.com/reference/dockerfile/
+[10]: https://docs.docker.com/reference/docke
