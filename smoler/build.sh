@@ -1,10 +1,10 @@
-# Converts a Dockerfile to a smolBSD service
+# Converts a SMOLerfile to a smolBSD service
 
 set -e
 
 usage()
 {
-	echo "usage: $0 [--build-arg KEY=val ...] [-t tag] [-y] <Dockerfile>"
+	echo "usage: $0 [--build-arg KEY=val ...] [-t tag] [-y] <SMOLerfile>"
 	exit 1
 }
 
@@ -31,7 +31,7 @@ if [ $# -lt 1 ] || [ ! -f "$1" ]; then
 	usage
 fi
 
-dockerfile=$(mktemp tmp/Dockerfile.XXXXXX)
+smolerfile=$(mktemp tmp/SMOLerfile.XXXXXX)
 
 while IFS= read -r line
 do
@@ -43,12 +43,12 @@ do
 		printf "%s\n" "$line"
 		;;
 	esac
-done <$1 >$dockerfile
+done <$1 >$smolerfile
 
 mkdir -p tmp
 TMPOPTS=$(mktemp tmp/options.mk.XXXXXX)
 # Dockerfile compatibility
-sed -n 's/LABEL \(smolbsd\.\)\{0,1\}\(.*=.*\)/\2/p' $dockerfile | \
+sed -n 's/LABEL \(smolbsd\.\)\{0,1\}\(.*=.*\)/\2/p' $smolerfile | \
 	awk -F= '{ printf "%s=%s\n", toupper($1), $2 }' \
 	>${TMPOPTS}
 
@@ -346,7 +346,7 @@ do
 	*)
 		;;
 	esac
-done < $dockerfile
+done < $smolerfile
 
 cat >>${etcrc}<<_ETCRC
 

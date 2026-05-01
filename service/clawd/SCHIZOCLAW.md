@@ -98,7 +98,7 @@ port 2121
 
 Now create the `smolweb` microvm that will host the website
 
-`dockerfiles/Dockerfile.smolweb`
+`smolerfiles/Dockerfile.smolweb`
 ```Dockerfile
 FROM base,etc
 
@@ -137,7 +137,7 @@ In _smolBSD_'s directory, create a `share` directory and paste the previously co
 Build the `smolweb` microVM:
 
 ```sh
-$ ./smoler.sh build dockerfiles/Dockerfile.smolweb
+$ ./smoler.sh build smolerfiles/Dockerfile.smolweb
 ```
 And start your micro web server, forwarding ports `8880` (`caddy`) and `2121` (mapped to `22`/`ssh`):
 ```sh

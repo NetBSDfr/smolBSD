@@ -48,7 +48,7 @@ cd smolBSD
 ```
   * OR build it yourself
 ```sh
-./smoler.sh build -y dockerfiles/Dockerfile.clawd
+./smoler.sh build -y smolerfiles/Dockerfile.clawd
 ```
 
 * Run the microVM

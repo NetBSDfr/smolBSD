@@ -61,9 +61,9 @@ $ brew install curl git bmake qemu binutils libarchive socat jq lsof picocom
 
 ## Quickstart
 
-### Create a _smolBSD_ image using a _Dockerfile_
+### Create a _smolBSD_ image using a _Dockerfile_ compatible **SMOLerfile**
 
-📄 `dockerfiles/Dockerfile.caddy`:
+📄 `smolerfiles/Dockerfile.caddy`:
 ```dockerfile
 # Mandatory, either comma separated base sets (here base and etc)
 # or base image name i.e. base-amd64.img
@@ -84,7 +84,7 @@ CMD caddy respond -l :8880
 ```
 ⚙️ Build:
 ```sh
-host$ ./smoler.sh build dockerfiles/Dockerfile.caddy
+host$ ./smoler.sh build smolerfiles/Dockerfile.caddy
 ```
 🚀 Run:
 ```sh
@@ -102,7 +102,7 @@ Date: Fri, 23 Jan 2026 18:20:42 GMT
 
 ## Project structure
 
-- `dockerfiles/` _smolBSD_ services `Dockerfile` examples
+- `smolerfiles/` _smolBSD_ services `SMOLerfile` examples
 - `Makefile` the entrypoint for image creation, called by `[b]make`
 - `mkimg.sh` image creation script, should not be called directly
 - `startnb.sh` starts a _NetBSD_ virtual machine using `qemu-system-x86_64` or `qemu-system-aarch64`
@@ -171,7 +171,7 @@ And then add this to your `rc(8)`:
 . /etc/include/basicrc
 ```
 
-## Dockerfile
+## SMOLerfile
 
 If you are more experienced with `Dockerfile`s, _smolBSD_ services can be generated using such configuration files; while it does not support the entirety of the [Dockerfile reference][10], the well known verbs are implemented and you can generate services configuration files using the `smoler.sh` script:
 
@@ -179,13 +179,13 @@ The `FROM` verb is follwed by _NetBSD_ `sets`, you probably want at least `base`
 
 The `smolbsd.service` `LABEL` is mandatory, it sets the service name.
 ```sh
-$ cat dockerfiles/Dockerfile.myservice
+$ cat smolerfiles/Dockerfile.myservice
 FROM base,etc
 
 LABEL smolbsd.service=myservice
 
 CMD ksh
-$ ./smoler.sh build -y dockerfiles/Dockerfile.myservice # -y proceeds with image build
+$ ./smoler.sh build -y smolerfiles/Dockerfile.myservice # -y proceeds with image build
 ✅ basicdocker service files generated
 ...
 ```
@@ -193,10 +193,13 @@ $ ./smoler.sh build -y dockerfiles/Dockerfile.myservice # -y proceeds with image
 `ARG` parameters can be overriden using `--build-arg`:
 
 ```sh
-$ ./smoler.sh build --build-arg FOO=bar --build-arg BAR=baz dockerfiles/Dockerfile.myservice
+$ ./smoler.sh build --build-arg FOO=bar --build-arg BAR=baz smolerfiles/Dockerfile.myservice
 ```
 
 If no `-t <tag>` is passed to the `build` command, the tag will be `latest`.
+
+>[!Note]
+> The non-Dockerfile compatible `INCLUDE` verb allows the inclusion of another file in the `SMOLerfile`.
 
 ### List existing images
 

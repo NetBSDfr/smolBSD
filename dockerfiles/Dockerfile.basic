@@ -1,6 +1,0 @@
-FROM base,etc
-
-LABEL smolbsd.service="basic"
-LABEL smolbsd.minimize="y"
-
-CMD ksh

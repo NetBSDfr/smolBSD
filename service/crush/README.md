@@ -16,7 +16,7 @@ The service mounts your project directory at `/mnt` inside the microvm, allowing
 ### 🔨 Build the image
 
 ```sh
-$ ./smoler.sh build -y dockerfiles/Dockerfile.crush
+$ ./smoler.sh build -y smolerfiles/Dockerfile.crush
 ```
 
 Or pull the pre-built image:
