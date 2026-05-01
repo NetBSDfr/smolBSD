@@ -1,4 +1,4 @@
-# Converts a basic Dockerfile to a smolBSD service
+# Converts a Dockerfile to a smolBSD service
 
 set -e
 
@@ -31,7 +31,19 @@ if [ $# -lt 1 ] || [ ! -f "$1" ]; then
 	usage
 fi
 
-dockerfile=$1
+dockerfile=$(mktemp tmp/Dockerfile.XXXXXX)
+
+while IFS= read -r line
+do
+	case "$line" in
+	INCLUDE\ *)
+		cat ${line##* }
+		;;
+	*)
+		printf "%s\n" "$line"
+		;;
+	esac
+done <$1 >$dockerfile
 
 mkdir -p tmp
 TMPOPTS=$(mktemp tmp/options.mk.XXXXXX)
@@ -350,6 +362,8 @@ if [ -z "$YES" ]; then
 	printf '%s' "${ARROW} press enter to build ${SERVICE} image or ^C to exit"
 	read dum
 fi
+
+rm -f tmp/*
 
 [ "$(uname -s)" = "NetBSD" ] && MAKE=make || MAKE=bmake
 
