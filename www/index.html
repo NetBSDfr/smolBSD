@@ -3,7 +3,7 @@
 <head>
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
-  <title>smolBSD — build your own minimal BSD system</title>
+  <title>smolBSD: build your own minimal BSD system</title>
   <link rel="icon" href="smol.ico">
   <script src="https://cdn.tailwindcss.com"></script>
   <link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;600&display=swap" rel="stylesheet">
@@ -54,18 +54,19 @@ Started</a>
     <div>
       <h2 class="text-3xl text-white mb-6 font-semibold">About</h2>
       <p class="text-gray-400 leading-relaxed">
-        <strong>smolBSD</strong> is a meta-operating system built on top of NetBSD.  
-        It lets you compose your own UNIX environment — from a single-purpose microservice system to a fully-custom OS image — in just a few minutes.
+        <strong>smolBSD</strong> helps you create a minimal NetBSD-based virtual machine
+that boots and starts a service in a couple milliseconds.
       </p>
       <p class="text-gray-400 leading-relaxed mt-4">
-        The smolBSD environment uses the <strong>netbsd-MICROVM</strong> kernel as its foundation, leveraging the same portable, reliable codebase that powers NetBSD itself.  
-        You decide what to include — sshd, httpd, or your own service — and smolBSD builds a coherent, minimal, bootable image ready to run anywhere.
+        No prior NetBSD installation is required. Create and start a microvm from any
+GNU/Linux, NetBSD, or macOS system.
+        PVH boot and various optimizations enable NetBSD/amd64 and NetBSD/i386 to
+directly boot QEMU or Firecracker in about <strong>10 ms</strong> on modern x86 CPUs.
       </p>
     </div>
     <pre class="bg-zinc-950 text-gray-300 p-6 rounded-2xl overflow-x-auto text-sm border border-zinc-800">
 $ bmake SERVICE=bozohttpd build
 ➡️ starting the builder microvm
-➡️ host filesystem mounted on /mnt
 ➡️ fetching sets
 ➡️ creating root filesystem (512M)
 ✅ image ready: bozohttpd-amd64.img
@@ -76,12 +77,12 @@ $ bmake SERVICE=bozohttpd build
   <section class="bg-zinc-950 py-24">
     <div class="max-w-5xl mx-auto text-center mb-12">
       <h2 class="text-3xl text-white font-semibold mb-4">Why smolBSD</h2>
-      <p class="text-gray-400">Build BSD systems like you build software — fast, reproducible, and minimal.</p>
+      <p class="text-gray-400">Build BSD systems like you build software: fast, reproducible, and minimal.</p>
     </div>
     <div class="grid sm:grid-cols-2 md:grid-cols-4 gap-8 max-w-5xl mx-auto px-6">
       <div class="p-6 border border-zinc-800 rounded-xl hover:border-amber-500 transition">
         <h3 class="text-xl text-amber-400 mb-2">🧩&nbsp;Composable</h3>
-        <p class="text-gray-400 text-sm">Pick only the components you need — from kernel to services.</p>
+        <p class="text-gray-400 text-sm">Pick only the components you need, from kernel to services.</p>
       </div>
       <div class="p-6 border border-zinc-800 rounded-xl hover:border-amber-500 transition">
         <h3 class="text-xl text-amber-400 mb-2">⚙️&nbsp;Reproducible</h3>
@@ -89,161 +90,243 @@ $ bmake SERVICE=bozohttpd build
       </div>
       <div class="p-6 border border-zinc-800 rounded-xl hover:border-amber-500 transition">
         <h3 class="text-xl text-amber-400 mb-2">🚀&nbsp;Instant Boot</h3>
-        <p class="text-gray-400 text-sm">Powered by netbsd-MICROVM — boot to service in milliseconds.</p>
+        <p class="text-gray-400 text-sm">PVH boot to service in ~10 ms on modern hardware.</p>
       </div>
       <div class="p-6 border border-zinc-800 rounded-xl hover:border-amber-500 transition">
-        <h3 class="text-xl text-amber-400 mb-2">💻&nbsp;Universal</h3>
-        <p class="text-gray-400 text-sm">Runs anywhere QEMU or Firecracker runs — cloud, CI, edge, or laptop.</p>
+        <h3 class="text-xl text-amber-400 mb-2">🐳&nbsp;Docker Familiar</h3>
+        <p class="text-gray-400 text-sm">Build with SMOLerfiles, run with <code>smoler.sh</code>, push and pull via OCI registries.</p>
       </div>
     </div>
   </section>
 
-  <!-- Quick Start -->
-  <section class="max-w-4xl mx-auto px-6 py-24 text-center">
-    <h2 class="text-3xl text-white mb-6 font-semibold">Quick Start</h2>
-    <p class="text-gray-400 mb-6">Build and boot your own BSD system in seconds:</p>
-    <pre class="bg-zinc-950 text-gray-300 p-6 rounded-2xl overflow-x-auto text-left text-sm border border-zinc-800">
-$ git clone https://github.com/NetBSDfr/smolBSD
-$ cd smolBSD
-$ cat ~/.ssh/id_ed25519.pub >> service/sshd/etc/mykey.pub
-$ bmake SERVICE=sshd build
-➡️ starting the builder microvm
-➡️ fetching sets
-➡️ creating root filesystem (512M)
-✅ image ready: sshd-amd64.img
-➡️ killing the builder microvm
+  <!-- Two Workflows -->
+  <section class="max-w-5xl mx-auto px-6 py-24">
+    <h2 class="text-3xl text-white mb-6 font-semibold text-center">Two Workflows</h2>
+    <p class="text-gray-400 text-center mb-12">Choose the style that fits you: Docker-native or POSIX shell scripting.</p>
 
-$ ./startnb.sh -f etc/sshd.conf 
-[   1.0092096] kernel boot time: 14ms
-Starting sshd.
-Server listening on :: port 22.
-Server listening on 0.0.0.0 port 22.
+    <div class="grid md:grid-cols-2 gap-8">
+      <!-- smoler.sh -->
+      <div class="border border-zinc-800 rounded-2xl p-6 hover:border-amber-500 transition">
+        <h3 class="text-xl text-amber-400 mb-4 font-semibold">🐳 smoler.sh (Docker-style)</h3>
+        <pre class="bg-zinc-950 text-gray-300 p-4 rounded-xl overflow-x-auto text-sm">
+$ ./smoler.sh build smolerfiles/Dockerfile.caddy
+✅ caddy-amd64:latest built
 
-$ ssh -p 2022 ssh@localhost
-    </pre>
-    <a href="https://github.com/NetBSDfr/smolBSD/releases" target="_blank"
-       class="inline-block mt-6 px-6 py-3 bg-amber-500 text-black font-semibold rounded-lg hover:bg-amber-400 transition">
-      Download
-    </a>
+$ ./smoler.sh run caddy-amd64:latest
+[   1.001231] kernel boot time: 10ms
+caddy respond -l :8880
+        </pre>
+        <p class="text-gray-500 text-sm mt-4">
+          Build, run, list, push, and pull images, just like Docker. Images are stored
+with <code>name-arch:tag</code> naming and can be shared via OCI registries.
+        </p>
+      </div>
+
+      <!-- bmake + startnb.sh -->
+      <div class="border border-zinc-800 rounded-2xl p-6 hover:border-amber-500 transition">
+        <h3 class="text-xl text-amber-400 mb-4 font-semibold">🔧 bmake + startnb.sh (manual)</h3>
+        <pre class="bg-zinc-950 text-gray-300 p-4 rounded-xl overflow-x-auto text-sm">
+$ bmake SERVICE=caddy build
+✅ image ready: caddy-amd64.img
+
+$ ./startnb.sh -f etc/caddy.conf
+[   1.001231] kernel boot time: 10ms
+caddy respond -l :8880
+        </pre>
+        <p class="text-gray-500 text-sm mt-4">
+          Full control over the build process and QEMU flags. Images are raw
+<code>.img</code> files in <code>images/</code>. <code>startnb.sh</code> is the
+low-level VM launcher that <code>smoler.sh</code> uses under the hood.
+        </p>
+      </div>
+    </div>
   </section>
 
-  <section class="max-w-4xl mx-auto px-6 py-24 text-center">
-    <h2 class="text-3xl text-white mb-6 font-semibold">Create</h2>
-    <p class="text-gray-400 mb-6">Your own service in seconds using a simple
-Dockerfile!</p>
-    <pre class="bg-zinc-950 text-gray-300 p-6 rounded-2xl overflow-x-auto text-left text-sm border border-zinc-800">
+  <!-- SMOLerfile -->
+  <section class="bg-zinc-950 py-24">
+    <div class="max-w-5xl mx-auto px-6 grid md:grid-cols-2 gap-12 items-center">
+      <div>
+        <h2 class="text-3xl text-white mb-6 font-semibold">SMOLerfile</h2>
+        <p class="text-gray-400 leading-relaxed">
+          Define your service with a Dockerfile-compatible syntax.
+          <code>smoler.sh</code> generates the full smolBSD service configuration for you.
+        </p>
+        <ul class="text-gray-400 text-sm mt-4 space-y-2">
+          <li><code class="text-amber-400">FROM</code>: NetBSD sets (<code>base,etc</code>)</li>
+          <li><code class="text-amber-400">LABEL smolbsd.service</code>: service name</li>
+          <li><code class="text-amber-400">LABEL smolbsd.publish</code>: port mapping</li>
+          <li><code class="text-amber-400">LABEL smolbsd.minimize</code>: shrink image</li>
+          <li><code class="text-amber-400">RUN</code>: run commands inside the builder</li>
+          <li><code class="text-amber-400">CMD</code>: default service command</li>
+        </ul>
+      </div>
+      <pre class="bg-zinc-950 text-gray-300 p-6 rounded-2xl overflow-x-auto text-sm border border-zinc-800">
 FROM base,etc
 
-LABEL SERVICE=caddy
+LABEL smolbsd.service=caddy
+LABEL smolbsd.minimize=y
+LABEL smolbsd.publish="8881:8880"
 
 RUN pkgin up && pkgin -y in caddy
 
-EXPOSE 8881:8880
+EXPOSE 8880
 
 CMD caddy respond -l :8880
-    </pre>
+      </pre>
+    </div>
   </section>
 
+  <!-- OCI Registry -->
+  <section class="max-w-4xl mx-auto px-6 py-24 text-center">
+    <h2 class="text-3xl text-white mb-6 font-semibold">OCI Registry</h2>
+    <p class="text-gray-400 mb-6">Push and pull microvm images to any OCI-compliant registry, share and version your systems like Docker images.</p>
+    <pre class="bg-zinc-950 text-gray-300 p-6 rounded-2xl overflow-x-auto text-left text-sm border border-zinc-800">
+$ ./smoler.sh push caddy-amd64:latest
+✅ pushed to ghcr.io/netbsdfr/smolbsd/caddy-amd64:latest
 
-<!-- Examples -->
-<section id="examples" class="bg-black py-24">
-  <div class="max-w-5xl mx-auto px-6">
-    <h2 class="text-3xl text-white font-semibold mb-12
-text-center">Services Examples</h2>
+$ ./smoler.sh pull caddy-amd64:latest
+✅ pulled caddy-amd64:latest (347M)
+    </pre>
+    <p class="text-gray-500 text-sm mt-4">
+      Official images at <a href="https://github.com/orgs/NetBSDfr/packages" target="_blank" class="text-amber-400 hover:text-amber-300">github.com/orgs/NetBSDfr/packages</a>.
+      Set <code class="text-amber-400">SMOLREPO</code> to use a custom registry.
+    </p>
+  </section>
 
-    <!-- Example 1: bozohttpd -->
-    <div class="grid md:grid-cols-2 gap-8 mb-16 items-center">
-      <div>
-        <h3 class="text-2xl text-amber-400 font-semibold mb-4">bozohttpd</h3>
-        <p class="text-gray-400 leading-relaxed">
-          A complete static web server in a few megabytes.  
-          smolBSD builds a minimal system with <code>bozohttpd</code>
-preconfigured and ready to serve content immediately on boot.
-        </p>
+  <!-- Quick Start -->
+  <section class="bg-zinc-950 py-24">
+    <div class="max-w-4xl mx-auto px-6 text-center">
+      <h2 class="text-3xl text-white mb-6 font-semibold">Quick Start</h2>
+      <p class="text-gray-400 mb-6">Build and boot your own BSD system in seconds:</p>
+      <pre class="bg-zinc-950 text-gray-300 p-6 rounded-2xl overflow-x-auto text-left text-sm border border-zinc-800">
+$ git clone https://github.com/NetBSDfr/smolBSD
+$ cd smolBSD
+
+# Docker-style
+$ ./smoler.sh build smolerfiles/Dockerfile.myservice
+✅ myservice-amd64:latest built
+
+$ ./smoler.sh run myservice-amd64:latest -P
+[   1.0092096] kernel boot time: 14ms
+
+# Or classic Makefile
+$ bmake SERVICE=sshd build
+✅ image ready: sshd-amd64.img
+
+$ ./startnb.sh -f etc/sshd.conf
+Starting sshd.
+Server listening on 0.0.0.0 port 22.
+      </pre>
+    </div>
+  </section>
+
+  <!-- Examples -->
+  <section id="examples" class="bg-black py-24">
+    <div class="max-w-5xl mx-auto px-6">
+      <h2 class="text-3xl text-white font-semibold mb-12
+text-center">Service Examples</h2>
+
+      <!-- Example 1: rescue -->
+      <div class="grid md:grid-cols-2 gap-8 mb-16 items-center">
+        <div>
+          <h3 class="text-2xl text-amber-400 font-semibold mb-4">rescue</h3>
+          <p class="text-gray-400 leading-relaxed">
+            The smallest possible microvm, just <strong>~10 MB</strong>.
+            A minimal rescue environment with read-only root filesystem.
+          </p>
+          <p class="text-gray-500 text-sm mt-2">
+            Supports amd64, i386, and aarch64.
+          </p>
+        </div>
+        <pre class="bg-zinc-950 text-gray-300 p-6 rounded-2xl overflow-x-auto
+text-sm border border-zinc-800">
+$ bmake SERVICE=rescue build
+✅ image ready: rescue-amd64.img
+
+$ ./startnb.sh -k kernels/netbsd-SMOL \
+  -i images/rescue-amd64.img
+[   1.0000000] NetBSD/amd64 booting ...
+#
+        </pre>
       </div>
-      <pre class="bg-zinc-950 text-gray-300 p-6 rounded-2xl overflow-x-auto
+
+      <!-- Example 2: sshd -->
+      <div class="grid md:grid-cols-2 gap-8 mb-16 items-center">
+        <div>
+          <h3 class="text-2xl text-amber-400 font-semibold mb-4">sshd</h3>
+          <p class="text-gray-400 leading-relaxed">
+            A minimal SSH server with key-based authentication.
+            Add your public key, build the image, and you have a remote shell in seconds.
+          </p>
+        </div>
+        <pre class="bg-zinc-950 text-gray-300 p-6 rounded-2xl overflow-x-auto
+text-sm border border-zinc-800">
+$ cat ~/.ssh/id_ed25519.pub >> service/sshd/etc/mykey.pub
+$ bmake SERVICE=sshd build
+✅ image ready: sshd-amd64.img
+
+$ ./startnb.sh -f etc/sshd.conf
+[   1.0092096] kernel boot time: 14ms
+Starting sshd.
+Server listening on 0.0.0.0 port 22.
+
+$ ssh -p 2022 ssh@localhost
+        </pre>
+      </div>
+
+      <!-- Example 3: bozohttpd -->
+      <div class="grid md:grid-cols-2 gap-8 mb-16 items-center">
+        <div>
+          <h3 class="text-2xl text-amber-400 font-semibold mb-4">bozohttpd</h3>
+          <p class="text-gray-400 leading-relaxed">
+            A complete static web server in a few megabytes.
+            smolBSD builds a minimal system with <code>bozohttpd</code>
+preconfigured and ready to serve content immediately on boot.
+          </p>
+        </div>
+        <pre class="bg-zinc-950 text-gray-300 p-6 rounded-2xl overflow-x-auto
 text-sm border border-zinc-800">
 $ bmake SERVICE=bozohttpd build
-➡️ starting the builder microvm
-➡️ fetching sets
-➡️ creating root filesystem (512M)
 ✅ image ready: bozohttpd-amd64.img
 
 $ ./startnb.sh -f etc/bozohttpd.conf
 [   1.001231] kernel boot time: 10ms
-Starting bozohttpd on :80
+started in daemon mode as 'port http root /var/www'
 listening on 0.0.0.0:80
-      </pre>
-    </div>
-
-    <!-- Example 2: nbakery -->
-    <div class="grid md:grid-cols-2 gap-8 mb-16 items-center
-md:flex-row-reverse">
-      <div class="md:order-2">
-        <h3 class="text-2xl text-amber-400 font-semibold mb-4">nbakery</h3>
-        <p class="text-gray-400 leading-relaxed">
-          A lightweight build and image creation service based entirely on
-NetBSD tools.  
-          The <code>nbakery</code> image gives you a taste of a preconfigured NetBSD environment with all the well known tools.
-        </p>
+        </pre>
       </div>
-      <pre class="bg-zinc-950 text-gray-300 p-6 rounded-2xl overflow-x-auto
-text-sm border border-zinc-800 md:order-1">
-$ bmake SERVICE=nbakery build
-➡️ starting the builder microvm
-➡️ fetching sets
-➡️ creating root filesystem (512M)
-✅ image ready: nbakery-amd64.img
 
-$ ./startnb.sh -f etc/nbakery.conf
-[   1.008374] kernel boot time: 11ms
-
-Welcome to the (n)bakery! 🧁
-
-💪 doas &lt;command&gt; to run command as root
-📦 pkgin to manage packages
-🚪 exit to cleanly shutdown, ^a-x to exit qemu
-🪟 you are inside a tmux with prefix ^q
-      </pre>
-    </div>
-
-    <!-- Example 3: nitrosshd -->
-    <div class="grid md:grid-cols-2 gap-8 items-center">
-      <div>
-        <h3 class="text-2xl text-amber-400 font-semibold mb-4">nitrosshd</h3>
-        <p class="text-gray-400 leading-relaxed">
-          A minimal secure shell server started with <code>nitro</code>,
-designed to launch instantly and provide remote access with zero unnecessary
-services.  
-          Ideal for an SSH bouncer.
-        </p>
-      </div>
-      <pre class="bg-zinc-950 text-gray-300 p-6 rounded-2xl overflow-x-auto
+      <!-- Example 3: caddy via SMOLerfile -->
+      <div class="grid md:grid-cols-2 gap-8 items-center">
+        <div>
+          <h3 class="text-2xl text-amber-400 font-semibold mb-4">caddy (SMOLerfile)</h3>
+          <p class="text-gray-400 leading-relaxed">
+            Define and run a full web server with a single SMOLerfile,
+build, run, and test in three commands.
+          </p>
+        </div>
+        <pre class="bg-zinc-950 text-gray-300 p-6 rounded-2xl overflow-x-auto
 text-sm border border-zinc-800">
-$ bmake SERVICE=nitrosshd build
-➡️ starting the builder microvm
-➡️ fetching sets
-➡️ creating root filesystem (512M)
-✅ image ready: nitrosshd-amd64.img
+$ ./smoler.sh build smolerfiles/Dockerfile.caddy
+✅ caddy-amd64:latest built
 
-$ ./startnb.sh -f etc/sshd.conf
-[   1.011598] kernel boot time: 12ms
-Created tmpfs /dev (1835008 byte, 3552 inodes)
-Starting sshd.
-Server listening on :: port 22.
-Server listening on 0.0.0.0 port 22.
-      </pre>
+$ ./smoler.sh run caddy-amd64:latest -P
+caddy respond -l :8880
+
+$ curl -I 127.0.0.1:8881
+HTTP/1.1 200 OK
+Server: Caddy
+        </pre>
+      </div>
+
     </div>
-
-  </div>
-</section>
-
+  </section>
 
   <!-- Community -->
   <section class="bg-zinc-950 py-24 text-center">
     <h2 class="text-3xl text-white mb-6 font-semibold">Community</h2>
     <p class="text-gray-400 max-w-3xl mx-auto mb-8">
-      smolBSD is an independent project built on top of NetBSD.  
+      smolBSD is an independent project built on top of NetBSD.
       Join us, share your micro-systems, or contribute new services and build recipes.
     </p>
     <div class="space-x-6 text-amber-400 text-2xl">
@@ -255,8 +338,7 @@ Server listening on 0.0.0.0 port 22.
 
   <!-- Footer -->
   <footer class="text-center text-gray-600 py-12 text-sm border-t border-gray-800">
-    © 2025 smolBSD
+    © 2025–2026 smolBSD
   </footer>
 </body>
 </html>
-
