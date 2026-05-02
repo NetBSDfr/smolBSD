@@ -2,13 +2,11 @@
 
 ## 📖 About
 
-This microservice runs [crush](https://github.com/charmbracelet/crush), an AI-powered terminal assistant built by Charmbracelet. It provides a fully configured NetBSD microvm with crush pre-installed and ready to use.
-
-The service mounts your project directory at `/mnt` inside the microvm, allowing you to work on any project with crush's AI capabilities in a lightweight, fast-booting environment.
+This service runs [crush](https://github.com/charmbracelet/crush), an AI-powered terminal assistant built by Charmbracelet. It provides a fully configured NetBSD microvm with crush pre-installed and ready to use.
 
 ## 🎒 Prerequisites
 
-- A `crush.json` configuration file (see [crush docs](https://github.com/charmbracelet/crush))
+- A `crush.json` configuration file (an example is included in this repository, or see [crush docs](https://github.com/charmbracelet/crush))
 - At least 512MB of memory recommended
 
 ## 🚀 Usage
@@ -25,38 +23,34 @@ Or pull the pre-built image:
 $ ./smoler.sh pull crush-amd64:latest
 ```
 
-### ▶️ Run with a project directory
+### ⚡ Quick start (config via command line)
 
 ```sh
-$ ./smoler.sh run crush-amd64:latest -m 1024 -w /path/to/project
+$ ./smoler.sh run crush-amd64:latest -m 1024 -E crush=/path/to/crush.json -w /path/to/project
 ```
 
-The `-w` flag mounts `/path/to/project` at `/mnt` inside the microvm. The `-m 1024` allocates 1GB of memory.
+Passes the config file from the host directly to the guest with `-E`, and the path for the project file you want `crush` to work on, it will be mounted in the microvm `/mnt` directory.
 
-### ⚡ Run with an inline crush config
+### 🔧 Full project (mount a directory)
 
-```sh
-$ ./smoler.sh run crush-amd64:latest -E crush=/path/to/crush.json
-```
-
-This passes a `crush.json` file directly into the microvm at `/var/qemufwcfg/opt/org.smolbsd.file.crush`.
-
-### 🔧 Run with a custom config file
-
-Copy your `crush.json` into the working directory before running:
+Keep a `crush.json` in each project directory for a ready-to-go setup:
 
 ```sh
 $ cp crush.json /path/to/project/
 $ ./smoler.sh run crush-amd64:latest -m 1024 -w /path/to/project
 ```
 
-### 💻 Interactive shell (no crush)
+### 📋 Flags
 
-If no `crush.json` is found, the microvm drops to a `ksh` prompt. You can also start it directly:
+| Flag | Description |
+|------|-------------|
+| `-m <mb>` | Memory to allocate (default: 512) |
+| `-E crush=<path>` | Pass a config file directly to the guest |
+| `-w <path>` | Mount a directory at `/mnt` inside the microvm |
 
-```sh
-$ ./startnb.sh -f etc/crush.conf
-```
+### ⚠️ No config found
+
+If no `crush.json` is available, crush won't start and the microvm drops to a `ksh` prompt instead.
 
 ## 🛑 Exiting
 
