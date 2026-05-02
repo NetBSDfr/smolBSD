@@ -1,15 +1,15 @@
-# 💥 Crush service
+# 💘 Crush service
 
-## 📖 About
+## About
 
 This service runs [crush](https://github.com/charmbracelet/crush), an AI-powered terminal assistant built by Charmbracelet. It provides a fully configured NetBSD microvm with crush pre-installed and ready to use.
 
-## 🎒 Prerequisites
+## Prerequisites
 
 - A `crush.json` configuration file (an example is included in this repository, or see [crush docs](https://github.com/charmbracelet/crush))
 - At least 512MB of memory recommended
 
-## 🚀 Usage
+## Usage
 
 ### 🔨 Build the image
 
@@ -52,11 +52,11 @@ $ ./smoler.sh run crush-amd64:latest -m 1024 -w /path/to/project
 
 If no `crush.json` is available, crush won't start and the microvm drops to a `ksh` prompt instead.
 
-## 🛑 Exiting
+## Exiting
 
 When shutting down the microvm, use **Ctrl-A Ctrl-X** to exit.
 
-## ⚙️ Configuration
+## Configuration
 
 The service runs as user `crush` with the following environment:
 
