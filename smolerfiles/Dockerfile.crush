@@ -14,7 +14,7 @@ LABEL smolbsd.minimize=y
 LABEL smolbsd.imgsize=2048
 LABEL smolbsd.use_pty=y
 
-ARG CRUSH_VERSION="0.62.1"
+ARG CRUSH_VERSION="0.65.2"
 ARG CRUSH_ARCH=$(uname -p|sed 's/aarch64/arm64/')
 
 ENV NBUSER=crush
@@ -47,7 +47,7 @@ set -g status off
 EOF
 
 RUN cat <<EOF >.profile
-printf "\n⌚ Wait for crush to load...\n\n"
+printf "\n⌚ Wait for ${LIGHTGREEN}crush${NORMAL} to load...\n\n"
 
 crush
 
@@ -61,11 +61,13 @@ for f in /mnt/crush.json /var/qemufwcfg/opt/org.smolbsd.file.crush
 do
 	if [ -f "\\\$f" ]; then
 		cp "\\\$f" crush.json
+		chown -R $NBUSER /home/$NBUSER
+		chmod 644 crush.json
 		exec login -f -p $NBUSER
 	fi
 done
 
-echo "⚠️ no crush.json, either:"
+printf "⚠️ no ${LIGHTGREEN}crush.json${NORMAL} passed from the host, either:\n"
 printf "\n- add ${LIGHTGREEN}-E crush=/path/to/crush.json${NORMAL} to the command line\nor"
 printf "\n- copy crush.json to a directory and add ${LIGHTGREEN}-w /path/to/directory'${NORMAL}\n"
 ksh

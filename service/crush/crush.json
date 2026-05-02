@@ -1,0 +1,22 @@
+{
+  "$schema": "https://charm.land/crush.json",
+  "options": {
+    "disable_provider_auto_update": true,
+    "disable_metrics": true
+  },
+  "providers": {
+    "ollama": {
+      "name": "llama.cpp",
+      "base_url": "http://192.168.1.1:4000/v1/",
+      "type": "openai-compat",
+      "models": [
+        {
+          "name": "llama.cpp Qwen 3.6 35B",
+          "id": "Qwen3.6-27B-Q5_K_M.gguf",
+          "context_window": 128000,
+          "default_max_tokens": 20000
+        }
+      ]
+    }
+  }
+}
