@@ -83,7 +83,7 @@ do
 	s) sharerw=y;;
 	t) serial_port=$OPTARG;;
 	u) CHOUPI="";;
-	v) VERBOSE=y;;
+	v) verbose=y;;
 	N) nonet=yes;;
 	P) use_pty=y;;
 	w) share=$OPTARG;;
@@ -308,7 +308,7 @@ cmd="${QEMU} -smp $cores \
 	-global virtio-mmio.force-legacy=false ${share} \
 	${drive2} ${network} ${d} ${viosock} ${extra}"
 
-[ -n "$VERBOSE" ] && echo "$cmd" && exit
+[ -n "$verbose" ] && echo "$cmd" && exit
 
 [ -n "$viosock" ] && \
 	(
