@@ -10,7 +10,7 @@ usage()
 
 IMGTAG="latest"
 while [ $# -gt 1 ]; do
-	case $1 in
+	case ${1} in
 	--build-arg)
 		shift
 		[ "${1#*=}" = "${1}" ] && usage
@@ -27,7 +27,9 @@ while [ $# -gt 1 ]; do
 	shift
 done
 
-if [ $# -lt 1 ] || [ ! -f "$1" ]; then
+lastp="$1"
+
+if [ $# -lt 1 ] || [ ! -f "$lastp" ]; then
 	usage
 fi
 
@@ -43,13 +45,15 @@ do
 		printf "%s\n" "$line"
 		;;
 	esac
-done <$1 >$smolerfile
+done <$lastp >$smolerfile
+
+case $lastp in *.smol) SERVICE=${lastp%.smol}; SERVICE=${SERVICE##*/};; esac
 
 mkdir -p tmp
 TMPOPTS=$(mktemp tmp/options.mk.XXXXXX)
 # Dockerfile compatibility
 sed -n 's/LABEL \(smolbsd\.\)\{0,1\}\(.*=.*\)/\2/p' $smolerfile | \
-	awk -F= '{ printf "%s=%s\n", toupper($1), $2 }' \
+	awk -F= '{ printf "%s=%s\n", toupper($lastp), $2 }' \
 	>${TMPOPTS}
 
 . ./${TMPOPTS}
