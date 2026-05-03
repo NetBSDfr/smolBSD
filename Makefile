@@ -133,8 +133,9 @@ kernfetch:
 setfetch:
 	@[ -d ${SETSDIR} ] || mkdir -p ${SETSDIR}
 	$Qfor s in ${SETS}; do \
-		${FRESHCHK} ${DIST}/sets/$${s%:*} ${SETSDIR}/$${s%:*} || \
-			${FETCH} -o ${SETSDIR}/$${s} ${DIST}/sets/$${s}; \
+		set=$${s%:*} && \
+		${FRESHCHK} ${DIST}/sets/$${set} ${SETSDIR}/$${set} || \
+			${FETCH} -o ${SETSDIR}/$${set} ${DIST}/sets/$${set}; \
 	done
 
 pkgfetch:
