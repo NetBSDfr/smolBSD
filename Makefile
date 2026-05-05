@@ -43,8 +43,8 @@ EXTRAS+=	-o
 .endif
 # enable BIOS boot
 .if defined(BIOSBOOT) && ${BIOSBOOT} == "y"
-BIOSKERNEL?=	kernels/netbsd-GENERIC
-EXTRAS+=	-b -k ${BIOSKERNEL}
+BIOSKERNEL?=	netbsd-GENERIC
+EXTRAS+=	-b -k kernels/${BIOSKERNEL}.SMOL
 .endif
 
 SETSDIR=	sets/${ARCH}
@@ -112,6 +112,7 @@ ARROW!=		. ${CHOUPI} && echo "$$ARROW"
 CHECK!=		. ${CHOUPI} && echo "$$CHECK"
 CPU!=		. ${CHOUPI} && echo "$$CPU"
 FREEZE!=	. ${CHOUPI} && echo "$$FREEZE"
+WARN!=		. ${CHOUPI} && echo "$$WARN"
 WHITEBULLET!=	. ${CHOUPI} && echo "$$WHITEBULLET"
 
 help:	# This help you are reading
@@ -128,6 +129,22 @@ kernfetch:
 		${FRESHCHK} ${KDIST}/kernel/${KERNEL}.gz kernels/${KERNEL} || \
 			curl -L -o- ${KDIST}/kernel/${KERNEL}.gz | \
 				gzip -dc > kernels/${KERNEL}; \
+	fi
+
+	$Qif [ "${BIOSBOOT}" = "y" ]; then \
+		${FRESHCHK} ${DIST}/kernel/${BIOSKERNEL}.gz kernels/${BIOSKERNEL} || \
+			curl -L -o- ${DIST}/kernel/${BIOSKERNEL}.gz | \
+				gzip -dc > kernels/${BIOSKERNEL}; \
+		cp -f kernels/${BIOSKERNEL} kernels/${BIOSKERNEL}.SMOL; \
+		if [ -f "confkerndev/confkerndev" ]; then \
+			confkerndev/confkerndev -v -i kernels/${BIOSKERNEL}.SMOL \
+				-w -k mainbus -k cpu -k acpicpu -k ioapic -k pci \
+				-k isa -k pcdisplay -k wsdisplay -k com -k virtio \
+				-k ld -k vioif ; \
+		else \
+			echo "${WARN} 'confkerndev' not present, not smoling the kernel"; \
+			echo "  ${ARROW} fetch it at: https://gitlab.com/0xDRRB/confkerndev"; \
+		fi; \
 	fi
 
 setfetch:
