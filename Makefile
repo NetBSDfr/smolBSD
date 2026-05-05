@@ -136,14 +136,13 @@ kernfetch:
 			curl -L -o- ${DIST}/kernel/${BIOSKERNEL}.gz | \
 				gzip -dc > kernels/${BIOSKERNEL}; \
 		cp -f kernels/${BIOSKERNEL} kernels/${BIOSKERNEL}.SMOL; \
-		if [ -f "confkerndev/confkerndev" ]; then \
+		if [ -f "confkerndev/confkerndev" ] && [ "${SMOLIFY}" = "y" ] ; then \
 			confkerndev/confkerndev -v -i kernels/${BIOSKERNEL}.SMOL \
 				-w -k mainbus -k cpu -k acpicpu -k ioapic -k pci \
 				-k isa -k pcdisplay -k wsdisplay -k com -k virtio \
 				-k ld -k vioif ; \
 		else \
-			echo "${WARN} 'confkerndev' not present, not smoling the kernel"; \
-			echo "  ${ARROW} fetch it at: https://gitlab.com/0xDRRB/confkerndev"; \
+			echo "${WARN} not smoling the kernel"; \
 		fi; \
 	fi
 

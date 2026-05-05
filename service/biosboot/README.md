@@ -37,13 +37,17 @@ And legacy boot on the _USB_ device.
 
 ### Smoling the `GENERIC` kernel
 
-This service does not use a _SMOL_ kernel, but a _GENERIC_ one as it is intended for real devices or other virtualization systems like _FreeBSD's bhyve_, nevertheless, using [confkerndev][1] you can dramatically reduce _GENERIC_ kernel boot time by disabling all unneeded drivers.  
+This service does not use a _SMOL_ kernel, but a _GENERIC_ one as it is intended for real devices or other virtualization systems like _FreeBSD's bhyve_, nevertheless, using [confkerndev][1] you can dramatically reduce _GENERIC_ kernel boot time by disabling all unneeded drivers for virtualized environments.  
 To do so, simply `git clone https://gitlab.com/0xDRRB/confkerndev` in _smolBSD_ directory and:
 
 ```sh
 $ cd confkerndev
 $ make
+$ cd ..
 ```
-That's it, _smolBSD_ build system will do the rest.
+And build the _smolBSD_ image like this:
+```sh
+$ bmake SERVICE=biosboot SMOLIFY=y build
+```
 
 [1]: https://gitlab.com/0xDRRB/confkerndev
