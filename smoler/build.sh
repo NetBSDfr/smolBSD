@@ -33,6 +33,7 @@ if [ $# -lt 1 ] || [ ! -f "$lastp" ]; then
 	usage
 fi
 
+mkdir -p tmp
 smolerfile=$(mktemp tmp/SMOLerfile.XXXXXX)
 
 while IFS= read -r line
@@ -49,7 +50,6 @@ done <$lastp >$smolerfile
 
 case $lastp in *.smol) SERVICE=${lastp%.smol}; SERVICE=${SERVICE##*/};; esac
 
-mkdir -p tmp
 TMPOPTS=$(mktemp tmp/options.mk.XXXXXX)
 # Dockerfile compatibility
 sed -n 's/LABEL \(smolbsd\.\)\{0,1\}\(.*=.*\)/\2/p' $smolerfile | \
