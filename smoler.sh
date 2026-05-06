@@ -26,7 +26,7 @@ run)
 "")
 	cat 1>&2 << _USAGE_
 Usage:
-	$progname build [-y] <path/to/Dockerfile>
+	$progname build [-y] [VAR=val ...] <path/to/Dockerfile>
 	$progname pull <image>
 	$progname push <image>
 	$progname images

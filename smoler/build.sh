@@ -4,11 +4,12 @@ set -e
 
 usage()
 {
-	echo "usage: $0 [--build-arg KEY=val ...] [-t tag] [-y] <SMOLerfile>"
+	echo "usage: $0 [--build-arg KEY=val ...] [-t tag] [-y] [VAR=val ...] <SMOLerfile>"
 	exit 1
 }
 
 IMGTAG="latest"
+MAKE_VARS=""
 while [ $# -gt 1 ]; do
 	case ${1} in
 	--build-arg)
@@ -22,6 +23,9 @@ while [ $# -gt 1 ]; do
 		;;
 	-y)
 		YES=y
+		;;
+	*=*)
+		MAKE_VARS="${MAKE_VARS} ${1}"
 		;;
 	esac
 	shift
@@ -371,4 +375,4 @@ rm -f tmp/*
 
 [ "$(uname -s)" = "NetBSD" ] && MAKE=make || MAKE=bmake
 
-$MAKE SERVICE=${SERVICE} BUILDARGS="${BUILDARGS}" IMGTAG=":${IMGTAG}" build
+$MAKE SERVICE=${SERVICE} BUILDARGS="${BUILDARGS}" IMGTAG=":${IMGTAG}" ${MAKE_VARS} build
