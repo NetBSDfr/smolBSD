@@ -53,7 +53,7 @@ case $lastp in *.smol) SERVICE=${lastp%.smol}; SERVICE=${SERVICE##*/};; esac
 TMPOPTS=$(mktemp tmp/options.mk.XXXXXX)
 # Dockerfile compatibility
 sed -n 's/LABEL \(smolbsd\.\)\{0,1\}\(.*=.*\)/\2/p' $smolerfile | \
-	awk -F= '{ printf "%s=%s\n", toupper($lastp), $2 }' \
+	awk -F= '{ printf "%s=%s\n", toupper($1), $2 }' \
 	>${TMPOPTS}
 
 . ./${TMPOPTS}
