@@ -293,6 +293,26 @@ $ bmake SERVICE=nitro build
 ```
 This will spawn a microvm running the build image, and will build the _service_ specified with the `SERVICE` `make(1)` variable.
 
+## Baremetal or non-PVH/MMIO aware VMMs
+
+It is possible to build _smolBSD_ images for bare metal platforms or vmms others than `qemu` and `Firecracker`, but you'll lose the sub-second boot speed, using a _BIOS_ bootable image and shipped with a _NetBSD GENERIC_ kernel.
+
+### Bare metal
+
+Considering `/dev/sde` is a disk drive (for instance USB):
+```
+$ smoler build -y -t USB BIOSBOOT=y BIOSCONSOLE=pc smolerfiles/Dockerfile.bsdshell
+$ sudo dd if=images/bsdshell-amd64:USB.img of=/dev/sde bs=1M
+```
+`BIOSCONSOLE=pc` orders the image to output display to the screen.
+
+### Bhyve
+
+```
+$ smoler build -y -t freebsd BIOSBOOT=y SMOLIFY=y smolerfiles/Dockerfile.bsdshell
+```
+The `SMOLIFY` triggers the use of [confkerndev][0] to disable unneeded drivers from the `GENERIC` kernel. If `confkerndev/confkerndev` is not present in _smolBSD_'s directory, it will ignore it and ship the image with an untouched `GENERIC` kernel.
+
 # Examples
 
 ## Very minimal (10MB) virtual machine - [source](service/rescue)
