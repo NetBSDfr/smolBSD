@@ -306,7 +306,7 @@ $ sudo dd if=images/bsdshell-amd64:USB.img of=/dev/sde bs=1M
 ```
 `BIOSCONSOLE=pc` orders the image to output display to the screen.
 
-### Bhyve
+### Bhyve (and probably many more)
 
 ```
 $ smoler build -y -t freebsd BIOSBOOT=y SMOLIFY=y smolerfiles/Dockerfile.bsdshell
