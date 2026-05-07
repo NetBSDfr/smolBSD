@@ -11,7 +11,7 @@
       "type": "openai-compat",
       "models": [
         {
-          "name": "llama.cpp Qwen 3.6 35B",
+          "name": "llama.cpp Qwen 3.6 27B",
           "id": "Qwen3.6-27B-Q5_K_M.gguf",
           "context_window": 128000,
           "default_max_tokens": 20000
