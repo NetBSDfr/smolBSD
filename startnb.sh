@@ -134,15 +134,29 @@ fi
 
 cputype="host"
 
+# allow forcing a specific accelerator (for CI or restricted hosts)
+if [ -n "${QEMU_ACCEL}" ]; then
+	accel="-accel ${QEMU_ACCEL}"
+	[ "${QEMU_ACCEL}" = "tcg" ] && cputype="qemu64"
+fi
+
 case $OS in
 NetBSD)
-	accel="-accel nvmm"
+	[ -z "$accel" ] && accel="-accel nvmm"
 	;;
 Linux)
-	accel="-accel kvm"
+	if [ -z "$accel" ]; then
+		if [ -c /dev/kvm ] && [ -r /dev/kvm ] && [ -w /dev/kvm ]; then
+			accel="-accel kvm"
+		else
+			accel="-accel tcg"
+			cputype="qemu64"
+			echo "${WARN} KVM unavailable, falling back to TCG"
+		fi
+	fi
 	;;
 Darwin)
-	accel="-accel hvf"
+	[ -z "$accel" ] && accel="-accel hvf"
 	if [ "$arch" = "evbarm-aarch64" ]; then
 		# Mac M1, M2, M3, M4
 		cputype="cortex-a57"
@@ -152,7 +166,7 @@ Darwin)
 	fi
 	;;
 OpenBSD|FreeBSD)
-	accel="-accel tcg" # unaccelerated
+	[ -z "$accel" ] && accel="-accel tcg" # unaccelerated
 	cputype="qemu64"
 	;;
 *)
