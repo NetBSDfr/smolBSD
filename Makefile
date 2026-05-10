@@ -65,6 +65,8 @@ CKSUM=		sha256sum -c
 CKSUMQ=		--quiet
 .elif ${OS} == "Darwin"
 CKSUM=		shasum -a 256 -c
+.elif ${OS} == "FreeBSD"
+CKSUM=		shasum -a 256 -c
 .endif
 
 FETCH=		scripts/fetch.sh
