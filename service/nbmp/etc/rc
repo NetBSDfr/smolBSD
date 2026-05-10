@@ -1,0 +1,130 @@
+#!/bin/sh
+. /etc/include/basicrc
+. /etc/include/choupi
+. /etc/include/mount9p
+. /etc/include/pkgin
+
+export PATH=/sbin:/bin:/usr/sbin:/usr/bin:/usr/pkg/bin:/usr/pkg/sbin
+export TERM=tmux-256color
+sqldir="/mnt/sql"
+wwwdir="/mnt/www"
+wwwroot="/var/www"
+logsdir="/mnt/logs"
+
+
+if [ -d ${logsdir} ]; then
+	rm -fr ${logsdir}/*
+else
+	mkdir ${logsdir}
+fi
+
+hostname nbmp
+
+# bash improvements.
+if [ ! -f /root/.bashrc ]; then
+cat >>/root/.bashrc<<EOF
+PS1="\u@\h:\w # "
+alias ll='ls -al'
+EOF
+fi
+
+# Search of the last PHP version in the NetBSD repository if no "PHP"
+# variable is given with startnb.sh.
+if [ ! -n "${PHP}" ]; then
+	echo -n "${INFO} no PHP version provided. Using PHP "
+	# Output : "php84-8.4.16"
+	PHP_FULL=$(pkgin search php | grep -E '^php[0-9]*-[0-9]' | tail -1 | cut -d " " -f 1)
+	
+	# Output : "8.4"
+	PHP=$(echo ${PHP_FULL%.*} | cut -d "-" -f 2)
+	
+	# Output : "84"
+	PHP_NO_DOT=$(echo ${PHP_FULL#php} | cut -d "-" -f 1)
+else
+	echo -n "${INFO} using PHP v"
+	PHP_NO_DOT=$(echo ${PHP} | tr -d ".")
+fi
+
+echo "${PHP}"
+
+PKGS="curl mariadb-server mariadb-client bozohttpd"
+PKGS_PHP="php${PHP_NO_DOT} php${PHP_NO_DOT}-mysqli php${PHP_NO_DOT}-curl php${PHP_NO_DOT}-pdo php${PHP_NO_DOT}-pdo_mysql"
+
+# If mariadb user does not exist, this means that the configuration has not been done.
+# So, let's do it now. Otherwise, let's continue.
+if ! id mariadb >/dev/null 2>&1; then
+	echo "${ARROW} Installing other packages "
+	pkgin -y install $PKGS
+
+	echo "${ARROW} MariaDB server settings"
+	cp /usr/pkg/share/examples/rc.d/mariadb /etc/rc.d/mariadb
+	echo "mariadb=yes" >> /etc/rc.conf
+	# Logs destination.
+	sed -i'' 's#--log-error=/var/log/mariadb/error.log#--log-error='${logsdir}/mariadb.log'#g' /etc/rc.d/mariadb
+	
+
+	echo "${ARROW} Bozohttpd settings"
+	rmdir ${wwwroot}
+	ln -snf ${wwwdir} ${wwwroot}
+fi
+
+# Management of PHP with version given by startnb.sh if any.
+if [ ! -d /usr/pkg/etc/php/${PHP} ]; then
+	echo "${ARROW} PHP settings ..."
+	pkgin -y install ${PKGS_PHP}
+	pkgin clean
+	# Logs destination.
+	sed -i'' 's/display_errors = Off/display_errors = On/g' /usr/pkg/etc/php/${PHP}/php.ini
+	sed -i'' 's#;error_log = syslog#error_log = '${logsdir}'/php.log#g' /usr/pkg/etc/php/${PHP}/php.ini
+fi
+
+echo "${ROCKET} MariaDB launching..."
+/etc/rc.d/mariadb start >/dev/null 2>&1
+exitCode=$?
+
+# "sleep", otherwhise, the next test happens too fast : MariaDB start slowly.
+while [ ! -e "/tmp/mysql.sock" ]; do
+	sleep 0.1
+done
+
+if [ ${exitCode} -ne 0 ]; then
+	echo -e "${ERROR} It seems MariaDB has fail to launch.\nExit\n\n"
+	return -1
+fi
+
+if [ "${nodeletesql}" = "yes" ]; then
+	echo "${INFO} use 'nodeletesql' -> do nothing with sql..."
+else
+	echo "${INFO} drop existing databases..."
+	dbs=$(mariadb -B -s -e "show databases" | grep -vE "^(information_schema|performance_schema|sys|mysql|test)$")
+	for db in ${dbs}; do
+		mariadb -e "drop database ${db}"
+	done
+
+	echo "${INFO} loading sql files... "
+	for sql in ${sqldir}/*.sql; do
+		if [ ! -f "${sql}" ]; then echo "${WARN}  no sql to load ${WARN}"; break; fi
+		echo -e "\t${ARROW} processing '$(basename $sql)'"
+		mariadb < $sql
+	done
+fi
+
+echo "${ROCKET} Bozohttpd launching..."
+/usr/libexec/bozohttpd -b -x index.php -C .php /usr/pkg/libexec/cgi-bin/php${PHP_NO_DOT} ${wwwdir}
+# No log management for bozohttpd. The only way to have it, is to start
+# with "-d" ("debug") and "-f" ("foreground") options to see logs in stdin.
+# bozohttp use syslog but it's not installed into smolBSD. Moreover,
+# "bozohttpd is designed to be small, simple and relatively featureless,
+# hopefully increasing its security." - From bozohttpd(8) man page
+
+exitCode=$?
+if [ ${exitCode} -ne 0 ]; then
+	echo -e "${ERROR} It seems bozohttpd has fail to launch.\nExit\n\n"
+	return -1
+fi
+
+echo -e "\n\n${ROCKET} Ready to be used !\n(use http://localhost:8181 by default to see your web pages)\n\n"
+
+bash --rcfile /root/.bashrc
+
+. /etc/include/shutdown
