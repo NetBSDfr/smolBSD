@@ -14,7 +14,7 @@ LABEL smolbsd.minimize=y
 LABEL smolbsd.imgsize=2048
 LABEL smolbsd.use_pty=y
 
-ARG CRUSH_VERSION="0.66.1"
+ARG CRUSH_VERSION="0.68.0"
 ARG CRUSH_ARCH=$(uname -p|sed 's/aarch64/arm64/')
 
 ENV NBUSER=crush
