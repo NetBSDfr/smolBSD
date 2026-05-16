@@ -10,11 +10,10 @@
 FROM base,comp,etc
 
 LABEL smolbsd.service=crush
-LABEL smolbsd.minimize=y
 LABEL smolbsd.imgsize=2048
 LABEL smolbsd.use_pty=y
 
-ARG CRUSH_VERSION="0.68.0"
+ARG CRUSH_VERSION="0.69.1"
 ARG CRUSH_ARCH=$(uname -p|sed 's/aarch64/arm64/')
 
 ENV NBUSER=crush
@@ -22,7 +21,7 @@ ENV LANG=en_US.UTF-8
 ENV TERM=tmux-256color
 ENV PATH=${PATH}:/usr/pkg/bin
 
-RUN pkgin up && pkgin -y in curl
+RUN pkgin up && pkgin -y in curl git-base ripgrep fd-find gh
 
 RUN mkdir -p /usr/pkg/bin && \
 	curl -L -s -o- \
