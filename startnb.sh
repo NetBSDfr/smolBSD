@@ -156,11 +156,9 @@ Linux)
 	;;
 Darwin)
 	[ -z "$accel" ] && accel="-accel hvf"
-	if [ "$arch" = "evbarm-aarch64" ]; then
-		# Mac M1, M2, M3, M4
-		cputype="max"
-	else
-		# Mac Intel
+	# qemu now supports cputype=host on Mac M1, M2, M3, M4
+	if [ "$arch" != "evbarm-aarch64" ]; then
+		# macOS for Intel used to, but I can't test it anymore
 		cputype="qemu64"
 	fi
 	;;
