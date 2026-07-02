@@ -377,7 +377,7 @@ bmake SERVICE=foo build
 |------|---------|-----|-------------|----------------|
 | x86_64 | `-M microvm,rtc=on,acpi=off,pic=off` | `host,+invtsc` | kvm/nvmm/hvf | `kernels/netbsd-SMOL` |
 | i386 | `-M microvm,…` | `host,+invtsc` | kvm/nvmm | `kernels/netbsd-SMOL386` |
-| aarch64 | `-M virt,highmem=off,gic-version=3` | `cortex-a57` or `host` | kvm/hvf | `kernels/netbsd-GENERIC64.img` |
+| aarch64 | `-M virt,highmem=off,gic-version=3` | `max` or `host` | kvm/hvf | `kernels/netbsd-GENERIC64.img` |
 
 **Console detection:**
 - Checks kernel symbols for `viocon_earlyinit` via `nm`

@@ -134,7 +134,7 @@ cputype="host"
 if [ -n "${QEMU_ACCEL}" ]; then
 	accel="-accel ${QEMU_ACCEL}"
 	if [ "${QEMU_ACCEL}" = "tcg" ]; then
-		[ "$arch" = "evbarm-aarch64" ] && cputype="cortex-a57" || \
+		[ "$arch" = "evbarm-aarch64" ] && cputype="max" || \
 			cputype="qemu64"
 	fi
 fi
@@ -158,7 +158,7 @@ Darwin)
 	[ -z "$accel" ] && accel="-accel hvf"
 	if [ "$arch" = "evbarm-aarch64" ]; then
 		# Mac M1, M2, M3, M4
-		cputype="cortex-a57"
+		cputype="max"
 	else
 		# Mac Intel
 		cputype="qemu64"
