@@ -17,6 +17,6 @@ RUN <<EOF
 useradd \$makehome $USERNAME
 chsh -s $USERSHELL $USERNAME
 touch ${HOMEDIR}/.hushlogin
-echo 'HISTFILE="\$HOME/.history"' >> /home/${USERNAME}/.profile
+echo 'HISTFILE="\$HOME/.history"' >> ${HOMEDIR}/.profile
 chown -R $USERNAME ${HOMEDIR}
 EOF
