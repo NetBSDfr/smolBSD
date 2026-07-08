@@ -1,0 +1,25 @@
+FROM base,etc
+
+LABEL smolbsd.service="clawlite"
+LABEL smolbsd.minimize="y"
+LABEL smolbsd.use_pty="y"
+
+ARG HOSTNAME=smolbsd
+ARG USERSHELL=/usr/pkg/bin/bash
+ENV USERNAME=clawlite
+
+# used by clawlite
+ARG TARGET_HOME=/home/$USERNAME
+
+RUN pkgin -y in bash curl jq && \
+	curl -o /usr/pkg/bin/claw -L \
+		https://raw.githubusercontent.com/kilian-ai/claw/refs/heads/main/clawlite.sh && \
+	chmod +x /usr/pkg/bin/claw && \
+	curl -o- -L https://raw.githubusercontent.com/kilian-ai/claw/main/scripts/install-and-seed.sh|sh && \
+	sed -i '/^OPENAI_BASE_URL=/d' ${TARGET_HOME}/.config/clawlite/config
+
+INCLUDE smolerfiles/usershell.inc
+
+CMD login -f -p $USERNAME
+
+# vim: filetype=dockerfile :
