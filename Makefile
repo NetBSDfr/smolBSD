@@ -1,3 +1,5 @@
+# v0.6.0
+
 ARCH!=		ARCH=${ARCH} scripts/uname.sh -m
 MACHINE!=	scripts/uname.sh -p
 OS!=		uname -s
