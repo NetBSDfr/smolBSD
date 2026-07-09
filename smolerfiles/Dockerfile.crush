@@ -13,7 +13,7 @@ LABEL smolbsd.service=crush
 LABEL smolbsd.imgsize=2048
 LABEL smolbsd.use_pty=y
 
-ARG CRUSH_VERSION="0.82.0"
+ARG CRUSH_VERSION="0.83.0"
 ARG CRUSH_ARCH=$(uname -p|sed 's/aarch64/arm64/')
 
 ENV NBUSER=crush
