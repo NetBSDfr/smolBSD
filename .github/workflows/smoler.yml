@@ -19,7 +19,7 @@ jobs:
       packages: write
     env:
       QEMU_ACCEL: tcg
-      DFILES: 'Dockerfile.(crush|clawd|bsdshell|nbakery|tiny)'
+      DFILES: '(Dock|SMOL)erfile.(crush|clawd|bsdshell|nbakery|tiny|clawlite)'
     steps:
       - name: Checkout
         uses: actions/checkout@v4
