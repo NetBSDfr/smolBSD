@@ -5,6 +5,7 @@ LABEL smolbsd.imgsize=2048
 LABEL smolbsd.minimize=y
 LABEL smolbsd.use_pty=y
 LABEL smolbsd.publish="7681:7681"
+LABEL version="smol1"
 
 ARG TTYD_VERSION=1.7.7
 ENV USERNAME=ttyd
