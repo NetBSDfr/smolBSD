@@ -10,12 +10,12 @@ RUN echo "hostname ${HOSTNAME}" >>/etc/rc.local && \
 	echo 'eval \$(resize)' >>/etc/rc.local && \
 	echo ". /etc/include/shutdown" >>/etc/rc
 
-ARG HOMEDIR=/home/${USERNAME}
+ENV HOMEDIR=/home/${USERNAME}
 
 RUN <<EOF
 [ -d "$HOMEDIR" ] || makehome="-m"
 useradd \$makehome $USERNAME
-chsh -s $USERSHELL $USERNAME
+chsh -s ${USERSHELL:-/bin/ksh} $USERNAME
 touch ${HOMEDIR}/.hushlogin
 echo 'HISTFILE="\$HOME/.history"' >> ${HOMEDIR}/.profile
 chown -R $USERNAME ${HOMEDIR}

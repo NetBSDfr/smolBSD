@@ -1,0 +1,38 @@
+FROM base,etc,comp
+
+LABEL smolbsd.service=ttyd
+LABEL smolbsd.imgsize=2048
+LABEL smolbsd.minimize=y
+LABEL smolbsd.use_pty=y
+LABEL smolbsd.publish="7681:7681"
+
+ARG TTYD_VERSION=1.7.7
+ENV USERNAME=ttyd
+ARG USERSHELL=/usr/pkg/bin/bash
+ARG HOSTNAME=smolbsd
+ARG LISTEN=7681
+
+RUN pkgin up && pkgin -y in \
+	curl cmake openssl libuv json-c zlib libwebsockets bash tmux
+
+RUN curl -sLo /tmp/ttyd.tar.gz \
+    https://github.com/tsl0922/ttyd/archive/refs/tags/${TTYD_VERSION}.tar.gz && \
+    cd /tmp && tar xzf ttyd.tar.gz && \
+    cd ttyd-${TTYD_VERSION} && \
+    sed -i'' 's/__OpenBSD__/__NetBSD__/g' src/pty.c && \
+    mkdir build && cd build && \
+    cmake -DCMAKE_PREFIX_PATH=/usr/pkg \
+    	-DCMAKE_EXE_LINKER_FLAGS="-lutil -Wl,-R/usr/pkg/lib" .. && \
+    make && make install
+
+RUN rm -rf /tmp/ttyd* /var/db/pkgin/cache/*
+
+EXPOSE 7681
+
+INCLUDE smolerfiles/usershell.inc
+
+USER ${USERNAME}
+
+CMD /usr/local/bin/ttyd -W -w ${HOMEDIR} /usr/pkg/bin/bash -l
+
+# vim: filetype=dockerfile :
