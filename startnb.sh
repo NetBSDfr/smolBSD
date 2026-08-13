@@ -321,8 +321,7 @@ fi
 [ -n "$fwcfgfile" ] && \
 	extra="$extra $(echo $fwcfgfile | sed -E 's|([[:alnum:]_]+)=([^,]+),?|-fw_cfg opt/org.smolbsd.file.\1,file=\2 |g')"
 
-# Use localtime for RTC instead of UTC by default
-extra="$extra -rtc base=localtime"
+extra="$extra -rtc base=utc,clock=host,driftfix=slew"
 
 [ -n "$use_pty" ] && escapex="^"
 echo "${EXIT} ^D to stop the vm, ^A-${escapex}X to kill it"
