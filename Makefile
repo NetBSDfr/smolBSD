@@ -4,17 +4,16 @@ ARCH!=		ARCH=${ARCH} scripts/uname.sh -m
 MACHINE!=	scripts/uname.sh -p
 OS!=		uname -s
 SETSEXT?=	tar.xz
+KDIST?=		https://smolbsd.org/assets
 
 .if ${ARCH} == "evbarm-aarch64"
-KERNEL=		netbsd-GENERIC64.img
+KERNEL=		netbsd-SMOL-aarch64.img
 LIVEIMGGZ=	https://nycdn.netbsd.org/pub/NetBSD-daily/HEAD/latest/evbarm-aarch64/binary/gzimg/arm64.img.gz
 .elif ${ARCH} == "i386"
 KERNEL=		netbsd-SMOL386
-KDIST=		https://smolbsd.org/assets
 SETSEXT=	tgz
 .else
 KERNEL=		netbsd-SMOL
-KDIST=		https://smolbsd.org/assets
 LIVEIMGGZ=	https://nycdn.netbsd.org/pub/NetBSD-daily/HEAD/latest/images/NetBSD-11.99.5-amd64-live.img.gz
 .endif
 
@@ -26,7 +25,6 @@ PKGVERS?=	11.0
 # for an obscure reason, packages path use uname -p...
 DIST?=		https://nycdn.netbsd.org/pub/NetBSD-daily/netbsd-${VERS}/latest/${ARCH}/binary
 PKGSITE?=	https://cdn.netbsd.org/pub/pkgsrc/packages/NetBSD/${MACHINE}/${PKGVERS}/All
-KDIST?=		${DIST}
 WHOAMI!=	whoami
 USER!= 		id -un
 GROUP!= 	id -gn
@@ -125,17 +123,11 @@ help:	# This help you are reading
 	$Qgrep '^[a-z]\+:.*#' Makefile
 
 kernfetch:
-	$Qif [ "${ARCH}" = "amd64" ] || [ "${ARCH}" = "i386" ]; then \
-		${FRESHCHK} ${KDIST}/${KERNEL} kernels/${KERNEL} || \
+	$Q${FRESHCHK} ${KDIST}/${KERNEL} kernels/${KERNEL} || \
 			${FETCH} -o kernels/${KERNEL} ${KDIST}/${KERNEL}; \
 		cd kernels && curl -L -s -o- ${KDIST}/${KERNEL}.sha256 | \
 			${CKSUM} ${CKSUMQ} && \
 				echo "${CHECK} ${KERNEL} sha256 checks out"; \
-	else \
-		${FRESHCHK} ${KDIST}/kernel/${KERNEL}.gz kernels/${KERNEL} || \
-			curl -L -o- ${KDIST}/kernel/${KERNEL}.gz | \
-				gzip -dc > kernels/${KERNEL}; \
-	fi
 
 	$Qif [ "${BIOSBOOT}" = "y" ]; then \
 		${FRESHCHK} ${DIST}/kernel/${BIOSKERNEL}.gz kernels/${BIOSKERNEL} || \

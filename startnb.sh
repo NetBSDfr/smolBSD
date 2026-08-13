@@ -214,7 +214,7 @@ aarch64)
 	mflags="-M virt,highmem=off,gic-version=3"
 	cpuflags="-cpu ${cputype}"
 	extra="$extra -device virtio-rng-pci"
-	kernel=${kernel:-kernels/netbsd-GENERIC64.img}
+	kernel=${kernel:-kernels/netbsd-SMOL-aarch64.img}
 	;;
 *)
 	echo "${WARN} Unknown architecture"
