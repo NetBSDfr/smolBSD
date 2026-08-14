@@ -147,6 +147,7 @@ Linux)
 	if [ -z "$accel" ]; then
 		if [ -c /dev/kvm ] && [ -r /dev/kvm ] && [ -w /dev/kvm ]; then
 			accel="-accel kvm"
+			kvm_virt=y
 		else
 			accel="-accel tcg"
 			cputype="qemu64"
@@ -211,7 +212,9 @@ x86_64|i386)
 	esac
 	;;
 aarch64)
-	mflags="-M virt,gic-version=3"
+	# gic-version=host needs kvm
+	[ -n "$kvm_virt" ] && gicvers=host || gicvers=3
+	mflags="-M virt,gic-version=$gicvers"
 	cpuflags="-cpu ${cputype}"
 	extra="$extra -device virtio-rng-pci"
 	kernel=${kernel:-kernels/netbsd-SMOL-aarch64.img}
