@@ -1,0 +1,88 @@
+# smol'd version of crush https://github.com/charmbracelet/crush
+#
+# copy a configured crush.json in the directory of the
+# project you want to work on and:
+#
+# ./smoler.sh run crush-amd64:latest -m 1024 -w /path/to/project
+#
+# /path/to/project will be mounted in /mnt
+#
+FROM base,comp,etc
+
+LABEL smolbsd.service=crush
+LABEL smolbsd.imgsize=2048
+LABEL smolbsd.use_pty=y
+LABEL revision="smol1"
+
+ARG CRUSH_VERSION="0.96.1"
+ARG CRUSH_ARCH=$(uname -p|sed 's/aarch64/arm64/')
+
+ENV NBUSER=crush
+ENV LANG=en_US.UTF-8
+ENV TERM=tmux-256color
+ENV PATH=${PATH}:/usr/pkg/bin
+
+RUN pkgin up && pkgin -y in curl git-base ripgrep fd-find gh bash rsync python314
+
+RUN mkdir -p /usr/pkg/bin && \
+	curl -L -s -o- \
+		https://github.com/charmbracelet/crush/releases/download/v${CRUSH_VERSION}/crush_${CRUSH_VERSION}_Netbsd_${CRUSH_ARCH}.tar.gz | \
+		tar zxf - -C /usr/pkg/bin --strip-components=1 crush_${CRUSH_VERSION}_Netbsd_${CRUSH_ARCH}/crush
+
+RUN cat <<EOF >/etc/rc.local
+hostname ${NBUSER}
+ulimit -n 4096
+EOF
+
+RUN echo 'eval \$(resize)' >>/etc/rc.local
+RUN echo 'printf "\nℹ️ When shutting down, ${LIGHTGREEN}Ctrl-A Ctrl-X${NORMAL} to exit the microvm\n\n"' >>/etc/rc.local
+
+USER $NBUSER
+WORKDIR /home/$NBUSER
+
+RUN touch .hushlogin
+
+RUN cat <<EOF >.tmux.conf
+set -g status off
+set -g default-terminal "screen-256color"
+set -g mode-keys vi
+set -g set-clipboard on
+set -g default-shell /usr/pkg/bin/bash
+EOF
+
+RUN cat <<EOF >.profile
+cd /home/$NBUSER
+if ! pgrep crush >/dev/null 2>&1; then
+	printf "\n\n🪟 ${LIGHTGREEN}crush${NORMAL} runs inside ${LIGHTGREEN}tmux${NORMAL} with prefix ${LIGHTGREEN}^b${NORMAL}\n"
+	printf "\n⌨️  Press ${LIGHTGREEN}enter${NORMAL} to start the session"
+	read x
+	printf "\n⌚ Wait for ${LIGHTGREEN}crush${NORMAL} to load...\n\n"
+
+	crush
+
+	exit
+fi
+PS1="[\\w]\$ "
+EOF
+
+RUN cat <<EOF >cmd.sh
+#!/bin/sh
+
+for f in /mnt/crush.json /var/qemufwcfg/opt/org.smolbsd.file.crush
+do
+	if [ -f "\\\$f" ]; then
+		cp "\\\$f" crush.json
+		chown -R $NBUSER /home/$NBUSER
+		chmod 644 crush.json
+		exec su ${NBUSER} -c "tmux -u new"
+	fi
+done
+
+printf "⚠️ no ${LIGHTGREEN}crush.json${NORMAL} passed from the host, either:\n"
+printf "\n- add ${LIGHTGREEN}-E crush=/path/to/crush.json${NORMAL} to the command line\nor"
+printf "\n- copy crush.json to a directory and add ${LIGHTGREEN}-w /path/to/directory'${NORMAL}\n"
+ksh
+EOF
+RUN chmod +x cmd.sh
+
+CMD ./cmd.sh
