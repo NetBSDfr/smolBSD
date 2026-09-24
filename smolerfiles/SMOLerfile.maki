@@ -46,8 +46,8 @@ FROM base,comp,etc
 LABEL smolbsd.service=maki
 LABEL smolbsd.imgsize=8192
 LABEL smolbsd.use_pty=y
-LABEL smolbsd.buildcpus=4
-LABEL smolbsd.buildmem=4096
+LABEL smolbsd.buildcpus=2
+LABEL smolbsd.buildmem=2048
 LABEL revision="smol1"
 
 ARG MAKI_VERSION="0.5.6"
@@ -74,7 +74,7 @@ RUN mkdir -p /usr/pkg/bin /usr/src && \
 	strip /usr/pkg/bin/maki && \
 	rm -rf /usr/src /root/.cargo/registry 2>/dev/null
 
-RUN echo "Built: " maki --version
+RUN echo -n "Built: " && maki --version
 
 RUN cat <<EOF >/etc/rc.local
 hostname ${NBUSER}
