@@ -46,8 +46,8 @@ FROM base,comp,etc
 LABEL smolbsd.service=maki
 LABEL smolbsd.imgsize=8192
 LABEL smolbsd.use_pty=y
-LABEL smolbsd.buildcpus=2
-LABEL smolbsd.buildmem=2048
+LABEL smolbsd.buildcpus=4
+LABEL smolbsd.buildmem=8192
 LABEL revision="smol1"
 
 ARG MAKI_VERSION="0.5.6"
