@@ -44,13 +44,11 @@
 FROM base,comp,etc
 
 LABEL smolbsd.service=maki
-LABEL smolbsd.imgsize=12288
+LABEL smolbsd.imgsize=8192
 LABEL smolbsd.use_pty=y
-LABEL smolbsd.buildcpus=4
-LABEL smolbsd.buildmem=8192
 LABEL revision="smol1"
 
-ARG MAKI_VERSION="0.5.6"
+ARG MAKI_VERSION="0.5.7"
 
 ENV NBUSER=maki
 ENV LANG=en_US.UTF-8
@@ -58,23 +56,14 @@ ENV TERM=tmux-256color
 ENV PATH=${PATH}:/usr/pkg/bin
 
 RUN pkgin up && pkgin -y in curl git-base ripgrep fd-find gh bash rsync \
-	tmux rust-bin openssl perl python pkgconfig gmake
+	tmux openssl perl python gmake
 
-RUN mkdir -p /usr/pkg/bin /usr/src && \
-	curl -L -s -o- \
-		https://github.com/tontinton/maki/archive/refs/tags/v${MAKI_VERSION}.tar.gz | \
-		tar zxf - -C /usr/src --strip-components=1 maki-${MAKI_VERSION} && \
-	cd /usr/src && sed -i.bak \
-		-e 's/#\[cfg(target_vendor = "apple")\]/#[cfg(any(target_vendor = "apple", target_os = "netbsd"))]/' \
-		-e 's/#\[cfg(not(target_vendor = "apple"))\]/#[cfg(not(any(target_vendor = "apple", target_os = "netbsd")))]/' \
-		maki-ui/src/clock.rs && \
-	cd /usr/src && PATH=/usr/pkg/gnu/bin:${PATH} CARGO_BUILD_JOBS=4 cargo fetch --locked && \
-	cd /usr/src && PATH=/usr/pkg/gnu/bin:${PATH} CARGO_BUILD_JOBS=4 CXXFLAGS="-include limits" cargo build --release --locked && \
-	install -o root -g wheel -m 755 target/release/maki /usr/pkg/bin/maki && \
-	strip /usr/pkg/bin/maki && \
-	rm -rf /usr/src /root/.cargo/registry 2>/dev/null
+ARG GHARCH=$(uname -p)
+# iMil's repo with local fixes
+ARG GHREPO=https://github.com/iMilnb/maki/releases/download
 
-RUN echo -n "Built: " && maki --version
+RUN curl -L -s -o- ${GHREPO}/v${MAKI_VERSION}/maki-v${MAKI_VERSION}-${GHARCH}-unknown-netbsd.tar.gz | \
+        tar zxf - -C /usr/pkg/bin maki
 
 RUN cat <<EOF >/etc/rc.local
 hostname ${NBUSER}
