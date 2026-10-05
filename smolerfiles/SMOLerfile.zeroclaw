@@ -32,7 +32,6 @@ FROM base,etc
 
 LABEL smolbsd.service=zeroclaw
 LABEL smolbsd.imgsize=1024
-LABEL smolbsd.minimize=y
 LABEL smolbsd.use_pty=y
 LABEL smolbsd.publish="42617:42617"
 LABEL revision="smol1"
@@ -67,7 +66,7 @@ allow_public_bind = true
 web_dist_dir = "/usr/pkg/share/zeroclaw/web/dist"
 EOF
 
-RUN echo "Built: " zeroclaw --version
+RUN echo "Built: \$(zeroclaw --version)"
 
 RUN cat <<EOF >/etc/rc.local
 hostname ${NBUSER}
