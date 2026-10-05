@@ -843,7 +843,7 @@ Two workflows in `.github/workflows/`:
 
 ### smoler.yml — SMOLerfile service images
 
-Triggers on push to `smolerfiles/*` (or manual dispatch with a list of files). Builds a fixed set of services (`crush`, `clawd`, `bsdshell`, `nbakery`, `tiny`, `clawlite`, `ttyd`) with `smoler.sh build` on plain runners using `QEMU_ACCEL=tcg` (no KVM), after `bmake fetchimg` for amd64 and evbarm-aarch64; publishes to GitHub Packages (`packages: write`). New SMOLerfiles you want CI-tested must be added to the `DFILES` regex in this workflow.
+Triggers on push to `smolerfiles/*` (or manual dispatch with a list of files). Builds a fixed set of services (`crush`, `clawd`, `bsdshell`, `nbakery`, `tiny`, `clawlite`, `ttyd`, `maki`, `zeroclaw`) with `smoler.sh build` on plain runners using `QEMU_ACCEL=tcg` (no KVM), after `bmake fetchimg` for amd64 and evbarm-aarch64; publishes to GitHub Packages (`packages: write`). New SMOLerfiles you want CI-tested must be added to the `DFILES` regex in this workflow.
 
 **Note:** CI builds the images natively inside a NetBSD VM (via `vmactions/netbsd-vm`), so the FFS path (WAPBL guard, `resize_ffs`, sailor when `MINIMIZE` + `sailor.conf`) *is* exercised. Only compressing and publishing run on the Linux host. See §20.
 

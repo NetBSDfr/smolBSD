@@ -1,0 +1,159 @@
+# smol'd version of ZeroClaw https://github.com/zeroclaw-labs/zeroclaw
+#
+# ZeroClaw is a Rust agent runtime (gateway + channels + tools + memory).
+# It is built from iMilnb's fork https://github.com/iMilnb/zeroclaw which
+# publishes NetBSD binaries in its releases (upstream does not), so no
+# toolchain or source build is needed: the release tarball ships the
+# zeroclaw, zerocode and zerorelay binaries plus the web dashboard assets
+# (web/dist). The binaries only link against NetBSD base libc/libm/
+# libpthread, so FROM base,etc is enough.
+#
+# the gateway listens on port 42617 (dashboard + REST/WS), published to
+# the host; the dashboard is served from /usr/pkg/share/zeroclaw/web/dist.
+#
+# run it with a pre-made config.toml:
+#
+# ./smoler.sh run zeroclaw-amd64:latest -m 1024 -w /path/to/configdir
+#
+# /path/to/configdir must contain config.toml (mounted in /mnt); a
+# .zeroclaw/config.toml layout also works. To inject a config without a
+# 9P share, pass it with -E:
+#
+# ./smoler.sh run zeroclaw-amd64:latest -E zeroclawconf=/path/to/config.toml
+#
+# without a host config the image starts `zeroclaw quickstart` in tmux;
+# the dashboard is then at http://localhost:42617 (pairing code shown by
+# `zeroclaw gateway get-paircode`).
+#
+# state (memory, sessions, logs) lives in ~/.zeroclaw inside the image
+# and is lost on reboot unless a config/state directory is shared in.
+
+FROM base,etc
+
+LABEL smolbsd.service=zeroclaw
+LABEL smolbsd.imgsize=1024
+LABEL smolbsd.minimize=y
+LABEL smolbsd.use_pty=y
+LABEL smolbsd.publish="42617:42617"
+LABEL revision="smol1"
+
+ARG ZC_VERSION="v0.8.5"
+# iMilnb's fork: the only place with NetBSD release binaries
+ARG GHREPO=https://github.com/iMilnb/zeroclaw/releases/download
+# NetBSD uname -m → Rust target triple (amd64→x86_64, evbarm→aarch64)
+ARG GHARCH=$(uname -m|sed 's/^amd64$/x86_64/;s/^evbarm$/aarch64/')
+
+ENV NBUSER=zeroclaw
+ENV LANG=en_US.UTF-8
+ENV TERM=tmux-256color
+ENV PATH=${PATH}:/usr/pkg/bin
+
+RUN pkgin up && pkgin -y in curl git-base ripgrep fd-find jq rsync bash tmux vim
+
+RUN mkdir -p /usr/pkg/bin /usr/pkg/share/zeroclaw && \
+	curl -L -s -o /tmp/zc.tgz \
+		${GHREPO}/${ZC_VERSION}/zeroclaw-${GHARCH}-unknown-netbsd.tar.gz && \
+	tar zxf /tmp/zc.tgz -C /usr/pkg/bin zeroclaw zerocode zerorelay && \
+	tar zxf /tmp/zc.tgz -C /usr/pkg/share/zeroclaw web/dist && \
+	rm /tmp/zc.tgz
+
+RUN cat <<EOF >/usr/pkg/share/zeroclaw/config.default.toml
+# minimal gateway config; add a model provider with
+# `zeroclaw quickstart` or by editing ~/.zeroclaw/config.toml
+[gateway]
+host = "0.0.0.0"
+port = 42617
+allow_public_bind = true
+web_dist_dir = "/usr/pkg/share/zeroclaw/web/dist"
+EOF
+
+RUN echo "Built: " zeroclaw --version
+
+RUN cat <<EOF >/etc/rc.local
+hostname ${NBUSER}
+ulimit -n 4096
+EOF
+
+RUN echo 'eval \$(resize)' >>/etc/rc.local
+RUN echo 'printf "\nℹ️ When shutting down, ${LIGHTGREEN}Ctrl-A Ctrl-X${NORMAL} to exit the microvm\n\n"' >>/etc/rc.local
+
+USER $NBUSER
+WORKDIR /home/$NBUSER
+
+RUN touch .hushlogin
+
+RUN cat <<EOF >.tmux.conf
+set -g status off
+set -g default-terminal "screen-256color"
+set -g mode-keys vi
+set -g set-clipboard on
+set -g default-shell /usr/pkg/bin/bash
+EOF
+
+RUN cat <<EOF >.profile
+cd /home/$NBUSER
+LIGHTGREEN="\033[92m"
+NORMAL="\033[0m"
+
+if ! pgrep zeroclaw >/dev/null 2>&1; then
+	if ! grep -q model_provider .zeroclaw/config.toml 2>/dev/null; then
+		printf "\n\n🦀 no ${LIGHTGREEN}model_provider${NORMAL} configured, starting ${LIGHTGREEN}quickstart${NORMAL}\n"
+		printf "\n⌨️  Press ${LIGHTGREEN}enter${NORMAL} to start the wizard"
+		read x
+		zeroclaw quickstart
+	fi
+	printf "\n\n⌚ Starting ${LIGHTGREEN}zeroclaw daemon${NORMAL} (gateway on :42617)...\n\n"
+	zeroclaw daemon >/tmp/zeroclaw.log 2>&1 &
+	sleep 3
+fi
+
+printf "🦀 ${LIGHTGREEN}zeroclaw${NORMAL} daemon running — dashboard ${LIGHTGREEN}http://localhost:42617${NORMAL}\n"
+printf "➡️  pair the dashboard: ${LIGHTGREEN}zeroclaw gateway get-paircode${NORMAL}\n"
+printf "➡️  CLI chat instead: ${LIGHTGREEN}pkill zeroclaw && zeroclaw agent -a default${NORMAL}\n"
+printf "➡️  daemon logs: ${LIGHTGREEN}/tmp/zeroclaw.log${NORMAL} — tmux prefix ${LIGHTGREEN}^b${NORMAL}\n"
+PS1="[\\w]\$ "
+EOF
+
+RUN cat <<EOF >cmd.sh
+#!/bin/sh
+
+for f in /mnt/config.toml \
+	/mnt/.zeroclaw/config.toml \
+	/var/qemufwcfg/opt/org.smolbsd.file.zeroclawconf
+do
+	if [ -f "\\\$f" ]; then
+		mkdir -p .zeroclaw
+		cp "\\\$f" .zeroclaw/config.toml
+		# reuse persisted state if the host share carries one
+		[ -d "/mnt/share/zeroclaw" ] && \
+			cp -rf /mnt/share/zeroclaw/* .zeroclaw/
+		chown -R $NBUSER /home/$NBUSER
+		chmod 600 .zeroclaw/config.toml
+		break
+	fi
+done
+
+if [ ! -f .zeroclaw/config.toml ]; then
+	printf "⚠️ no ${LIGHTGREEN}config.toml${NORMAL} passed from the host, either:\n"
+	printf "\n- add ${LIGHTGREEN}-E zeroclawconf=/path/to/config.toml${NORMAL} to the command line"
+	printf "\n- or copy config.toml to a directory and add ${LIGHTGREEN}-w /path/to/directory${NORMAL}\n"
+	printf "\nstarting with the packaged default config (quickstart will run)\n"
+	mkdir -p .zeroclaw
+	cp /usr/pkg/share/zeroclaw/config.default.toml .zeroclaw/config.toml
+fi
+
+# make the dashboard reachable through the published port
+zeroclaw config migrate >/dev/null 2>&1
+zeroclaw config set gateway.host 0.0.0.0
+zeroclaw config set gateway.allow_public_bind true
+zeroclaw config set gateway.web_dist_dir /usr/pkg/share/zeroclaw/web/dist
+
+exec tmux -u new
+EOF
+RUN chmod +x cmd.sh
+
+EXPOSE 42617
+
+CMD ./cmd.sh
+
+# vim: filetype=dockerfile :
