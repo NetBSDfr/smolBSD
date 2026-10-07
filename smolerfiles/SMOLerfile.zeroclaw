@@ -96,6 +96,7 @@ triple="\$(uname -m | sed 's/^amd64$/x86_64/;s/^evbarm$/aarch64/')-unknown-netbs
 
  # latest release tag, grep-based like the official installer (no jq)
 version=\$(curl -fsS --connect-timeout 10 --max-time 30 \
+	--retry 4 --retry-delay 2 --retry-all-errors \
 	"https://api.github.com/repos/\${GHREPO}/releases/latest" 2>/dev/null |
 	grep '"tag_name"' | head -1 | sed 's/.*"tag_name": *"\(.*\)".*/\1/')
 [ -n "\$version" ] || die "could not resolve the latest release (network?)"
@@ -130,13 +131,16 @@ trap 'rm -rf "\$tmp"' EXIT
 
  # checksum manifest first: distinguishes "no NetBSD asset in this
  # release" from a broken download; nothing unverified gets installed
-curl -fsS --connect-timeout 10 --max-time 30 "\${base}/SHA256SUMS" \
-	-o "\$tmp/SHA256SUMS" || die "could not fetch SHA256SUMS (network?)"
+curl -fsS --connect-timeout 10 --max-time 30 \
+	--retry 4 --retry-delay 2 --retry-all-errors \
+	"\${base}/SHA256SUMS" -o "\$tmp/SHA256SUMS" ||
+	die "could not fetch SHA256SUMS (network?)"
 expected=\$(awk -v n="\$asset" '\$2 == n { print \$1 }' "\$tmp/SHA256SUMS")
 [ -n "\$expected" ] || die "no \${asset} published in \${version}"
 
 printf "  \033[36m↓\033[0m %s\n" "\${base}/\${asset}"
 curl -fSL --connect-timeout 15 --max-time 600 --progress-bar \
+	--retry 3 --retry-delay 3 --retry-all-errors \
 	"\${base}/\${asset}" -o "\$tmp/\${asset}" ||
 	die "download failed (keeping the installed version)"
 
