@@ -8,8 +8,17 @@
 # (web/dist). The binaries only link against NetBSD base libc/libm/
 # libpthread, so FROM base,etc is enough.
 #
+# the official install.sh has no NetBSD target triple (it would fall back
+# to a rustup source build, impossible on NetBSD), so zeroclaw-install
+# adapts its prebuilt path: latest release resolved from the GitHub API,
+# SHA256SUMS verified, installed under $HOME (no root needed). It runs on
+# every start, keeping the VM on the latest release; without network the
+# baked-in baseline in /usr/pkg/bin keeps working. Re-check by hand with
+# `zeroclaw-install`.
+#
 # the gateway listens on port 42617 (dashboard + REST/WS), published to
-# the host; the dashboard is served from /usr/pkg/share/zeroclaw/web/dist.
+# the host; the dashboard is served from ~/.local/share/zeroclaw/web/dist
+# after an update, /usr/pkg/share/zeroclaw/web/dist for the baseline.
 #
 # run it with a pre-made config.toml:
 #
@@ -34,7 +43,7 @@ LABEL smolbsd.service=zeroclaw
 LABEL smolbsd.imgsize=1024
 LABEL smolbsd.use_pty=y
 LABEL smolbsd.publish="42617:42617"
-LABEL revision="smol1"
+LABEL revision="smol2"
 
 ARG ZC_VERSION="v0.8.5"
 # iMilnb's fork: the only place with NetBSD release binaries
@@ -56,9 +65,104 @@ RUN mkdir -p /usr/pkg/bin /usr/pkg/share/zeroclaw && \
 	tar zxf /tmp/zc.tgz -C /usr/pkg/share/zeroclaw web/dist && \
 	rm /tmp/zc.tgz
 
+# zeroclaw-install: NetBSD adaptation of the official install.sh prebuilt
+# path (quoted heredoc: only \$ survives to the file, nothing expands here;
+# comments must be indented, lines starting with # are stripped by smoler)
+RUN echo '#!/bin/sh' >/usr/pkg/bin/zeroclaw-install && cat <<'EOF' >>/usr/pkg/bin/zeroclaw-install
+ # zeroclaw-install — install/update ZeroClaw from iMilnb's fork releases.
+ #
+ # The official installer (zeroclaw-labs/zeroclaw install.sh) knows no
+ # NetBSD target triple: detect_target_triple() returns empty and the
+ # script falls back to a rustup source build, which does not exist for
+ # NetBSD. iMilnb's fork is the only place publishing NetBSD release
+ # binaries, so this keeps the parts of the official installer that
+ # matter and retargets them:
+ #   - latest release resolved live from the GitHub API (nothing pinned)
+ #   - SHA256SUMS fetched first and verified before anything is installed
+ #   - installed under $HOME, no root needed (mirrors the official
+ #     ~/.cargo/bin user install); /usr/pkg/bin keeps the baked baseline
+ # Run it any time to move to the latest release.
+set -eu
+
+GHREPO=iMilnb/zeroclaw
+BIN_DIR="\$HOME/.local/bin"
+WEB_DIR="\${XDG_DATA_HOME:-\$HOME/.local/share}/zeroclaw/web/dist"
+
+info() { printf "  \033[32m✓\033[0m %s\n" "\$*"; }
+die() { printf "  \033[31m✗\033[0m %s\n" "\$*" >&2; exit 1; }
+
+ # NetBSD reports amd64/evbarm; the Rust target triple is x86_64/aarch64
+triple="\$(uname -m | sed 's/^amd64$/x86_64/;s/^evbarm$/aarch64/')-unknown-netbsd"
+
+ # latest release tag, grep-based like the official installer (no jq)
+version=\$(curl -fsS --connect-timeout 10 --max-time 30 \
+	"https://api.github.com/repos/\${GHREPO}/releases/latest" 2>/dev/null |
+	grep '"tag_name"' | head -1 | sed 's/.*"tag_name": *"\(.*\)".*/\1/')
+[ -n "\$version" ] || die "could not resolve the latest release (network?)"
+
+current=\$(zeroclaw --version 2>/dev/null | awk '{print \$2}')
+if [ "\$current" = "\${version#v}" ]; then
+	info "zeroclaw \${version} is already installed"
+	exit 0
+fi
+
+ # only move forward (awk comparison; NetBSD sort has no -V)
+version_newer() {
+	awk -v a="\$1" -v b="\$2" 'BEGIN {
+		sub(/^v/, "", a); sub(/^v/, "", b)
+		n = split(a, x, "."); m = split(b, y, ".")
+		for (i = 1; i <= (n > m ? n : m); i++) {
+			if (x[i] + 0 > y[i] + 0) exit 0
+			if (x[i] + 0 < y[i] + 0) exit 1
+		}
+		exit 1
+	}'
+}
+if [ -n "\$current" ] && ! version_newer "\$version" "\$current"; then
+	info "installed zeroclaw \${current} is not older than \${version}, keeping it"
+	exit 0
+fi
+
+base="https://github.com/\${GHREPO}/releases/download/\${version}"
+asset="zeroclaw-\${triple}.tar.gz"
+tmp=\$(mktemp -d) || exit 1
+trap 'rm -rf "\$tmp"' EXIT
+
+ # checksum manifest first: distinguishes "no NetBSD asset in this
+ # release" from a broken download; nothing unverified gets installed
+curl -fsS --connect-timeout 10 --max-time 30 "\${base}/SHA256SUMS" \
+	-o "\$tmp/SHA256SUMS" || die "could not fetch SHA256SUMS (network?)"
+expected=\$(awk -v n="\$asset" '\$2 == n { print \$1 }' "\$tmp/SHA256SUMS")
+[ -n "\$expected" ] || die "no \${asset} published in \${version}"
+
+printf "  \033[36m↓\033[0m %s\n" "\${base}/\${asset}"
+curl -fSL --connect-timeout 15 --max-time 600 --progress-bar \
+	"\${base}/\${asset}" -o "\$tmp/\${asset}" ||
+	die "download failed (keeping the installed version)"
+
+actual=\$(sha256 -q "\$tmp/\${asset}" 2>/dev/null ||
+	sha256sum "\$tmp/\${asset}" | awk '{print \$1}')
+[ "\$actual" = "\$expected" ] || die "checksum mismatch, refusing to install"
+info "checksum verified"
+
+tar -xzf "\$tmp/\${asset}" -C "\$tmp"
+mkdir -p "\$BIN_DIR"
+for b in zeroclaw zerocode zerorelay; do
+	if [ -f "\$tmp/\$b" ]; then
+		install -m 755 "\$tmp/\$b" "\$BIN_DIR/\$b"
+	fi
+done
+if [ -d "\$tmp/web/dist" ]; then
+	mkdir -p "\$WEB_DIR"
+	cp -R "\$tmp/web/dist/." "\$WEB_DIR/"
+	info "web dashboard → \${WEB_DIR}"
+fi
+
+info "zeroclaw \${version} installed in \${BIN_DIR}"
+EOF
+RUN chmod +x /usr/pkg/bin/zeroclaw-install
+
 RUN cat <<EOF >/usr/pkg/share/zeroclaw/config.default.toml
-# minimal gateway config; add a model provider with
-# `zeroclaw quickstart` or by editing ~/.zeroclaw/config.toml
 [gateway]
 host = "0.0.0.0"
 port = 42617
@@ -91,30 +195,41 @@ EOF
 
 RUN cat <<EOF >.profile
 cd /home/$NBUSER
+PATH="\\\$HOME/.local/bin:\\\$PATH"
+export PATH
 LIGHTGREEN="\033[92m"
 NORMAL="\033[0m"
 
 if ! pgrep zeroclaw >/dev/null 2>&1; then
-	if ! grep -q model_provider .zeroclaw/config.toml 2>/dev/null; then
-		printf "\n\n🦀 no ${LIGHTGREEN}model_provider${NORMAL} configured, starting ${LIGHTGREEN}quickstart${NORMAL}\n"
-		printf "\n⌨️  Press ${LIGHTGREEN}enter${NORMAL} to start the wizard"
+	if ! grep -qE '^\\[providers\\.models\\.|^fallback *=|^default_provider *=' .zeroclaw/config.toml 2>/dev/null; then
+		printf "\n\n🦀 no \\\${LIGHTGREEN}model_provider\\\${NORMAL} configured, starting \\\${LIGHTGREEN}quickstart\\\${NORMAL}\n"
+		printf "\n⌨️  Press \\\${LIGHTGREEN}enter\\\${NORMAL} to start the wizard, or type \\\${LIGHTGREEN}s\\\${NORMAL} to skip: "
 		read x
-		zeroclaw quickstart
+		case "\\\${x:-1}" in
+		1 | "") zeroclaw quickstart ;;
+		esac
 	fi
-	printf "\n\n⌚ Starting ${LIGHTGREEN}zeroclaw daemon${NORMAL} (gateway on :42617)...\n\n"
+	printf "\n\n⌚ Starting \\\${LIGHTGREEN}zeroclaw daemon\\\${NORMAL} (gateway on :42617)...\n\n"
 	zeroclaw daemon >/tmp/zeroclaw.log 2>&1 &
 	sleep 3
 fi
 
-printf "🦀 ${LIGHTGREEN}zeroclaw${NORMAL} daemon running — dashboard ${LIGHTGREEN}http://localhost:42617${NORMAL}\n"
-printf "➡️  pair the dashboard: ${LIGHTGREEN}zeroclaw gateway get-paircode${NORMAL}\n"
-printf "➡️  CLI chat instead: ${LIGHTGREEN}pkill zeroclaw && zeroclaw agent -a default${NORMAL}\n"
-printf "➡️  daemon logs: ${LIGHTGREEN}/tmp/zeroclaw.log${NORMAL} — tmux prefix ${LIGHTGREEN}^b${NORMAL}\n"
-PS1="[\\w]\$ "
+printf "🦀 \\\${LIGHTGREEN}zeroclaw\\\${NORMAL} daemon running — dashboard \\\${LIGHTGREEN}http://localhost:42617\\\${NORMAL}\n"
+printf "➡️  pair the dashboard: \\\${LIGHTGREEN}zeroclaw gateway get-paircode\\\${NORMAL}\n"
+printf "➡️  terminal UI: \\\${LIGHTGREEN}zerocode\\\${NORMAL} — CLI chat: \\\${LIGHTGREEN}pkill zeroclaw && zeroclaw agent -a default\\\${NORMAL}\n"
+printf "➡️  update: \\\${LIGHTGREEN}zeroclaw-install\\\${NORMAL} — logs: \\\${LIGHTGREEN}/tmp/zeroclaw.log\\\${NORMAL} — tmux prefix \\\${LIGHTGREEN}^b\\\${NORMAL}\n"
+PS1="[\\w]\\\$ "
 EOF
 
 RUN cat <<EOF >cmd.sh
-#!/bin/sh
+
+PATH="\\\$HOME/.local/bin:\\\$PATH"
+export PATH
+LIGHTGREEN="\033[92m"
+NORMAL="\033[0m"
+
+printf "\n⌚ checking for the latest \\\${LIGHTGREEN}zeroclaw\\\${NORMAL} release...\n"
+zeroclaw-install || printf "⚠️ staying on the baked-in build (no network?)\n"
 
 for f in /mnt/config.toml \
 	/mnt/.zeroclaw/config.toml \
@@ -126,16 +241,15 @@ do
 		# reuse persisted state if the host share carries one
 		[ -d "/mnt/share/zeroclaw" ] && \
 			cp -rf /mnt/share/zeroclaw/* .zeroclaw/
-		chown -R $NBUSER /home/$NBUSER
 		chmod 600 .zeroclaw/config.toml
 		break
 	fi
 done
 
 if [ ! -f .zeroclaw/config.toml ]; then
-	printf "⚠️ no ${LIGHTGREEN}config.toml${NORMAL} passed from the host, either:\n"
-	printf "\n- add ${LIGHTGREEN}-E zeroclawconf=/path/to/config.toml${NORMAL} to the command line"
-	printf "\n- or copy config.toml to a directory and add ${LIGHTGREEN}-w /path/to/directory${NORMAL}\n"
+	printf "⚠️ no \\\${LIGHTGREEN}config.toml\\\${NORMAL} passed from the host, either:\n"
+	printf "\n- add \\\${LIGHTGREEN}-E zeroclawconf=/path/to/config.toml\\\${NORMAL} to the command line"
+	printf "\n- or copy config.toml to a directory and add \\\${LIGHTGREEN}-w /path/to/directory\\\${NORMAL}\n"
 	printf "\nstarting with the packaged default config (quickstart will run)\n"
 	mkdir -p .zeroclaw
 	cp /usr/pkg/share/zeroclaw/config.default.toml .zeroclaw/config.toml
@@ -146,6 +260,9 @@ zeroclaw config migrate >/dev/null 2>&1
 zeroclaw config set gateway.host 0.0.0.0
 zeroclaw config set gateway.allow_public_bind true
 zeroclaw config set gateway.web_dist_dir /usr/pkg/share/zeroclaw/web/dist
+if [ -f "\\\$HOME/.local/share/zeroclaw/web/dist/index.html" ]; then
+	zeroclaw config set gateway.web_dist_dir "\\\$HOME/.local/share/zeroclaw/web/dist"
+fi
 
 exec tmux -u new
 EOF
