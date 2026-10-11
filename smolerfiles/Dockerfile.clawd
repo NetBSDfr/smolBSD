@@ -1,5 +1,12 @@
 # smolClaw: run an picoclaw instance in a microVM
 #
+# picoclaw and picoclaw-launcher are the NetBSD release binaries from
+# https://github.com/afjcjsbx/picoclaw, installed in the user's ~/bin
+# (which .bash_profile adds to PATH). At every boot, before the tmux
+# session starts, ~/bin/picoclaw-install checks the latest release and
+# updates the binaries in place; without network the baked-in release
+# keeps working. Re-check by hand with `picoclaw-install`.
+#
 # build this service:
 # $ ./smoler.sh build -y smolerfiles/Dockerfile.clawd
 # run this service:
@@ -15,7 +22,7 @@ LABEL smolbsd.publish="18789:18789,18800:18800,2289:22"
 # microvm will use a pty as console
 LABEL smolbsd.use_pty="y"
 # only for bumping
-LABEL version="0.3.1-smol2"
+LABEL version="0.5.0-smol1"
 
 ARG PYVERS="314"
 # ripgrep, fd, jq and rsync for convenience and tool writing
@@ -32,15 +39,9 @@ ENV TERM=tmux-256color
 ENV MAXFILES=4096
 
 ARG GHARCH=$(uname -p|sed 's/aarch64/arm64/;s/arm$/arm64/')
-# official repo
-#ARG GHREPO=https://github.com/sipeed/picoclaw/releases/download
-#ARG GHRELEASE=v0.3.1
-# iMil's repo with local fixes
-ARG GHREPO=https://github.com/iMilnb/picoclaw/releases/download
-ARG GHRELEASE=nightly
-
-RUN curl -L -s -o- ${GHREPO}/${GHRELEASE}/picoclaw_Netbsd_${GHARCH}.tar.gz | \
-	tar zxf - -C /usr/pkg/bin picoclaw picoclaw-launcher
+# afjcjsbx's repo: the one publishing NetBSD binaries in its releases
+ARG GHREPO=https://github.com/afjcjsbx/picoclaw/releases/download
+ARG GHRELEASE=v0.5.0
 
 RUN <<EOF
 useradd -m ${NBUSER}
@@ -58,6 +59,118 @@ for p in python pip pipx uv- uvx-; do
 	ln -s /usr/pkg/bin/\${p}3.${PYVERS#3} /usr/pkg/bin/\${p%-}
 done
 EOF
+
+# baked-in baseline: the release binaries go in the user's ~/bin, which
+# .bash_profile adds to PATH (picoclaw-install refreshes it at every boot)
+RUN mkdir -p ${NBHOME}/bin && \
+	curl -L -s -o- ${GHREPO}/${GHRELEASE}/picoclaw_Netbsd_${GHARCH}.tar.gz | \
+	tar zxf - -C ${NBHOME}/bin picoclaw picoclaw-launcher
+
+# picoclaw-install: latest release resolved live from the GitHub API,
+# checksums verified, installed under $HOME (no root needed). Runs at
+# every boot from cmd.sh, keeping the VM on the latest release.
+# (quoted heredoc: only \$ survives to the file, nothing expands here;
+# comments must be indented, lines starting with # are stripped by smoler)
+RUN echo '#!/bin/sh' >${NBHOME}/bin/picoclaw-install && cat <<'EOF' >>${NBHOME}/bin/picoclaw-install
+ # picoclaw-install — install/update picoclaw from afjcjsbx's releases.
+ #
+ # The latest release tag is resolved from the GitHub API (nothing
+ # pinned), the published checksums file is fetched first and verified
+ # before anything is installed, and the binaries land in $HOME/bin.
+ # Without network the baked-in baseline keeps working; run it any time
+ # by hand to move to the latest release.
+set -eu
+
+GHREPO=afjcjsbx/picoclaw
+BIN_DIR="\$HOME/bin"
+
+info() { printf "  \033[32m✓\033[0m %s\n" "\$*"; }
+die() { printf "  \033[31m✗\033[0m %s\n" "\$*" >&2; exit 1; }
+
+ # NetBSD reports x86_64/aarch64; release assets use x86_64/arm64
+arch="\$(uname -p | sed 's/aarch64/arm64/;s/arm$/arm64/')"
+
+ # latest release tag, grep-based (no jq)
+version=\$(curl -fsS --connect-timeout 10 --max-time 30 \
+	--retry 4 --retry-delay 2 --retry-all-errors \
+	"https://api.github.com/repos/\${GHREPO}/releases/latest" 2>/dev/null |
+	grep '"tag_name"' | head -1 | sed 's/.*"tag_name": *"\(.*\)".*/\1/')
+[ -n "\$version" ] || die "could not resolve the latest release (network?)"
+
+ # version line of the picoclaw banner: 🦞 picoclaw 0.5.0 (git: …)
+current=\$(picoclaw version 2>/dev/null |
+	sed -n 's/.*picoclaw \([0-9][0-9.]*\).*/\1/p' | head -1)
+if [ "\$current" = "\${version#v}" ]; then
+	info "picoclaw \${version} is already installed"
+	exit 0
+fi
+
+ # only move forward (awk comparison; NetBSD sort has no -V)
+version_newer() {
+	awk -v a="\$1" -v b="\$2" 'BEGIN {
+		sub(/^v/, "", a); sub(/^v/, "", b)
+		n = split(a, x, "."); m = split(b, y, ".")
+		for (i = 1; i <= (n > m ? n : m); i++) {
+			if (x[i] + 0 > y[i] + 0) exit 0
+			if (x[i] + 0 < y[i] + 0) exit 1
+		}
+		exit 1
+	}'
+}
+if [ -n "\$current" ] && ! version_newer "\$version" "\$current"; then
+	info "installed picoclaw \${current} is not older than \${version}, keeping it"
+	exit 0
+fi
+
+base="https://github.com/\${GHREPO}/releases/download/\${version}"
+asset="picoclaw_Netbsd_\${arch}.tar.gz"
+sums="picoclaw_\${version#v}_checksums.txt"
+tmp=\$(mktemp -d) || exit 1
+trap 'rm -rf "\$tmp"' EXIT
+
+ # checksum manifest first: distinguishes "no NetBSD asset in this
+ # release" from a broken download; nothing unverified gets installed
+curl -fsSL --connect-timeout 10 --max-time 30 \
+	--retry 4 --retry-delay 2 --retry-all-errors \
+	"\${base}/\${sums}" -o "\$tmp/checksums.txt" ||
+	die "could not fetch \${sums} (network?)"
+expected=\$(awk -v n="\$asset" '\$2 == n { print \$1 }' "\$tmp/checksums.txt")
+[ -n "\$expected" ] || die "no \${asset} published in \${version}"
+
+printf "  \033[36m↓\033[0m %s\n" "\${base}/\${asset}"
+curl -fSL --connect-timeout 15 --max-time 600 --progress-bar \
+	--retry 3 --retry-delay 3 --retry-all-errors \
+	"\${base}/\${asset}" -o "\$tmp/\${asset}" ||
+	die "download failed (keeping the installed version)"
+
+actual=\$(sha256 -q "\$tmp/\${asset}" 2>/dev/null ||
+	sha256sum "\$tmp/\${asset}" | awk '{print \$1}')
+[ "\$actual" = "\$expected" ] || die "checksum mismatch, refusing to install"
+info "checksum verified"
+
+tar -xzf "\$tmp/\${asset}" -C "\$tmp" picoclaw picoclaw-launcher
+mkdir -p "\$BIN_DIR"
+install -m 755 "\$tmp/picoclaw" "\$BIN_DIR/picoclaw"
+install -m 755 "\$tmp/picoclaw-launcher" "\$BIN_DIR/picoclaw-launcher"
+info "picoclaw \${version} installed in \${BIN_DIR}"
+EOF
+RUN chmod +x ${NBHOME}/bin/picoclaw-install
+
+# boot script: check for a new release before handing over to tmux, where
+# picoclaw is started
+RUN cat <<'EOF' >${NBHOME}/cmd.sh
+
+PATH="\$HOME/bin:\$PATH"
+export PATH
+LIGHTGREEN="\033[92m"
+NORMAL="\033[0m"
+
+printf "\n⌚ checking for the latest \${LIGHTGREEN}picoclaw\${NORMAL} release...\n"
+picoclaw-install || printf "⚠️ staying on the baked-in build (no network?)\n"
+
+exec tmux -u new
+EOF
+RUN chmod +x ${NBHOME}/cmd.sh
 
 RUN cat <<EOF >${NBHOME}/.vimrc
 set nocompatible
@@ -133,4 +246,4 @@ EXPOSE 18800
 
 # script creates a pty, do not su - in order to get env vars
 CMD /etc/rc.d/sshd onestart && \
-	script -c "cd ${NBHOME} && su ${NBUSER} -c 'tmux -u new'" /dev/null || bash
+	script -c "cd ${NBHOME} && su ${NBUSER} -c './cmd.sh'" /dev/null || bash
