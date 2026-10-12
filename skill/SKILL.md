@@ -157,7 +157,7 @@ smolBSD/
 | Command | Routes To | Purpose |
 |---------|-----------|---------|
 | `./smoler.sh build [-y] [-t tag] [--build-arg K=V] [VAR=val] <SMOLerfile>` | `smoler/build.sh` | Parse SMOLerfile → generate service dir → call `bmake build` |
-| `./smoler.sh run <image> [startnb.sh flags]` | `startnb.sh` | Run a built image (resolves name → config file or raw path). **Any** `startnb.sh` flag passes through after the image name (e.g. `-l drive2,drive3` for extra drives, `-r`, `-e`). |
+| `./smoler.sh run <image> [startnb.sh flags]` | `startnb.sh` | Run a built image (resolves name → config file or raw path). **Any** `startnb.sh` flag passes through after the image name (e.g. `-l drive2,drive3` for extra drives, `-r`, `-e`). **This is the way to test a freshly built image** — it loads the generated `etc/<name>.conf` (`use_pty`, `hostfwd`, `imgtag`), so it reproduces the real launch; calling `startnb.sh` directly bypasses that config. |
 | `./smoler.sh push <image>` | `smoler/img.sh` | Push to OCI registry via oras |
 | `./smoler.sh pull <image>` | `smoler/img.sh` | Pull from OCI registry via oras |
 | `./smoler.sh images [ok]` | `smoler/img.sh` | List local images with size, date, signature status. Columns are sized as fixed proportions of terminal width (name = 50%, size/date/sig = 25% each); not auto-fit to content. Pass `ok` to show only images with verified `smolsig`. |
