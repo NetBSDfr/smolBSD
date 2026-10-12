@@ -538,7 +538,7 @@ The builder VM is a special service that:
 | `-p` | ports | Port forwarding: `[tcp|udp]:[hostaddr]:hostport-[guestaddr]:guestport` (protocol defaults to tcp) |
 | `-n` | N | Number of additional VirtIO console sockets. Creates N host socket files (`s-<uuid>-p<1..N>.sock` in CWD) which map to guest `/dev/ttyVI01`..`ttyVIN` (device nodes are created by basicrc, not by startnb.sh) |
 | `-w` | path | 9P host directory to share with guest |
-| `-e` | k=v,… | Export variables via QEMU fw_cfg (`opt/org.smolbsd.var.*`) |
+| `-e` | k=v,… | Export variables via QEMU fw_cfg (`opt/org.smolbsd.var.*`). Multiple variables go in **one** comma-separated flag (`-e FOO=bar,BAZ=boo`); repeated `-e` flags do not accumulate. |
 | `-E` | f=path,… | Export files via QEMU fw_cfg (`opt/org.smolbsd.file.*`) |
 | `-P` | (none) | Use PTY console; `startnb.sh` attaches `picocom -q -b 115200` by default. If `use_pty` in the config file is set to a command (not `y`), that command is used instead |
 | `-d` | (none) | Daemonize QEMU |
