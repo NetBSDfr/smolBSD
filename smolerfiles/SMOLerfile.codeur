@@ -42,12 +42,16 @@
 # persist sessions and memory across reboots.
 #
 # without a config file, the CODEUR_API_URL / CODEUR_API_KEY / CODEUR_MODEL
-# environment variables can be injected directly with -e:
+# environment variables can be injected directly with -e (comma-separated,
+# one -e flag for all of them):
 #
-# ./smoler.sh run codeur-amd64:latest -e CODEUR_API_URL=https://api.openai.com/v1/chat/completions -e CODEUR_API_KEY=sk-... -e CODEUR_MODEL=gpt-4o
+# ./smoler.sh run codeur-amd64:latest -e CODEUR_API_URL=https://api.openai.com/v1/chat/completions,CODEUR_API_KEY=sk-...,CODEUR_MODEL=gpt-4o
 #
 # state (sessions, memory) lives in ~/.local/{state,share}/codeur inside
 # the image and is lost on reboot unless persisted through the share.
+# codeur only mkdir()s its own leaf directory under the XDG bases, so
+# the .local/{state,share} and .cache parents are pre-created below
+# (otherwise sessions die with "cannot open state directory").
 
 FROM base,comp,etc
 
@@ -90,6 +94,9 @@ USER $NBUSER
 WORKDIR /home/$NBUSER
 
 RUN touch .hushlogin
+
+# codeur mkdir()s only the leaf codeur/ dirs under the XDG bases
+RUN mkdir -p .config/codeur .local/state .local/share .cache
 
 RUN cat <<EOF >.tmux.conf
 set -g status off
@@ -143,7 +150,7 @@ fi
 printf "⚠️ no \\\${LIGHTGREEN}config.ini\\\${NORMAL} passed from the host, either:\n"
 printf "\n- add \\\${LIGHTGREEN}-E codeurconf=/path/to/config.ini\\\${NORMAL} to the command line"
 printf "\n- or copy config.ini to a directory and add \\\${LIGHTGREEN}-w /path/to/directory\\\${NORMAL}\n"
-printf "\n- or pass \\\${LIGHTGREEN}-e CODEUR_API_URL=... -e CODEUR_API_KEY=...\\\${NORMAL} to run without a config file\n"
+printf "\n- or pass \\\${LIGHTGREEN}-e CODEUR_API_URL=...,CODEUR_API_KEY=...\\\${NORMAL} to run without a config file\n"
 ksh
 EOF
 RUN chmod +x cmd.sh
