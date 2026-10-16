@@ -304,6 +304,13 @@ The parser generates numbered postinst scripts:
 - **`SMOLerfile.<name>`** — same syntax; service name from `LABEL smolbsd.service`
 - **`<name>.smol`** — minimal files; service name extracted from filename itself
 - **`*.inc`** — include fragments (used with `INCLUDE` directive)
+- **`agent.inc` / `agent-launch.inc`** — shared fragments for tmux-launched agent
+  services (maki, crush, codeur, zeroclaw): `agent.inc` carries the common bootstrap
+  (ENV trio, `/etc/rc.local`, `USER`/`WORKDIR`, `.tmux.conf`) and requires
+  `ENV NBUSER=<name>` before it; `agent-launch.inc` adds the parameterized `.profile`
+  and `cmd.sh` (config-check + tmux launch), driven by `ARG`s (`AGENT`,
+  `AGENT_EMOJI`, `CONF_FILES`, `CONF_TARGET`, `CONF_NAME`, `CONF_VAR`, optional
+  `CONF_SHARE`, `CONF_MODE`, `CONF_ENV_FALLBACK`, `CONF_HINT`) set before the INCLUDE.
 
 ### 4.9 make vs bmake
 

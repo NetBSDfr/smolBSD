@@ -51,9 +51,6 @@ LABEL revision="smol1"
 ARG MAKI_VERSION="0.5.7"
 
 ENV NBUSER=maki
-ENV LANG=en_US.UTF-8
-ENV TERM=tmux-256color
-ENV PATH=${PATH}:/usr/pkg/bin
 
 RUN pkgin up && pkgin -y in curl git-base ripgrep fd-find gh bash rsync \
 	tmux openssl perl python gmake
@@ -65,68 +62,15 @@ ARG GHREPO=https://github.com/iMilnb/maki/releases/download
 RUN curl -L -s -o- ${GHREPO}/v${MAKI_VERSION}/maki-v${MAKI_VERSION}-${GHARCH}-unknown-netbsd.tar.gz | \
         tar zxf - -C /usr/pkg/bin maki
 
-RUN cat <<EOF >/etc/rc.local
-hostname ${NBUSER}
-ulimit -n 4096
-EOF
+INCLUDE smolerfiles/agent.inc
 
-RUN echo 'eval \$(resize)' >>/etc/rc.local
-RUN echo 'printf "\nℹ️ When shutting down, ${LIGHTGREEN}Ctrl-A Ctrl-X${NORMAL} to exit the microvm\n\n"' >>/etc/rc.local
-
-USER $NBUSER
-WORKDIR /home/$NBUSER
-
-RUN touch .hushlogin
-
-RUN cat <<EOF >.tmux.conf
-set -g status off
-set -g default-terminal "screen-256color"
-set -g mode-keys vi
-set -g set-clipboard on
-set -g default-shell /usr/pkg/bin/bash
-EOF
-
-RUN cat <<EOF >.profile
-cd /home/$NBUSER
-if ! pgrep maki >/dev/null 2>&1; then
-	printf "\n\n🪟 ${LIGHTGREEN}maki${NORMAL} runs inside ${LIGHTGREEN}tmux${NORMAL} with prefix ${LIGHTGREEN}^b${NORMAL}\n"
-	printf "\n⌨️  Press ${LIGHTGREEN}enter${NORMAL} to start the session"
-	read x
-	printf "\n⌚ Wait for ${LIGHTGREEN}maki${NORMAL} to load...\n\n"
-
-	maki
-
-	exit
-fi
-PS1="[\\w]\$ "
-EOF
-
-RUN cat <<EOF >cmd.sh
-#!/bin/sh
-
-for f in /mnt/init.lua \
-	/mnt/.maki/init.lua \
-	/var/qemufwcfg/opt/org.smolbsd.file.makiconf
-do
-	if [ -f "\\\$f" ]; then
-		mkdir -p .config/maki
-		cp "$f" .config/maki/init.lua
-		# fresh launch, populate config with own toml
-		[ -d "/mnt/share/maki" ] && \
-			cp -rf /mnt/share/maki/* .config/maki/
-		chown -R $NBUSER /home/$NBUSER
-		chmod 644 .config/maki/init.lua
-		exec su ${NBUSER} -c "tmux -u new"
-	fi
-done
-
-printf "⚠️ no ${LIGHTGREEN}init.lua${NORMAL} passed from the host, either:\n"
-printf "\n- add ${LIGHTGREEN}-E makiconf=/path/to/init.lua${NORMAL} to the command line"
-printf "\n- copy init.lua to a directory and add ${LIGHTGREEN}-w /path/to/directory${NORMAL}\n"
-printf "\n- or drop a .maki/init.lua in the project (picked up by maki)\n"
-ksh
-EOF
-RUN chmod +x cmd.sh
+ARG CONF_FILES=/mnt/init.lua /mnt/.maki/init.lua /var/qemufwcfg/opt/org.smolbsd.file.makiconf
+ARG CONF_TARGET=.config/maki/init.lua
+ARG CONF_NAME=init.lua
+ARG CONF_VAR=makiconf
+ARG CONF_SHARE=/mnt/share/maki
+ARG CONF_HINT=or drop a .maki/init.lua in the project (picked up by maki)
+INCLUDE smolerfiles/agent-launch.inc
 
 CMD ./cmd.sh
 

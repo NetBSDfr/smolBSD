@@ -52,9 +52,6 @@ ARG GHREPO=https://github.com/iMilnb/zeroclaw/releases/download
 ARG GHARCH=$(uname -m|sed 's/^amd64$/x86_64/;s/^evbarm$/aarch64/')
 
 ENV NBUSER=zeroclaw
-ENV LANG=en_US.UTF-8
-ENV TERM=tmux-256color
-ENV PATH=${PATH}:/usr/pkg/bin
 
 RUN pkgin up && pkgin -y in curl git-base ripgrep fd-find jq rsync bash tmux vim
 
@@ -176,26 +173,7 @@ EOF
 
 RUN echo "Built: \$(zeroclaw --version)"
 
-RUN cat <<EOF >/etc/rc.local
-hostname ${NBUSER}
-ulimit -n 4096
-EOF
-
-RUN echo 'eval \$(resize)' >>/etc/rc.local
-RUN echo 'printf "\nℹ️ When shutting down, ${LIGHTGREEN}Ctrl-A Ctrl-X${NORMAL} to exit the microvm\n\n"' >>/etc/rc.local
-
-USER $NBUSER
-WORKDIR /home/$NBUSER
-
-RUN touch .hushlogin
-
-RUN cat <<EOF >.tmux.conf
-set -g status off
-set -g default-terminal "screen-256color"
-set -g mode-keys vi
-set -g set-clipboard on
-set -g default-shell /usr/pkg/bin/bash
-EOF
+INCLUDE smolerfiles/agent.inc
 
 RUN cat <<EOF >.profile
 cd /home/$NBUSER
