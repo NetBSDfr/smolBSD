@@ -64,9 +64,6 @@ ARG CODEUR_VERSION="main"
 ARG CBREPO=https://codeberg.org/bapt/codeur/archive
 
 ENV NBUSER=codeur
-ENV LANG=en_US.UTF-8
-ENV TERM=tmux-256color
-ENV PATH=${PATH}:/usr/pkg/bin
 
 RUN pkgin up && pkgin -y in curl pkg-config git-base ripgrep fd-find \
 	bash rsync tmux vim
@@ -82,78 +79,20 @@ RUN cd /tmp && \
 	make install && \
 	cd / && rm -rf /tmp/codeur /tmp/codeur.tgz
 
-RUN cat <<EOF >/etc/rc.local
-hostname ${NBUSER}
-ulimit -n 4096
-EOF
-
-RUN echo 'eval \$(resize)' >>/etc/rc.local
-RUN echo 'printf "\nℹ️ When shutting down, ${LIGHTGREEN}Ctrl-A Ctrl-X${NORMAL} to exit the microvm\n\n"' >>/etc/rc.local
-
-USER $NBUSER
-WORKDIR /home/$NBUSER
-
-RUN touch .hushlogin
+INCLUDE smolerfiles/agent.inc
 
 # codeur mkdir()s only the leaf codeur/ dirs under the XDG bases
 RUN mkdir -p .config/codeur .local/state .local/share .cache
 
-RUN cat <<EOF >.tmux.conf
-set -g status off
-set -g default-terminal "screen-256color"
-set -g mode-keys vi
-set -g set-clipboard on
-set -g default-shell /usr/pkg/bin/bash
-EOF
-
-RUN cat <<EOF >.profile
-cd /home/$NBUSER
-LIGHTGREEN="\033[92m"
-NORMAL="\033[0m"
-
-if ! pgrep codeur >/dev/null 2>&1; then
-	printf "\n\n🧩 \\\${LIGHTGREEN}codeur\\\${NORMAL} runs inside \\\${LIGHTGREEN}tmux\\\${NORMAL} with prefix \\\${LIGHTGREEN}^b\\\${NORMAL}\n"
-	printf "\n⌨️  Press \\\${LIGHTGREEN}enter\\\${NORMAL} to start the session"
-	read x
-	printf "\n⌚ Wait for \\\${LIGHTGREEN}codeur\\\${NORMAL} to load...\n\n"
-
-	codeur
-
-	exit
-fi
-PS1="[\\w]\\\$ "
-EOF
-
-RUN cat <<EOF >cmd.sh
-#!/bin/sh
-
-for f in /mnt/config.ini \
-	/mnt/.config/codeur/config.ini \
-	/var/qemufwcfg/opt/org.smolbsd.file.codeurconf
-do
-	if [ -f "\\\$f" ]; then
-		mkdir -p .config/codeur
-		cp "\\\$f" .config/codeur/config.ini
-		# reuse persisted state if the host share carries one
-		[ -d "/mnt/share/codeur" ] && \
-			cp -rf /mnt/share/codeur/* .config/codeur/
-		chown -R $NBUSER /home/$NBUSER
-		chmod 644 .config/codeur/config.ini
-		exec su ${NBUSER} -c "tmux -u new"
-	fi
-done
-
-if [ -n "\\\$CODEUR_API_URL" ] || [ -n "\\\$CODEUR_API_KEY" ]; then
-	exec su ${NBUSER} -c "tmux -u new"
-fi
-
-printf "⚠️ no \\\${LIGHTGREEN}config.ini\\\${NORMAL} passed from the host, either:\n"
-printf "\n- add \\\${LIGHTGREEN}-E codeurconf=/path/to/config.ini\\\${NORMAL} to the command line"
-printf "\n- or copy config.ini to a directory and add \\\${LIGHTGREEN}-w /path/to/directory\\\${NORMAL}\n"
-printf "\n- or pass \\\${LIGHTGREEN}-e CODEUR_API_URL=...,CODEUR_API_KEY=...\\\${NORMAL} to run without a config file\n"
-ksh
-EOF
-RUN chmod +x cmd.sh
+ARG AGENT_EMOJI=🧩
+ARG CONF_FILES=/mnt/config.ini /mnt/.config/codeur/config.ini /var/qemufwcfg/opt/org.smolbsd.file.codeurconf
+ARG CONF_TARGET=.config/codeur/config.ini
+ARG CONF_NAME=config.ini
+ARG CONF_VAR=codeurconf
+ARG CONF_SHARE=/mnt/share/codeur
+ARG CONF_ENV_FALLBACK=CODEUR_API_URL CODEUR_API_KEY
+ARG CONF_HINT=or pass -e CODEUR_API_URL=...,CODEUR_API_KEY=... to run without a config file
+INCLUDE smolerfiles/agent-launch.inc
 
 CMD ./cmd.sh
 
