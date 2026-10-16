@@ -1,0 +1,105 @@
+# smol'd version of quaude https://github.com/schmonz/clode
+#
+# quaude is Claude Code repackaged by clode: the upstream Bun binary's
+# JavaScript is extracted, rebased from Bun onto Node calls and compiled
+# to QuickJS-NG (txiki.js) bytecode, producing a self-contained binary
+# that needs no Node and no npm at run time. clode is the builder and is
+# published as a NetBSD binary (10.1 assets, they run on 11.x too); the
+# quaude it writes carries Anthropic's code, is a derived work and is
+# never distributed — so the image ships clode and the user builds
+# quaude once, on first boot:
+#
+# clode fetch claude && clode build
+#
+# (fetch downloads the pinned claude release and verifies its sha256,
+# build extracts the bundle and writes ./quaude; zstd/unzip/curl are
+# the tools clode shells out to, sha256 and tar come with NetBSD base).
+#
+# quaude itself needs bash, bfs >= 3.x (built with Oniguruma, pkgsrc
+# default) and ugrep >= 7.5.0 at run time.
+#
+# run it with an API key and optionally a Claude Code settings.json:
+#
+# ./smoler.sh run quaude-amd64:latest -m 1024 \
+# 	-E ANTHROPIC_API_KEY=sk-ant-... -E claudeconf=/path/to/settings.json
+#
+# -w /path/to/directory also works (settings.json inside it, and a
+# share/quaude directory is copied into .claude/ to persist login and
+# history across reboots). Without a key, quaude starts its OAuth login.
+#
+# state (.claude/, .claude.json, ./quaude) lives in the image and is
+# lost on reboot unless a host directory is shared in with -w.
+
+FROM base,etc
+
+LABEL smolbsd.service=quaude
+LABEL smolbsd.imgsize=2048
+LABEL smolbsd.use_pty=y
+LABEL revision="smol1"
+
+ARG CLODE_VERSION="0.20260831.1"
+ARG GHREPO=https://github.com/schmonz/clode/releases/download
+# clode assets are named netbsd-10.1-<arch> (amd64 stays, evbarm→arm64)
+ARG CLARCH=$(uname -m|sed 's/^evbarm$/arm64/')
+
+ENV NBUSER=quaude
+
+RUN pkgin up && pkgin -y in bash tmux curl git-base zstd unzip bfs ugrep
+
+RUN curl -fL -s -o /usr/pkg/bin/clode \
+	${GHREPO}/v${CLODE_VERSION}/clode-${CLODE_VERSION}-netbsd-10.1-${CLARCH} && \
+	chmod +x /usr/pkg/bin/clode
+
+INCLUDE smolerfiles/agent.inc
+
+RUN cat <<EOF >.profile
+cd /home/$NBUSER
+if ! pgrep quaude >/dev/null 2>&1; then
+	printf "\n\n🧊 ${LIGHTGREEN}quaude${NORMAL} runs inside ${LIGHTGREEN}tmux${NORMAL} with prefix ${LIGHTGREEN}^b${NORMAL}\n"
+	printf "\n⌨️  Press ${LIGHTGREEN}enter${NORMAL} to start the session"
+	read x
+	printf "\n⌚ Wait for ${LIGHTGREEN}quaude${NORMAL} to load...\n\n"
+
+	./quaude
+
+	exit
+fi
+PS1="[\\w]\$ "
+EOF
+
+RUN cat <<EOF >cmd.sh
+# API key passed with -E ANTHROPIC_API_KEY=sk-ant-...
+if [ -f /var/qemufwcfg/opt/org.smolbsd.file.ANTHROPIC_API_KEY ]; then
+	ANTHROPIC_API_KEY=\\\$(cat /var/qemufwcfg/opt/org.smolbsd.file.ANTHROPIC_API_KEY)
+	export ANTHROPIC_API_KEY
+fi
+
+for f in /mnt/settings.json \\
+	/var/qemufwcfg/opt/org.smolbsd.file.claudeconf
+do
+	if [ -f "\\\$f" ]; then
+		mkdir -p .claude
+		cp "\\\$f" .claude/settings.json
+		break
+	fi
+done
+
+# reuse persisted state (login, history) if the host share carries one
+[ -d /mnt/share/quaude ] && mkdir -p .claude && \\
+	cp -rf /mnt/share/quaude/* .claude/
+chown -R $NBUSER /home/$NBUSER
+
+if [ ! -x ./quaude ]; then
+	printf "⚠️ no ${LIGHTGREEN}quaude${NORMAL} built yet, from the home directory:\n"
+	printf "\n  ${LIGHTGREEN}clode fetch claude && clode build${NORMAL}\n"
+	printf "\n(needs network for a few minutes; then re-run ${LIGHTGREEN}./cmd.sh${NORMAL})\n"
+	ksh
+fi
+
+exec su $NBUSER -c "tmux -u new"
+EOF
+RUN chmod +x cmd.sh
+
+CMD ./cmd.sh
+
+# vim: filetype=dockerfile :
