@@ -45,7 +45,7 @@ LABEL smolbsd.use_pty=y
 LABEL smolbsd.publish="42617:42617"
 LABEL revision="smol2"
 
-ARG ZC_VERSION="v0.8.5"
+ARG ZC_VERSION="v0.8.6"
 # iMilnb's fork: the only place with NetBSD release binaries
 ARG GHREPO=https://github.com/iMilnb/zeroclaw/releases/download
 # NetBSD uname -m → Rust target triple (amd64→x86_64, evbarm→aarch64)
