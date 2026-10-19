@@ -51,7 +51,7 @@ jobs:
           # fetch sailor for maximum minimization
           git clone --depth=1 https://github.com/NetBSDfr/sailor
           if [ "${{ github.event_name }}" = "push" ]; then
-            dockerfiles="$(git diff --name-only HEAD~1|grep -E $DFILES|xargs)"
+            dockerfiles="$(git diff --name-only --diff-filter=d HEAD~1|grep -E $DFILES|xargs)"
           else
             dockerfiles="${{ inputs.dockerfiles }}"
           fi
