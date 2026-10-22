@@ -91,6 +91,14 @@ Inside the VM it will be mounted at:
 ## SSH access
 
 * You can build _smolClaw_ with your _SSH_ public key just by copying it to `share/ssh.pub`
+* `ssh.pub` is the **file name the build looks for**: an `id_rsa.pub` or `id_ed25519.pub`
+  simply dropped in `share/` is silently ignored, and you'll be prompted for a password at
+  every connection. Either rename your key, or use another name by editing the
+  `ARG SSH_PUBKEY=` line in `smolerfiles/Dockerfile.clawd`. You can also override it at
+  build time without touching the file:
+```sh
+$ ./smoler.sh build -y --build-arg SSH_PUBKEY=/mnt/share/id_rsa.pub smolerfiles/Dockerfile.clawd
+```
 * You can also do it once the microvm is started but you'll have to re-do it at every build:
 ```sh
 [~]@😈+🦞> mkdir -p ~/.ssh && cat >~/.ssh/authorized_keys
