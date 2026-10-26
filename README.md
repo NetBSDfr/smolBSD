@@ -335,14 +335,14 @@ $ bmake SERVICE=rescue ARCH=evbarm-aarch64 build
 ```
 Start the microvm
 ```sh
-$ ./startnb.sh -k kernels/netbsd-SMOL -i images/rescue-amd64.img
+$ ./startnb.sh -k kernels/amd64/smolbsd -i images/rescue-amd64.img
 ```
 
 ## Image filled with the `base` set on an `x86_64` CPU - [source](service/base)
 
 ```sh
 $ bmake SERVICE=base build
-$ ./startnb.sh -k kernels/netbsd-SMOL -i images/base-amd64.img
+$ ./startnb.sh -k kernels/amd64/smolbsd -i images/base-amd64.img
 ```
 
 ## Running the `bozohttpd` web server on an `aarch64` CPU - [source](service/bozohttpd)
@@ -437,7 +437,7 @@ the following should be available at `http://localhost:5000`:
 
 As of February 2026, many features needed for _smolBSD_ fast boot are integrated in [NetBSD's current kernel][6], and [NetBSD 11 releases][7] those still pending are available in my [NetBSD development branch][5].
 
-Pre-built 64 bits kernel at https://smolbsd.org/assets/netbsd-SMOL and a 32 bits kernel at https://smolbsd.org/assets/netbsd-SMOL386  
+Pre-built kernels are published per architecture at https://smolbsd.org/assets/{amd64,i386,aarch64}/smolbsd
 
 `aarch64` `netbsd-GENERIC64` kernels are able to boot directly to the kernel with no modification
 

@@ -214,10 +214,10 @@ x86_64|i386)
 		extra="$extra -L bios -bios bios-microvm.bin"
 	case $machine in
 	i386)
-		kernel=${kernel:-kernels/netbsd-SMOL386}
+		kernel=${kernel:-kernels/i386/smolbsd}
 		;;
 	x86_64)
-		kernel=${kernel:-kernels/netbsd-SMOL}
+		kernel=${kernel:-kernels/amd64/smolbsd}
 		;;
 	esac
 	;;
@@ -227,7 +227,7 @@ aarch64)
 	mflags="-M virt,gic-version=$gicvers"
 	cpuflags="-cpu ${cputype}"
 	extra="$extra -device virtio-rng-pci"
-	kernel=${kernel:-kernels/netbsd-SMOL-aarch64.img}
+	kernel=${kernel:-kernels/evbarm-aarch64/smolbsd}
 	;;
 *)
 	echo "${WARN} Unknown architecture"

@@ -4,16 +4,14 @@ ARCH!=		ARCH=${ARCH} scripts/uname.sh -m
 MACHINE!=	scripts/uname.sh -p
 OS!=		uname -s
 SETSEXT?=	tar.xz
-KDIST?=		https://smolbsd.org/assets
+KDIST?=	https://smolbsd.org/assets
+KERNEL?=		smolbsd
 
 .if ${ARCH} == "evbarm-aarch64"
-KERNEL=		netbsd-SMOL-aarch64.img
 LIVEIMGGZ=	https://nycdn.netbsd.org/pub/NetBSD-daily/HEAD/latest/evbarm-aarch64/binary/gzimg/arm64.img.gz
 .elif ${ARCH} == "i386"
-KERNEL=		netbsd-SMOL386
 SETSEXT=	tgz
 .else
-KERNEL=		netbsd-SMOL
 LIVEIMGGZ=	https://nycdn.netbsd.org/pub/NetBSD-daily/HEAD/latest/images/NetBSD-11.99.5-amd64-live.img.gz
 .endif
 
@@ -50,11 +48,12 @@ EXTRAS+=	-b -k kernels/${BIOSKERNEL}.SMOL
 
 SETSDIR=	sets/${ARCH}
 PKGSDIR=	pkgs/${ARCH}
+KERNELDIR=	kernels/${ARCH}
 
 LIVEIMG=	images/NetBSD-${ARCH}-live.img
 
 # sets to fetch, defaults to base
-SETS?=		base.${SETSEXT} etc.${SETSEXT}
+SETS?=		base.${SETSEXT} etc.${SETSEXT} smolset.tar.xz
 
 # Default: BSD
 DDUNIT=		m
@@ -123,11 +122,24 @@ help:	# This help you are reading
 	$Qgrep '^[a-z]\+:.*#' Makefile
 
 kernfetch:
-	$Q${FRESHCHK} ${KDIST}/${KERNEL} kernels/${KERNEL} || \
-			${FETCH} -o kernels/${KERNEL} ${KDIST}/${KERNEL}; \
-		cd kernels && curl -L -s -o- ${KDIST}/${KERNEL}.sha256 | \
-			${CKSUM} ${CKSUMQ} && \
+	@[ -d ${KERNELDIR} ] || mkdir -p ${KERNELDIR}
+	# kernel published at KDIST/<machine arch>/smolbsd (aarch64, not
+	# evbarm-aarch64) with optional .sha256 alongside; probe first so
+	# unpublished assets warn instead of swallowing a 404 page
+	$Qu=${KDIST}/${ARCH:C/.*-//}/${KERNEL}; \
+	if curl -LfsI $$u >/dev/null; then \
+		${FRESHCHK} $$u ${KERNELDIR}/${KERNEL} || \
+			${FETCH} -o ${KERNELDIR}/${KERNEL} $$u; \
+		if curl -LfsI $$u.sha256 >/dev/null; then \
+			cd ${KERNELDIR} && curl -L -s $$u.sha256 | \
+				${CKSUM} ${CKSUMQ} && \
 				echo "${CHECK} ${KERNEL} sha256 checks out"; \
+		else \
+			echo "${WARN} no $$u.sha256"; \
+		fi; \
+	else \
+		echo "${WARN} no ${KERNEL} in ${KDIST} yet"; \
+	fi
 
 	$Qif [ "${BIOSBOOT}" = "y" ]; then \
 		${FRESHCHK} ${DIST}/kernel/${BIOSKERNEL}.gz kernels/${BIOSKERNEL} || \
@@ -146,10 +158,24 @@ kernfetch:
 
 setfetch:
 	@[ -d ${SETSDIR} ] || mkdir -p ${SETSDIR}
+	# resolve each set: our KDIST/<arch>/ copy first (smolset and any
+	# republished set; assets/ dirs use the machine arch, aarch64
+	# not evbarm-aarch64), then the NetBSD daily sets, then a locally
+	# staged file; everything goes through the same freshness check
 	$Qfor s in ${SETS}; do \
 		set=$${s%:*} && \
-		${FRESHCHK} ${DIST}/sets/$${set} ${SETSDIR}/$${set} || \
-			${FETCH} -o ${SETSDIR}/$${set} ${DIST}/sets/$${set}; \
+		case $${set} in */*) continue ;; esac; \
+		alt="${KDIST}/${ARCH:C/.*-//}/$${set}"; \
+		daily="${DIST}/sets/$${set}"; \
+		if curl -LfsI $$alt >/dev/null 2>&1; then url=$$alt; \
+		elif curl -LfsI $$daily >/dev/null 2>&1; then url=$$daily; \
+		elif [ -s ${SETSDIR}/$${set} ]; then \
+			echo "keeping local ${SETSDIR}/$${set}"; continue; \
+		else \
+			echo "no source for $${set}" >&2; exit 1; \
+		fi; \
+		${FRESHCHK} $$url ${SETSDIR}/$${set} || \
+			${FETCH} -o ${SETSDIR}/$${set} $$url; \
 	done
 
 pkgfetch:
@@ -225,7 +251,7 @@ build: fetchall # Build an image (with SERVICE=$SERVICE from service/)
 	$Qecho "  ${WHITEBULLET} ${BUILDMEM}MB RAM"
 	$Qecho "  ${WHITEBULLET} ${BUILDCPUS} cores"
 	# Fire up the builder microVM
-	$QQEMU_CACHE=none ./startnb.sh -k kernels/${KERNEL} -i ${BUILDIMGPATH} -l ${DSTIMG} \
+	$QQEMU_CACHE=none ./startnb.sh -k ${KERNELDIR}/${KERNEL} -i ${BUILDIMGPATH} -l ${DSTIMG} \
 		-c ${BUILDCPUS} -m ${BUILDMEM} \
 		-p ${PORT} -w . -x "-pidfile qemu-${.TARGET}.pid" &
 	# wait till the build is finished, guest removes the lock
