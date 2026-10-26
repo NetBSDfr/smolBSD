@@ -54,7 +54,7 @@ PKGSDIR=	pkgs/${ARCH}
 LIVEIMG=	images/NetBSD-${ARCH}-live.img
 
 # sets to fetch, defaults to base
-SETS?=		base.${SETSEXT} etc.${SETSEXT}
+SETS?=		base.${SETSEXT} etc.${SETSEXT} smolset.tar.xz
 
 # Default: BSD
 DDUNIT=		m
@@ -146,10 +146,24 @@ kernfetch:
 
 setfetch:
 	@[ -d ${SETSDIR} ] || mkdir -p ${SETSDIR}
+	# resolve each set: our KDIST/<arch>/ copy first (smolset and any
+	# republished set; assets/ dirs use the machine arch, aarch64
+	# not evbarm-aarch64), then the NetBSD daily sets, then a locally
+	# staged file; everything goes through the same freshness check
 	$Qfor s in ${SETS}; do \
 		set=$${s%:*} && \
-		${FRESHCHK} ${DIST}/sets/$${set} ${SETSDIR}/$${set} || \
-			${FETCH} -o ${SETSDIR}/$${set} ${DIST}/sets/$${set}; \
+		case $${set} in */*) continue ;; esac; \
+		alt="${KDIST}/${ARCH:C/.*-//}/$${set}"; \
+		daily="${DIST}/sets/$${set}"; \
+		if curl -LfsI $$alt >/dev/null 2>&1; then url=$$alt; \
+		elif curl -LfsI $$daily >/dev/null 2>&1; then url=$$daily; \
+		elif [ -s ${SETSDIR}/$${set} ]; then \
+			echo "keeping local ${SETSDIR}/$${set}"; continue; \
+		else \
+			echo "no source for $${set}" >&2; exit 1; \
+		fi; \
+		${FRESHCHK} $$url ${SETSDIR}/$${set} || \
+			${FETCH} -o ${SETSDIR}/$${set} $$url; \
 	done
 
 pkgfetch:
