@@ -44,9 +44,9 @@
 FROM base,comp,etc
 
 LABEL smolbsd.service=maki
-LABEL smolbsd.imgsize=8192
+LABEL smolbsd.imgsize=2048
 LABEL smolbsd.use_pty=y
-LABEL revision="smol1"
+LABEL revision="smol2"
 
 ARG MAKI_VERSION="0.6.5"
 
