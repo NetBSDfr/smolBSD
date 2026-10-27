@@ -46,7 +46,7 @@ FROM base,comp,etc
 LABEL smolbsd.service=maki
 LABEL smolbsd.imgsize=2048
 LABEL smolbsd.use_pty=y
-LABEL revision="smol2"
+LABEL revision="smol3"
 
 ARG MAKI_VERSION="0.6.5"
 
@@ -57,7 +57,7 @@ RUN pkgin up && pkgin -y in curl git-base ripgrep fd-find gh bash rsync \
 
 ARG GHARCH=$(uname -p)
 # iMil's repo with local fixes
-ARG GHREPO=https://github.com/iMilnb/maki/releases/download
+ARG GHREPO=https://github.com/tontinton/maki/releases/download
 
 RUN curl -L -s -o- ${GHREPO}/v${MAKI_VERSION}/maki-v${MAKI_VERSION}-${GHARCH}-unknown-netbsd.tar.gz | \
         tar zxf - -C /usr/pkg/bin maki
