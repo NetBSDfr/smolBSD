@@ -1,0 +1,48 @@
+# SMOLerfile.xbase — base SMOLerfile for Xorg-based services:
+# minimal GLX-accelerated Xorg over virtio-gpu (virgl) + fluxbox (pkgsrc).
+#
+# Requirements:
+#  - kernel: the viogpu-glx SMOL build (virtiodrm + viogpu + vioinput),
+#    not the stock netbsd-SMOL.
+#  - sets/amd64/smolset.tar.xz: patched libdrm (virtio-mmio busid),
+#    libglapi and the virtio_gpu DRI driver, built from the supasmol
+#    tree (NetBSD-src: ./mksmolset.sh amd64, then copy
+#    obj/smolset.amd64.tar.xz over this file).
+#
+# Run with stock QEMU >= 10 (tglx.sh wraps all flags):
+#   ./smoler.sh run xbase-amd64:latest -k kernels/netbsd-SMOL-vioglx
+#   with: -device virtio-gpu-gl-device -display sdl,gl=on
+
+# smolset LAST: its patched libdrm/libglapi/virtio_gpu_dri must overwrite
+# the official same-named files from the xbase set (extraction order =
+# override order)
+FROM base,etc,xbase,xserver,xetc,xfont,smolset
+
+LABEL smolbsd.service=xbase
+LABEL smolbsd.imgsize=2048
+LABEL smolbsd.use_pty=y
+
+RUN pkgin up && pkgin -y in fluxbox
+# fontconfig's CONF_FILES merge does not happen through pkgin, so its
+# default config must be placed by hand (libXft font rendering)
+RUN mkdir -p /usr/pkg/etc/fonts && \
+	cp /usr/pkg/share/examples/fontconfig/fonts.conf \
+	/usr/pkg/etc/fonts/fonts.conf
+# fluxbox 1.3.7: the default STYLE paints the root dark gray (the
+# overlay file hints at "background: none" to stop it); seed that so
+# the root stays black like the xsetroot below expects.
+RUN mkdir -p /root/.fluxbox && \
+	printf 'background: none\n' > /root/.fluxbox/overlay
+# \$PATH stays literal: the generated postinst wraps RUN in double quotes
+RUN printf '%s\n' 'export DISPLAY=:1' \
+	'export PATH=\$PATH:/usr/X11R7/bin:/usr/pkg/bin' >> /etc/profile
+
+# xorg.conf + session.sh live in service/xbase/etc/ and land in the
+# image's /etc via mkimg's standard service-dir rsync (COPY's relative
+# paths are not portable between host and builder VM mounts)
+
+ENV LD_LIBRARY_PATH=/usr/X11R7/lib
+
+CMD sh /etc/session.sh
+
+# vim: filetype=dockerfile :

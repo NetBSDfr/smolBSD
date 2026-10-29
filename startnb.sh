@@ -6,7 +6,7 @@ usage()
 Usage:	${0##*/} -f conffile | -k kernel -i image [-c CPUs] [-m memory]
 	[-a kernel parameters] [-r root disk] [-l drive2,...] [-p port]
 	[-t tcp serial port] [-w path] [-e k=v] [-E f=path] [-x qemu extra args]
-	[-N] [-b] [-n] [-s] [-d] [-v] [-u]
+	[-N] [-b] [-n] [-s] [-d] [-v] [-u] [-X]
 
 	Boot a microvm
 	-f conffile	vm config file
@@ -25,6 +25,8 @@ Usage:	${0##*/} -f conffile | -k kernel -i image [-c CPUs] [-m memory]
 	-e k=v[,...]	export variables to vm via QEMU fw_cfg
 	-E f=path[,...]	export host file paths to vm via QEMU fw_cfg
 	-x arguments	extra qemu arguments
+	-X		X-enabled vm: virtio-gpu-gl device, SDL GL display,
+			smolbsdx kernel and 2048 MB by default
 	-N		disable networking
 	-b		bridge mode
 	-s		don't lock image file
@@ -47,7 +49,7 @@ if [ "$(uname -s)" != "Darwin" ]; then
 	fi
 fi
 
-options="f:k:a:e:E:p:i:Im:n:c:r:l:p:uw:x:t:hbdsPNv"
+options="f:k:a:e:E:p:i:Im:n:c:r:l:p:uw:x:t:hbdsPNvX"
 
 export CHOUPI=y
 
@@ -88,6 +90,7 @@ do
 	P) use_pty=y;;
 	w) share=$OPTARG;;
 	x) extra=$OPTARG;;
+	X) glx=y; mem=${mem:-2048};;
 	*) usage;;
 	esac
 done
@@ -217,7 +220,12 @@ x86_64|i386)
 		kernel=${kernel:-kernels/i386/smolbsd}
 		;;
 	x86_64)
-		kernel=${kernel:-kernels/amd64/smolbsd}
+		# -X boots the GLX kernel (SMOLX: virtiodrm + LinuxKPI)
+		if [ -n "$glx" ]; then
+			kernel=${kernel:-kernels/amd64/smolbsdx}
+		else
+			kernel=${kernel:-kernels/amd64/smolbsd}
+		fi
 		;;
 	esac
 	;;
@@ -236,7 +244,7 @@ esac
 if [ ! -f "$kernel" ]; then
 	[ "$OS" != "NetBSD" ] && MAKE=bmake || MAKE=make
 	echo -n "${ERROR} $kernel not present, fetch default kernel now? [y/N] "
-	read r && [ "$r" = "y" ] && $MAKE kernfetch || exit 1
+	read r && [ "$r" = "y" ] && $MAKE kernfetch KERNEL=${kernel##*/} || exit 1
 fi
 echo "${ARROW} using kernel $kernel"
 
@@ -295,7 +303,24 @@ fi
 
 pidfile="qemu-${svc}.pid"
 
-d="-display none -pidfile ${pidfile}"
+if [ -n "$glx" ]; then
+	# stock QEMU < 10 cannot render virtio-gpu-gl (virgl/DMABUF
+	# display path broken), so fail early instead of silently
+	qver=$($QEMU --version 2>/dev/null | sed -nE 's/.*version ([0-9]+).*/\1/p' | head -1)
+	if [ "${qver:-0}" -lt 10 ]; then
+		echo "${ERROR} qemu ${qver:-?} is too old for GL (-X needs QEMU >= 10 for virtio-gpu-gl)"
+		exit 1
+	fi
+	# GL-capable virtio-gpu claimed by virtiodrm
+	# in the guest (virgl 3D to the host GPU), virtio keyboard and
+	# tablet through vioinput, rendered in an SDL GL window
+	export IBUS_ADDRESS=bogus	# SDL ibus crash-fix
+	d="-display sdl,gl=on -pidfile ${pidfile}"
+	extra="$extra -device virtio-gpu-gl-device \
+	-device virtio-tablet-device -device virtio-keyboard-device"
+else
+	d="-display none -pidfile ${pidfile}"
+fi
 
 if [ -n "$daemon" ]; then
 	# XXX: daemonize makes viocon crash
