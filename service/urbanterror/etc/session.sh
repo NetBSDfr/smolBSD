@@ -71,6 +71,15 @@ timeout 10 glxinfo 2>&1 |
 	grep -E 'direct rendering|renderer string|version string' |
 	sed 's/^/UT glx: /'
 
+# Hide the X server root cursor (the hollow-X default): with in_nograb
+# the game never grabs or blanks it and never defines its own, so the
+# window inherits root's X_cursor.  xset has no "cursor none" on NetBSD;
+# xsetroot -cursor does, but needs a bitmap with hotspot defines (a
+# 2x2 all-zero one = invisible).  Verified on a live game: root cursor
+# blanked, Urban Terror's own drawn cursor unaffected.
+printf '#define b_width 2\n#define b_height 2\n#define b_x_hot 0\n#define b_y_hot 0\nstatic char b_bits[] = {\n  0x00, 0x00, 0x00, 0x00 };\n' > /tmp/blank.xbm
+DISPLAY=:1 xsetroot -cursor /tmp/blank.xbm /tmp/blank.xbm
+
 # Urban Terror: windowed X (r_mode -1, window sized to the guest screen),
 # settings land in /root/.q3a; the serial shell stays usable for logs.
 # in_raw 0: the engine's XInput2 raw path reads the virtio-tablet's
