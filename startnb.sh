@@ -25,8 +25,9 @@ Usage:	${0##*/} -f conffile | -k kernel -i image [-c CPUs] [-m memory]
 	-e k=v[,...]	export variables to vm via QEMU fw_cfg
 	-E f=path[,...]	export host file paths to vm via QEMU fw_cfg
 	-x arguments	extra qemu arguments
-	-X		X-enabled vm: virtio-gpu-gl device, SDL GL display,
-			smolbsdx kernel and 2048 MB by default
+	-X		X-enabled vm: virtio-gpu-gl device, GL display
+			(SDL, or gtk with QEMU_DISPLAY=gtk), smolbsdx
+			kernel and 2048 MB by default
 	-N		disable networking
 	-b		bridge mode
 	-s		don't lock image file
@@ -313,9 +314,18 @@ if [ -n "$glx" ]; then
 	fi
 	# GL-capable virtio-gpu claimed by virtiodrm
 	# in the guest (virgl 3D to the host GPU), virtio keyboard and
-	# tablet through vioinput, rendered in an SDL GL window
-	export IBUS_ADDRESS=bogus	# SDL ibus crash-fix
-	d="-display sdl,gl=on -pidfile ${pidfile}"
+	# tablet through vioinput, rendered in a GL window.
+	# QEMU_DISPLAY picks the windowing backend, sdl (default) or gtk;
+	# gtk is a fallback for hosts where the SDL GL path misbehaves.
+	gui=${QEMU_DISPLAY:-sdl}
+	case $gui in
+	sdl)	export IBUS_ADDRESS=bogus	# SDL ibus crash-fix
+		d="-display sdl,gl=on";;
+	gtk)	d="-display gtk,gl=on";;
+	*)	echo "${ERROR} QEMU_DISPLAY must be sdl or gtk (got '$gui')"
+		exit 1;;
+	esac
+	d="$d -pidfile ${pidfile}"
 	extra="$extra -device virtio-gpu-gl-device \
 	-device virtio-tablet-device -device virtio-keyboard-device"
 else
