@@ -361,6 +361,15 @@ fi
 
 extra="$extra -rtc base=utc,clock=host,driftfix=slew"
 
+# virtio-sound (viosnd in guest); host backend selectable with
+# AUDIODEV (default pa, use none to disable); skipped silently if the
+# QEMU build has no virtio-sound device (needs QEMU >= 10)
+audiodev=${AUDIODEV:-pa}
+if [ "$audiodev" != none ] && \
+   $QEMU -device help 2>/dev/null | grep -q virtio-sound-device; then
+	extra="$extra -audiodev $audiodev,id=snd0 -device virtio-sound-device,audiodev=snd0"
+fi
+
 [ -n "$use_pty" ] && escapex="^"
 echo "${EXIT} ^D to stop the vm, ^A-${escapex}X to kill it"
 

@@ -1,0 +1,10 @@
+#!/bin/sh
+
+. /etc/include/basicrc
+
+export LD_LIBRARY_PATH=/usr/X11R7/lib
+
+# entrypoint
+sh /etc/session.sh
+
+. /etc/include/shutdown
