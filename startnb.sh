@@ -6,7 +6,7 @@ usage()
 Usage:	${0##*/} -f conffile | -k kernel -i image [-c CPUs] [-m memory]
 	[-a kernel parameters] [-r root disk] [-l drive2,...] [-p port]
 	[-t tcp serial port] [-w path] [-e k=v] [-E f=path] [-x qemu extra args]
-	[-N] [-b] [-n] [-s] [-d] [-v] [-u] [-X]
+	[-N] [-b] [-n] [-s] [-d] [-v] [-u] [-S] [-X]
 
 	Boot a microvm
 	-f conffile	vm config file
@@ -28,6 +28,9 @@ Usage:	${0##*/} -f conffile | -k kernel -i image [-c CPUs] [-m memory]
 	-X		X-enabled vm: virtio-gpu-gl device, GL display
 			(SDL, or gtk with QEMU_DISPLAY=gtk), smolbsdx
 			kernel and 2048 MB by default
+	-S		virtio-sound device (viosnd in guest), host
+			backend picked by AUDIODEV (coreaudio on macOS,
+			pa elsewhere)
 	-N		disable networking
 	-b		bridge mode
 	-s		don't lock image file
@@ -50,7 +53,7 @@ if [ "$(uname -s)" != "Darwin" ]; then
 	fi
 fi
 
-options="f:k:a:e:E:p:i:Im:n:c:r:l:p:uw:x:t:hbdsPNvX"
+options="f:k:a:e:E:p:i:Im:n:c:r:l:p:uw:x:t:hbdsPNvXS"
 
 export CHOUPI=y
 
@@ -89,6 +92,7 @@ do
 	v) verbose=y;;
 	N) nonet=yes;;
 	P) use_pty=y;;
+	S) sound=y;;
 	w) share=$OPTARG;;
 	x) extra=$OPTARG;;
 	X) glx=y; mem=${mem:-2048};;
@@ -371,11 +375,18 @@ fi
 
 extra="$extra -rtc base=utc,clock=host,driftfix=slew"
 
-# virtio-sound (viosnd in guest); host backend selectable with
-# AUDIODEV (default pa, use none to disable); skipped silently if the
-# QEMU build has no virtio-sound device (needs QEMU >= 10)
-audiodev=${AUDIODEV:-pa}
-if [ "$audiodev" != none ] && \
+# virtio-sound (viosnd in guest), enabled on demand with -S; host
+# backend selectable with AUDIODEV (use none to disable); skipped
+# silently if the QEMU build has no virtio-sound device (needs QEMU >= 10).
+# macOS QEMU builds ship no pa driver, their native backend is coreaudio.
+if [ -n "$sound" ]; then
+	if [ "$(uname -s)" = "Darwin" ]; then
+		audiodev=${AUDIODEV:-coreaudio}
+	else
+		audiodev=${AUDIODEV:-pa}
+	fi
+fi
+if [ -n "$audiodev" ] && [ "$audiodev" != none ] && \
    $QEMU -device help 2>/dev/null | grep -q virtio-sound-device; then
 	extra="$extra -audiodev $audiodev,id=snd0 -device virtio-sound-device,audiodev=snd0"
 fi

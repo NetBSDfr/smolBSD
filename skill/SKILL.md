@@ -555,6 +555,8 @@ The builder VM is a special service that:
 | `-t` | port | TCP serial port (telnet) |
 | `-a` | params | Append kernel boot parameters |
 | `-x` | args | Extra raw QEMU arguments |
+| `-S` | (none) | Enable virtio-sound (`viosnd` in guest). Off by default — the host backend must exist: `AUDIODEV` selects it (`pa` default on Linux/NetBSD, `coreaudio` on macOS, where QEMU has no `pa` driver; `none` disables). Skipped silently if the QEMU build lacks `virtio-sound-device` (needs QEMU >= 10) |
+| `-X` | (none) | X-enabled VM: virtio-gpu-gl + GL display (`QEMU_DISPLAY=sdl|gtk`), smolbsdx kernel, 2048 MB default |
 | `-v` | (none) | Verbose (print QEMU command, don't execute) |
 | `-u` | (none) | Non-colorful output (sets `CHOUPI=`; the ASCII fallback branch in choupi is `CHOUPI=n`) |
 | `-h` | (none) | Show usage |
@@ -563,6 +565,9 @@ The builder VM is a special service that:
 - `QEMU_ACCEL` — force a specific accelerator (`kvm`, `hvf`, `nvmm`, `tcg`)
 - `QEMU` — override QEMU binary (default: `qemu-system-<machine>`)
 - `ARCH` — override architecture detection
+- `AUDIODEV` — host audio backend used by `-S` (`pa`/`coreaudio`/`sdl`/…, `none` disables); defaults per platform (see `-S` above)
+- `QEMU_DISPLAY` — windowing backend for `-X` (`sdl` default, `gtk` fallback)
+- `QEMU_CACHE` — QEMU cache mode passed to disk devices (e.g. `none`)
 
 **Architecture-specific QEMU invocation:**
 

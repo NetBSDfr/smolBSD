@@ -418,6 +418,11 @@ The following environment variables change `startnb.sh` behavior:
 
 * `QEMU` will use custom `qemu` instead of the one in user's `$PATH`
 
+* `AUDIODEV` selects the host audio backend for the `-S` (virtio-sound)
+  flag; defaults to `pa` on Linux/NetBSD and `coreaudio` on macOS, where
+  the QEMU builds ship no PulseAudio driver. `AUDIODEV=none` disables
+  sound even with `-S`.
+
 ## Basic frontend
 
 A simple virtual machine manager is available in the `app/` directory, it is a

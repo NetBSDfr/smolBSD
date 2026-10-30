@@ -8,7 +8,7 @@
 #    from the supasmol tree; ./mksmolset.sh amd64 + copy from obj/)
 #
 # Run:
-#   ./startnb.sh -X -i urbanterror-amd64:latest
+#   ./smoler.sh run urbanterror-amd64:latest -X -S
 
 # smolset LAST: its patched libdrm/libglapi/virtio_gpu_dri must overwrite
 # the official same-named files from the xbase set (extraction order =
