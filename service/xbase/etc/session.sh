@@ -9,6 +9,16 @@ export DISPLAY=:1
 export VIRGL_3D_THROTTLE=0	# else the mesa virgl swap throttle pins the desktop at ~5fps
 export CONSOLEDEVICE=/dev/ttyE0
 
+# session exit ends in reboot, not halt: startnb -X adds -no-reboot,
+# so reboot makes QEMU exit and the window disappears, while a halt
+# leaves it stuck on screen.  ro-remount the rw root first; if
+# reboot -f ever returns, /etc/rc falls back to halt as before.
+power_off() {
+	sync; sync
+	mount -u -o ro / 2>/dev/null
+	reboot -f
+}
+
 # wscons + DRM device nodes
 cd /dev
 sh MAKEDEV wscons 2>/dev/null
@@ -54,7 +64,8 @@ if xtry :1 || xtry :1 -vtdev /dev/ttyE0 || xtry :1 vt2 ||
 else
 	echo "XBASE: all Xorg attempts failed, tail of /tmp/Xorg.log:"
 	tail -25 /tmp/Xorg.log
-	exit 1	# /etc/rc falls through to shutdown -> VM halts
+	power_off
+	exit 1
 fi
 
 # serial console shell (autologin root).  getty -a hides PAM/utmpx
@@ -85,3 +96,4 @@ xsetroot -solid black
 # block on Xorg: when it exits, /etc/rc runs shutdown and the VM halts
 wait $XPID
 echo "XBASE: Xorg exited"
+power_off

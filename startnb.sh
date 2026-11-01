@@ -6,7 +6,7 @@ usage()
 Usage:	${0##*/} -f conffile | -k kernel -i image [-c CPUs] [-m memory]
 	[-a kernel parameters] [-r root disk] [-l drive2,...] [-p port]
 	[-t tcp serial port] [-w path] [-e k=v] [-E f=path] [-x qemu extra args]
-	[-N] [-b] [-n] [-s] [-d] [-v] [-u] [-S] [-X]
+	[-N] [-b] [-n] [-s] [-d] [-v] [-u] [-S] [-X mode]
 
 	Boot a microvm
 	-f conffile	vm config file
@@ -25,9 +25,12 @@ Usage:	${0##*/} -f conffile | -k kernel -i image [-c CPUs] [-m memory]
 	-e k=v[,...]	export variables to vm via QEMU fw_cfg
 	-E f=path[,...]	export host file paths to vm via QEMU fw_cfg
 	-x arguments	extra qemu arguments
-	-X		X-enabled vm: virtio-gpu-gl device, GL display
+	-X mode		X-enabled vm: virtio-gpu-gl device, GL display
 			(SDL, or gtk with QEMU_DISPLAY=gtk), smolbsdx
-			kernel and 2048 MB by default
+			kernel and 2048 MB by default; mode is
+			window, fullscreen (-full-screen, guest video
+			mode detected from the host desktop size) or
+			an explicit WxH to force it
 	-S		virtio-sound device (viosnd in guest), host
 			backend picked by AUDIODEV (coreaudio on macOS,
 			pa elsewhere)
@@ -53,7 +56,7 @@ if [ "$(uname -s)" != "Darwin" ]; then
 	fi
 fi
 
-options="f:k:a:e:E:p:i:Im:n:c:r:l:p:uw:x:t:hbdsPNvXS"
+options="f:k:a:e:E:p:i:Im:n:c:r:l:p:uw:x:t:hbdsPNvX:S"
 
 export CHOUPI=y
 
@@ -95,7 +98,7 @@ do
 	S) sound=y;;
 	w) share=$OPTARG;;
 	x) extra=$OPTARG;;
-	X) glx=y; mem=${mem:-2048};;
+	X) glx="$OPTARG"; mem=${mem:-2048};;
 	*) usage;;
 	esac
 done
@@ -309,6 +312,11 @@ fi
 pidfile="qemu-${svc}.pid"
 
 if [ -n "$glx" ]; then
+	case $glx in
+	window|fullscreen|[0-9]*x[0-9]*) ;;
+	*)	echo "${ERROR} -X must be window, fullscreen or WxH (got '$glx')"
+		exit 1;;
+	esac
 	# stock QEMU < 10 cannot render virtio-gpu-gl (virgl/DMABUF
 	# display path broken), so fail early instead of silently
 	qver=$($QEMU --version 2>/dev/null | sed -nE 's/.*version ([0-9]+).*/\1/p' | head -1)
@@ -330,8 +338,45 @@ if [ -n "$glx" ]; then
 		exit 1;;
 	esac
 	d="$d -pidfile ${pidfile}"
-	extra="$extra -device virtio-gpu-gl-device \
+	# the virtio-gpu EDID is fixed at device realize (QEMU defaults
+	# xres=1280,yres=800), so a fullscreen window only scales that
+	# mode instead of filling the monitor: feed the real desktop
+	# size to the guest as the EDID preferred mode.  -X WxH skips
+	# the detection and forces it.
+	gpuopts=""
+	case $glx in
+	window) ;;
+	fullscreen|[0-9]*x[0-9]*)
+		if [ "$glx" = fullscreen ]; then
+			gpures=""
+			if [ -n "${DISPLAY:-}" ]; then
+				gpures=$(xrandr -q 2>/dev/null |
+					sed -nE 's/^[A-Za-z0-9-]+ connected( primary)? ([0-9]+x[0-9]+)\+.*/\2/p' |
+					head -1)
+				[ -n "$gpures" ] || gpures=$(xdpyinfo 2>/dev/null |
+					awk '/dimensions:/{print $2}')
+			fi
+		else
+			gpures=$(echo "$glx" | sed -nE 's/^([0-9]+x[0-9]+)$/\1/p')
+		fi
+		case $gpures in
+		[0-9]*x[0-9]*)
+			gpuopts=",xres=${gpures%x*},yres=${gpures#*x}"
+			echo "${INFO} fullscreen at ${gpures}";;
+		*)	echo "${WARN} -X ${glx}: no host resolution, keeping QEMU default";;
+		esac
+		extra="$extra -full-screen"
+		;;
+	esac
+	extra="$extra -device virtio-gpu-gl-device${gpuopts} \
 	-device virtio-tablet-device -device virtio-keyboard-device"
+	# a halted guest leaves the (fullscreen, undecorated) SDL
+	# window stuck with nothing to close it; the JEMATA kill
+	# socket needs a spare virtconsole port, which panics the
+	# LOCKDEBUG kernels (viocon ctrl port sleep lock from irq).
+	# so sessions end in reboot instead, and -no-reboot makes
+	# that reboot exit QEMU.
+	extra="$extra -no-reboot"
 else
 	d="-display none -pidfile ${pidfile}"
 fi

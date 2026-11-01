@@ -556,7 +556,7 @@ The builder VM is a special service that:
 | `-a` | params | Append kernel boot parameters |
 | `-x` | args | Extra raw QEMU arguments |
 | `-S` | (none) | Enable virtio-sound (`viosnd` in guest). Off by default — the host backend must exist: `AUDIODEV` selects it (`pa` default on Linux/NetBSD, `coreaudio` on macOS, where QEMU has no `pa` driver; `none` disables). Skipped silently if the QEMU build lacks `virtio-sound-device` (needs QEMU >= 10) |
-| `-X` | (none) | X-enabled VM: virtio-gpu-gl + GL display (`QEMU_DISPLAY=sdl|gtk`), smolbsdx kernel, 2048 MB default |
+| `-X` | `mode` | X-enabled VM: virtio-gpu-gl + GL display (`QEMU_DISPLAY=sdl|gtk`), smolbsdx kernel, 2048 MB default. `mode` = `window` (default QEMU EDID, 1280x800), `fullscreen` (adds `-full-screen` and sets the EDID preferred mode to the host desktop size, detected via xrandr then xdpyinfo) or an explicit `WxH` to force it. The virtio-gpu EDID is fixed at QEMU device realize, so toggling fullscreen later does not resize the guest. `-X` also passes `-no-reboot`: session images (xbase `session.sh`) end with `reboot -f` when X exits, so QEMU exits and the window closes — a plain halt would leave the undecorated window stuck, and the usual `JEMATA!` p1 kill socket cannot be used because a spare virtconsole port panics the LOCKDEBUG dev kernels (viocon ctrl: sleep lock from interrupt context) |
 | `-v` | (none) | Verbose (print QEMU command, don't execute) |
 | `-u` | (none) | Non-colorful output (sets `CHOUPI=`; the ASCII fallback branch in choupi is `CHOUPI=n`) |
 | `-h` | (none) | Show usage |
