@@ -345,7 +345,11 @@ if [ -n "$glx" ]; then
 	# the detection and forces it.
 	gpuopts=""
 	case $glx in
-	window) ;;
+	# QEMU >= 10 defaults the virtio-gpu EDID on, and the built-in
+	# EDID times 1280x800 at 74.99Hz: virtio-drm fakes vblank against
+	# that and GL swaps judder (glxgears 27 FPS flicker).  Window mode
+	# keeps the classic EDID-less framebuffer (59.8Hz, clean pacing).
+	window) gpuopts=",edid=off";;
 	fullscreen|[0-9]*x[0-9]*)
 		if [ "$glx" = fullscreen ]; then
 			gpures=""
