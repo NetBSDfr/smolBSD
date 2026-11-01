@@ -1,0 +1,20 @@
+# Omarchy-flavored minimal prompt: no user, no time — just location and git.
+add_newline = false
+command_timeout = 300
+format = "$directory$git_branch$git_status$character"
+
+[directory]
+truncation_length = 3
+truncate_to_repo = true
+style = "bold blue"
+
+[git_branch]
+format = "on [$symbol$branch]($style) "
+style = "bold purple"
+
+[git_status]
+format = '([\[$all_status$ahead_behind\]]($style) )'
+
+[character]
+success_symbol = "[  ](bold green)"
+error_symbol = "[  ](bold red)"

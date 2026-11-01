@@ -1,0 +1,15 @@
+configuration {
+	modi: "drun,run,window";
+	show: "drun";
+	font: "JetBrainsMono Nerd Font 11";
+	show-icons: false;
+	sidebar-mode: true;
+	display-drun: "apps";
+	display-run: "run";
+	display-window: "win";
+	location: 0;
+	yoffset: 0;
+	width: 36;
+	lines: 8;
+}
+@theme "/home/smol/.config/rofi/catppuccin.rasi"

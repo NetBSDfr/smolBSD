@@ -1,0 +1,44 @@
+# SMOLerfile.smolcracy — Omarchy-style keyboard-first X11 desktop:
+# i3 + rofi + dunst + picom + rxvt-unicode, session running as user
+# smol with passwordless doas to root.  Same GL stack as xbase
+# (SMOLX kernel, virtiodrm/vioinput, virgl).  Look & feel clones the
+# Omarchy catppuccin theme: Inter UI font, JetBrainsMono terminal,
+# dark rounded windows, thin accent borders, top bar, corner notices.
+
+# smolset LAST: its patched libdrm/libglapi/virtio_gpu_dri must overwrite
+# the official same-named files from the xbase set (extraction order =
+# override order)
+FROM base,etc,xbase,xserver,xetc,xfont,smolset
+
+LABEL smolbsd.service=smolcracy
+LABEL smolbsd.imgsize=2048
+LABEL smolbsd.use_pty=y
+
+RUN pkgin up && pkgin -y in i3 i3status i3lock rxvt-unicode rofi \
+	dunst picom maim hsetroot clipit xidle xdotool wmctrl btop \
+	JetBrainsMono-ttf Inter-UI dejavu-ttf bash starship lsd doas nerd-fonts-JetBrainsMono nerd-fonts-symbols alacritty
+# fontconfig's CONF_FILES merge does not happen through pkgin, so its
+# default config must be placed by hand (libXft font rendering)
+RUN mkdir -p /usr/pkg/etc/fonts && \
+	cp /usr/pkg/share/examples/fontconfig/fonts.conf \
+	/usr/pkg/etc/fonts/fonts.conf
+# dbus needs a machine-id for the session bus (dunst, notify-send);
+# pkgsrc dbus looks in /var/lib/dbus and /etc, and none exists in a
+# fresh smolBSD image, so write one from base uuidgen
+RUN uuidgen | tr -d '-' > /etc/machine-id
+# session user: wheel gives access to the device nodes, doas is
+# NetBSD base, and 'permit nopass' grants passwordless root.  No -m:
+# /home/smol already exists (it rides in via service packages/) and
+# the skel files are not needed for an X session.
+RUN echo /usr/pkg/bin/bash >> /etc/shells
+RUN useradd -d /home/smol -G wheel -s /usr/pkg/bin/bash -c 'smolBSD user' smol && \
+	usermod -s /usr/pkg/bin/bash root && \
+	printf 'permit nopass smol\npermit nopass root as smol\n' > /etc/doas.conf && cp /etc/doas.conf /usr/pkg/etc/doas.conf || true
+# config tree arrives via the service-dir packages/ rsync as root
+RUN chown -R smol /home/smol
+
+ENV LD_LIBRARY_PATH=/usr/pkg/lib:/usr/X11R7/lib
+
+CMD sh /etc/session.sh
+
+# vim: filetype=dockerfile :

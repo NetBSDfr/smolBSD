@@ -1,0 +1,8 @@
+[Desktop Entry]
+Type=Application
+Name=Terminal
+Comment=terminal
+Exec=alacritty
+Icon=utilities-terminal
+Terminal=false
+Categories=System;TerminalEmulator;

@@ -1,0 +1,131 @@
+# smolcracy i3 config — Omarchy-style keyboard-first keymap (Mod4 =
+# Super) with the Omarchy catppuccin look: pixel borders with a thin
+# mauve border on the focused window, dark top bar with workspace
+# pills left and status right.  NOTE: pkgsrc ships vanilla i3 (no
+# gaps support, no hide_edge_borders smart, no sway keywords).
+
+set $mod Mod4
+set $term alacritty
+
+font pango:Inter 10
+
+default_border pixel 2
+
+floating_modifier $mod
+
+# --- launching (Omarchy app hotkeys) ---
+# alacritty reads its own TOML config; xrdb/Xresources stay for
+# urxvt (fallback terminal) only
+# (see .xsession), so a fresh merge keeps late windows colored
+bindsym $mod+Return exec --no-startup-id alacritty
+bindsym $mod+Shift+t exec --no-startup-id alacritty -e btop
+bindsym $mod+space exec --no-startup-id rofi -show drun
+bindsym $mod+Escape exec --no-startup-id sh ~/.config/smolcracy/powermenu.sh
+
+# --- gaps: upstream i3 has gaps but NO smart_gaps ---
+gaps inner 10
+gaps outer 5
+
+# --- window ops ---
+bindsym $mod+w kill
+bindsym $mod+q kill
+bindsym $mod+t floating toggle
+bindsym $mod+f fullscreen toggle
+bindsym $mod+j split toggle
+bindsym $mod+b bar mode toggle
+
+# focus / move like Omarchy arrows
+bindsym $mod+Left focus left
+bindsym $mod+Down focus down
+bindsym $mod+Up focus up
+bindsym $mod+Right focus right
+bindsym $mod+Shift+Left move left
+bindsym $mod+Shift+Down move down
+bindsym $mod+Shift+Up move up
+bindsym $mod+Shift+Right move right
+
+# --- workspaces (Omarchy: move follows, Mod1 stays put) ---
+workspace_auto_back_and_forth yes
+bindsym $mod+1 workspace number 1
+bindsym $mod+2 workspace number 2
+bindsym $mod+3 workspace number 3
+bindsym $mod+4 workspace number 4
+bindsym $mod+5 workspace number 5
+bindsym $mod+6 workspace number 6
+bindsym $mod+7 workspace number 7
+bindsym $mod+8 workspace number 8
+bindsym $mod+9 workspace number 9
+bindsym $mod+Shift+1 move container to workspace number 1; workspace number 1
+bindsym $mod+Shift+2 move container to workspace number 2; workspace number 2
+bindsym $mod+Shift+3 move container to workspace number 3; workspace number 3
+bindsym $mod+Shift+4 move container to workspace number 4; workspace number 4
+bindsym $mod+Shift+5 move container to workspace number 5; workspace number 5
+bindsym $mod+Shift+6 move container to workspace number 6; workspace number 6
+bindsym $mod+Shift+7 move container to workspace number 7; workspace number 7
+bindsym $mod+Shift+8 move container to workspace number 8; workspace number 8
+bindsym $mod+Shift+9 move container to workspace number 9; workspace number 9
+bindsym $mod+Shift+Mod1+1 move container to workspace number 1
+bindsym $mod+Shift+Mod1+2 move container to workspace number 2
+bindsym $mod+Shift+Mod1+3 move container to workspace number 3
+bindsym $mod+Shift+Mod1+4 move container to workspace number 4
+bindsym $mod+Shift+Mod1+5 move container to workspace number 5
+bindsym $mod+Shift+Mod1+6 move container to workspace number 6
+bindsym $mod+Shift+Mod1+7 move container to workspace number 7
+bindsym $mod+Shift+Mod1+8 move container to workspace number 8
+bindsym $mod+Shift+Mod1+9 move container to workspace number 9
+bindsym $mod+Tab workspace next
+bindsym $mod+Shift+Tab workspace prev
+bindsym $mod+Ctrl+Tab workspace back_and_forth
+
+# --- scratchpad (Omarchy Super+S) ---
+bindsym $mod+s scratchpad show
+bindsym $mod+Shift+s move scratchpad
+
+# --- resize (Omarchy Super+minus/equal) ---
+bindsym $mod+minus resize shrink width 10 px or 10 ppt
+bindsym $mod+equal resize grow width 10 px or 10 ppt
+bindsym $mod+Shift+minus resize shrink height 10 px or 10 ppt
+bindsym $mod+Shift+equal resize grow height 10 px or 10 ppt
+
+# --- system ---
+bindsym $mod+Ctrl+l exec --no-startup-id i3lock -e -c 1e1e2e
+bindsym $mod+Print exec --no-startup-id sh -c 'maim -s ~/Pictures/$(date +%Y%m%d-%H%M%S).png'
+# logout: session.sh ends with reboot -f, startnb -X adds -no-reboot,
+# so QEMU exits and the window disappears
+bindsym $mod+Shift+e exec i3-msg exit
+
+# --- session services (run as smol) ---
+# Omarchy ships photo wallpapers; the flat catppuccin base is the
+# offline twin (hsetroot here has no -blend)
+exec --no-startup-id hsetroot -solid "#1e1e2e"
+# picom once raced X startup at boot and died silently; delay it a
+# beat, log the attempt, fall back to xrender if glx is unusable
+exec --no-startup-id sh -c 'sleep 2; picom 2>>/tmp/picom.log; sleep 1; exec picom --backend=xrender 2>>/tmp/picom.log'
+exec --no-startup-id dunst
+exec --no-startup-id clipit
+exec --no-startup-id xidle -timeout 600 -program "i3lock -e -c 1e1e2e"
+
+# --- Omarchy catppuccin palette ---
+# (background border text indicator child_border)
+client.focused		#1e1e2e #cba6f7 #cdd6f4 #cba6f7 #cba6f7
+client.focused_inactive	#1e1e2e #45475a #6c7086 #45475a #45475a
+client.unfocused	#1e1e2e #313244 #585b70 #313244 #313244
+client.urgent		#1e1e2e #f38ba8 #cdd6f4 #f38ba8 #f38ba8
+client.placeholder	#1e1e2e #1e1e2e #cdd6f4
+
+bar {
+	position top
+	height 26
+	status_command i3status
+	font pango:Inter 10
+	colors {
+		background #11111b
+		statusline #cdd6f4
+		separator #313244
+		focused_workspace #cba6f7 #cba6f7 #11111b
+		active_workspace #11111b #11111b #7f849c
+		inactive_workspace #11111b #11111b #585b70
+		urgent_workspace #f38ba8 #f38ba8 #11111b
+		binding_mode #11111b #11111b #f9e2af
+	}
+}

@@ -147,6 +147,9 @@ shhead()
 	. ../service/common/funcs
 	. ../service/common/choupi
 
+	# openpam 2025+ fails pam_start without /var/run/log
+	chroot . sh -c 'mkdir -p /var/run; [ -e /var/run/log ] || : >/var/run/log' 2>/dev/null || true
+
 	EOHEAD
 }
 
@@ -243,12 +246,12 @@ do
 				# remove any heredoc specfier
 				heretag=$(printf '%s' "$heretag"|tr -d "'\"")
 				printf '%s\n' \
-					"chroot . su ${USER} -c \"cd ${WORKDIR} && ${prehere}${posttag}" \
+					"chroot . sh -c \"cd ${WORKDIR} && ${prehere}${posttag}" \
 					>>"$postinst"
 				;;
 			*)
 				escaped=$(printf '%s' "$val" | sed 's/"/\\"/g')
-				printf '%s\n' "chroot . su ${USER} -c \"cd ${WORKDIR} && ${escaped}\"" \
+				printf '%s\n' "chroot . sh -c \"cd ${WORKDIR} && ${escaped}\"" \
 					>>"$postinst"
 				;;
 		esac

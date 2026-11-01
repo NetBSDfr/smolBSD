@@ -1,0 +1,31 @@
+! smolcracy — Omarchy catppuccin look for rxvt-unicode
+URxvt.termName:		xterm-256color
+URxvt.font:		xft:JetBrainsMono Nerd Font:pixelsize=12:antialias=true
+URxvt.boldFont:		xft:JetBrainsMono Nerd Font:pixelsize=12:antialias=true:weight=bold
+URxvt.internalBorder:	10
+URxvt.scrollStyle:	none
+URxvt.cursorBlink:	true
+URxvt.cursorColor:	#f5c2e7
+URxvt.underlineColor:	#89b4fa
+! catppuccin-mocha
+URxvt.background:	#1e1e2e
+URxvt.foreground:	#cdd6f4
+URxvt.color0:		#45475a
+URxvt.color8:		#585b70
+URxvt.color1:		#f38ba8
+URxvt.color9:		#f38ba8
+URxvt.color2:		#a6e3a1
+URxvt.color10:		#a6e3a1
+URxvt.color3:		#f9e2af
+URxvt.color11:		#f9e2af
+URxvt.color4:		#89b4fa
+URxvt.color12:		#89b4fa
+URxvt.color5:		#f5c2e7
+URxvt.color13:		#f5c2e7
+URxvt.color6:		#94e2d5
+URxvt.color14:		#94e2d5
+URxvt.color7:		#bac2de
+URxvt.color15:		#a6adc8
+URxvt.highlightColor:	#45475a
+URxvt.highlightTextColor: #cdd6f4
+URxvt.scrollBar: false

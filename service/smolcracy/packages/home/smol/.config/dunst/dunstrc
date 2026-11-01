@@ -1,0 +1,30 @@
+# smolcracy dunst — corner notices, no key grabs (a dunst ctrl+space
+# grab would eat terminal keys).  Colors follow the Omarchy catppuccin
+# theme: dark panel, accent frame.
+[global]
+	font = Inter 10
+	width = (300, 500)
+	height = 150
+	origin = top-right
+	offset = 16x40
+	frame_width = 1
+
+[shortcuts]
+	close = none
+	action = none
+	context = none
+
+[urgency_low]
+	background = "#1e1e2e"
+	foreground = "#a6adc8"
+	frame_color = "#45475a"
+
+[urgency_normal]
+	background = "#1e1e2e"
+	foreground = "#cdd6f4"
+	frame_color = "#cba6f7"
+
+[urgency_critical]
+	background = "#1e1e2e"
+	foreground = "#f38ba8"
+	frame_color = "#f38ba8"

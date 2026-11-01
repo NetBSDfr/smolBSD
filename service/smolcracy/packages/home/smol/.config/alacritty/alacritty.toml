@@ -1,0 +1,41 @@
+# smolBSD alacritty - Omarchy-flavored terminal, catppuccin mocha
+[window]
+padding = { x = 8, y = 8 }
+dynamic_padding = true
+
+[font]
+size = 10.0
+normal = { family = "JetBrainsMono Nerd Font Mono", style = "Regular" }
+bold = { family = "JetBrainsMono Nerd Font Mono", style = "Bold" }
+italic = { family = "JetBrainsMono Nerd Font Mono", style = "Italic" }
+
+[env]
+TERM = "xterm-256color"
+
+[colors.primary]
+background = "#1e1e2e"
+foreground = "#cdd6f4"
+
+[colors.normal]
+black = "#45475a"
+red = "#f38ba8"
+green = "#a6e3a1"
+yellow = "#f9e2af"
+blue = "#89b4fa"
+magenta = "#cba6f7"
+cyan = "#94e2d5"
+white = "#bac2de"
+
+[colors.bright]
+black = "#585b70"
+red = "#f38ba8"
+green = "#a6e3a1"
+yellow = "#f9e2af"
+blue = "#89b4fa"
+magenta = "#cba6f7"
+cyan = "#94e2d5"
+white = "#a6adc8"
+
+[colors.selection]
+background = "#585b70"
+text = "#cdd6f4"

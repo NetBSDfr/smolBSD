@@ -1,0 +1,8 @@
+[Desktop Entry]
+Type=Application
+Name=System Monitor
+Comment=btop in a terminal
+Exec=alacritty -e btop
+Icon=utilities-system-monitor
+Terminal=false
+Categories=System;Monitor;

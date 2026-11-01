@@ -1,0 +1,4 @@
+# icons stay on the rich default theme: alacritty falls back per
+# glyph to Symbols Nerd Font for the ranges JetBrains Nerd lacks.
+icons:
+  when: always

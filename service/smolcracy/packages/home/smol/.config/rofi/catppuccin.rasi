@@ -1,0 +1,15 @@
+* { background-color: #1e1e2e; text-color: #cdd6f4; }
+window { height: 420px; transparency: "real"; background-color: #11111bf2; border: 2; border-radius: 16; border-color: #9199cb; padding: 16; }
+mainbox { children: [ inputbar, listview ]; spacing: 12; }
+inputbar { children: [ prompt, entry ]; background-color: transparent; padding: 4 2; }
+prompt { background-color: #9199cb; text-color: #1e1e2e; border-radius: 8; padding: 2 10; margin: 0 10 0 0; }
+entry { text-color: #cdd6f4; background-color: transparent; }
+listview { spacing: 6; margin: 8 10 0 10; }
+element { padding: 12 16; border-radius: 14; }
+element-icon, element-text { background-color: inherit; }
+element.normal.normal { background-color: transparent; text-color: #cdd6f4; }
+element.selected.normal { background-color: #45475a; text-color: #cdd6f4; }
+highlight { text-color: #cba6f7; }
+sidebar { spacing: 8; margin-top: 10; }
+button { padding: 4 12; background-color: transparent; text-color: #6c7086; border-radius: 8; }
+button.selected.normal { background-color: #313244; text-color: #cba6f7; }

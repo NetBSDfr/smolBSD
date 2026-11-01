@@ -1,0 +1,44 @@
+# p10k-style prompt: mauve dir pill, git info, clock pill, duration on line 1.
+add_newline = true
+command_timeout = 300
+
+format = """
+$directory$git_branch$git_status$time$cmd_duration\
+$line_break\
+$status$character"""
+
+[directory]
+format = "[ \uf07b $path ]($style)"
+style = "bold bg:#cba6f7 fg:#1e1e2e"
+truncation_length = 3
+truncate_to_repo = true
+read_only_style = "bg:#cba6f7 fg:#1e1e2e"
+
+[git_branch]
+symbol = "\ue0a0"
+format = "[ $symbol$branch]($style) "
+style = "bold fg:#cba6f7"
+
+[git_status]
+format = "[$all_status$ahead_behind]($style) "
+style = "bold fg:#f38ba8"
+
+[time]
+disabled = false
+time_format = "%R"
+format = "[ \uf017 $time ]($style)"
+style = "bg:#313244 fg:#cdd6f4"
+
+[cmd_duration]
+min_time = 2000
+format = " [$duration]($style)"
+style = "bold fg:#a6e3a1"
+
+[status]
+disabled = false
+format = "[ $symbol$status ](bg:#f38ba8 fg:#1e1e2e bold)"
+symbol = "\uf00d"
+
+[character]
+success_symbol = "[>](bold green)"
+error_symbol = "[>](bold red)"
