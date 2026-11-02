@@ -30,3 +30,10 @@ URxvt.highlightColor:	#45475a
 URxvt.highlightTextColor: #cdd6f4
 URxvt.scrollBar: false
 URxvt.depth:		32
+# Pin Xft DPI: virtio-gpu (edid=off) reports a fixed physical size, so
+# the core DPI follows the pixel size of each X mode (1280 -> 96dpi,
+# 1920 -> 144dpi) and every Xft font in the session inflates with the
+# resolution.  A fixed 96 keeps the bar and all fonts pixel-constant
+# across mode changes, which is what smolbar.sh's centering formula
+# calibrates against.
+Xft.dpi: 96
