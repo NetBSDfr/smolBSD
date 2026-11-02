@@ -330,10 +330,15 @@ if [ -n "$glx" ]; then
 	# QEMU_DISPLAY picks the windowing backend, sdl (default) or gtk;
 	# gtk is a fallback for hosts where the SDL GL path misbehaves.
 	gui=${QEMU_DISPLAY:-sdl}
+	gpudevice=virtio-gpu-gl-device
 	case $gui in
 	sdl)	export IBUS_ADDRESS=bogus	# SDL ibus crash-fix
 		d="-display sdl,gl=on";;
-	gtk)	d="-display gtk,gl=on";;
+	gtk)	# NVIDIA EGL blob renders the GLArea black on this host;
+		# pin the host GL stack to Mesa software (slower, correct).
+		export LIBGL_ALWAYS_SOFTWARE=1
+		export __EGL_VENDOR_LIBRARY_FILENAMES=/usr/share/glvnd/egl_vendor.d/50_mesa.json
+		d="-display gtk,gl=on";;
 	*)	echo "${ERROR} QEMU_DISPLAY must be sdl or gtk (got '$gui')"
 		exit 1;;
 	esac
@@ -372,7 +377,7 @@ if [ -n "$glx" ]; then
 		extra="$extra -full-screen"
 		;;
 	esac
-	extra="$extra -device virtio-gpu-gl-device${gpuopts} \
+	extra="$extra -device ${gpudevice}${gpuopts} \
 	-device virtio-tablet-device -device virtio-keyboard-device"
 	# a halted guest leaves the (fullscreen, undecorated) SDL
 	# window stuck with nothing to close it; the JEMATA kill

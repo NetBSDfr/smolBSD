@@ -104,8 +104,8 @@ if xtry :1 || xtry :1 -vtdev /dev/ttyE0 || xtry :1 vt2 ||
 	{ export CONSOLEDEVICE=/dev/ttyE0; xtry :1 -novtswitch; }; then
 	:
 else
-	echo "SMOLCRACY: all Xorg attempts failed, tail of /tmp/Xorg.log:"
-	tail -25 /tmp/Xorg.log
+	echo "SMOLCRACY: all Xorg attempts failed, tail of /mnt/Xorg.log:"
+	tail -25 /mnt/Xorg.log
 	power_off
 	exit 1
 fi
