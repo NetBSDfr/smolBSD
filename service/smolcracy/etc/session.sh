@@ -47,6 +47,9 @@ fi
 cd /
 
 mount -t tmpfs -o -s64m tmpfs /tmp 2>/dev/null
+# i3status memory/cpu modules read /proc/meminfo and /proc/stat
+mkdir -p /proc
+mount -t procfs procfs /proc 2>/dev/null
 
 # PAM (login/su) is broken in the Oct-2026 base for reasons still
 # unclear upstream; daemon -u (setusercontext, no PAM) runs the session,
@@ -65,7 +68,7 @@ chown smol $XAUTHORITY 2>/dev/null
 
 xtry() {
 	echo "SMOLCRACY: trying Xorg $*"
-	Xorg "$@" -config /etc/xorg.conf -nolisten tcp >/tmp/Xorg.log 2>&1 &
+	Xorg "$@" -config /etc/xorg.conf -nolisten tcp >/mnt/Xorg.log 2>&1 &
 	XPID=$!
 	i=0
 	while [ $i -lt 20 ]; do
@@ -75,6 +78,19 @@ xtry() {
 	done
 	if [ -e /tmp/.X11-unix/X1 ]; then
 		echo "SMOLCRACY: Xorg up ($*) after ${i}s"
+		# the socket appears before Xorg finishes seeding its auth
+		# cookie; anything started in that window gets a spurious
+		# "Connection refused" (lost xrdb resources, flapping i3bar
+		# leaking i3status pipelines).  Wait until the session user can
+		# actually connect.
+		j=0
+		while [ $j -lt 30 ]; do
+			j=$((j+1))
+			$SMOLL env DISPLAY=:1 XAUTHORITY=$XAUTHORITY \
+				/usr/X11R7/bin/xdpyinfo >/dev/null 2>&1 && break
+			sleep 1
+		done
+		echo "SMOLCRACY: X display :1 connectable by smol after ${j}s"
 		return 0
 	fi
 	echo "SMOLCRACY: Xorg FAILED ($*)"
@@ -118,6 +134,8 @@ echo "SMOLCRACY: starting i3 session as smol"
 SPID=$!
 wait $SPID
 echo "SMOLCRACY: session ended"
+$SMOLL env DISPLAY=:1 XAUTHORITY=$XAUTHORITY /usr/X11R7/bin/xdpyinfo >/dev/null 2>&1 && echo "SMOLCRACY: X still reachable" || echo "SMOLCRACY: X NOT reachable"
+tail -25 /mnt/Xorg.log 2>/dev/null | sed "s/^/SMOLCRACY xorg: /"
 tail -25 /tmp/i3.log 2>/dev/null | sed "s/^/SMOLCRACY i3: /"
 tail -8 /tmp/xrdb.log 2>/dev/null | sed "s/^/SMOLCRACY xrdb: /"
 kill $XPID 2>/dev/null

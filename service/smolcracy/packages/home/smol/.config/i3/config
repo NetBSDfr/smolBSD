@@ -5,20 +5,21 @@
 # gaps support, no hide_edge_borders smart, no sway keywords).
 
 set $mod Mod4
-set $term alacritty
+set $term urxvt
 
-font pango:Inter 10
+font pango:JetBrainsMono Nerd Font Mono 10
 
 default_border pixel 2
 
 floating_modifier $mod
 
 # --- launching (Omarchy app hotkeys) ---
-# alacritty reads its own TOML config; xrdb/Xresources stay for
-# urxvt (fallback terminal) only
+# urxvt is the default terminal; its look comes from xrdb/Xresources
+# (merged by .xsession before first launch).  alacritty remains
+# available via its own TOML config.
 # (see .xsession), so a fresh merge keeps late windows colored
-bindsym $mod+Return exec --no-startup-id alacritty
-bindsym $mod+Shift+t exec --no-startup-id alacritty -e btop
+bindsym $mod+Return exec --no-startup-id $term
+bindsym $mod+Shift+t exec --no-startup-id $term -e btop
 bindsym $mod+space exec --no-startup-id rofi -show drun
 bindsym $mod+Escape exec --no-startup-id sh ~/.config/smolcracy/powermenu.sh
 
@@ -97,12 +98,11 @@ bindsym $mod+Shift+e exec i3-msg exit
 # --- session services (run as smol) ---
 # Omarchy ships photo wallpapers; the flat catppuccin base is the
 # offline twin (hsetroot here has no -blend)
-exec --no-startup-id hsetroot -solid "#1e1e2e"
+exec --no-startup-id hsetroot -cover /home/smol/Pictures/smolcracy.jpg
 # picom once raced X startup at boot and died silently; delay it a
 # beat, log the attempt, fall back to xrender if glx is unusable
 exec --no-startup-id sh -c 'sleep 2; picom 2>>/tmp/picom.log; sleep 1; exec picom --backend=xrender 2>>/tmp/picom.log'
 exec --no-startup-id dunst
-exec --no-startup-id clipit
 exec --no-startup-id xidle -timeout 600 -program "i3lock -e -c 1e1e2e"
 
 # --- Omarchy catppuccin palette ---
@@ -116,8 +116,8 @@ client.placeholder	#1e1e2e #1e1e2e #cdd6f4
 bar {
 	position top
 	height 26
-	status_command i3status
-	font pango:Inter 10
+	status_command ~/.config/i3status/smolbar.sh
+	font pango:JetBrainsMono Nerd Font Mono 10
 	colors {
 		background #11111b
 		statusline #cdd6f4

@@ -1,0 +1,3 @@
+# first-run dialog suppressed; plain-text history file is opt-in
+[Settings]
+save_history=false

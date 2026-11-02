@@ -9,6 +9,11 @@ HOME=/home/smol
 export HOME
 SHELL=/usr/pkg/bin/bash
 export SHELL
+# AccelMethod "none" (no glamor) means no DRI3: Mesa clients run in
+# software.  llvmpipe's AVX2 JIT aborts on this host CPU (LLVM 13
+# machine-model bug), so use the JIT-free softpipe backend instead.
+GALLIUM_DRIVER=softpipe
+export GALLIUM_DRIVER
 # never blank: DPMS-off over virtio-gpu shows QEMU's "Display output
 # is not active" placeholder instead of the desktop (guest stays fine!)
 ( sleep 2; xset s off -dpms; xset dpms 0 0 0 ) >/dev/null 2>&1 &
@@ -29,10 +34,12 @@ eval $(dbus-launch --sh-syntax)
   while [ $i -lt 60 ]; do
 	i=$((i+1))
 	xrdb -merge $HOME/.Xresources 2>>/tmp/xrdb.log
-	[ "$(xrdb -query 2>/dev/null | wc -l)" -gt 0 ] && break
+	# grep for a real entry: a failed xrdb prints its error to stdout,
+	# which a plain wc -l would count as "entries present"
+	[ "$(xrdb -query 2>/dev/null | grep -c URxvt)" -gt 0 ] && break
 	sleep 2
   done
-  echo "smolcracy: xrdb entries=$(xrdb -query 2>/dev/null | wc -l) tries=$i" \
+  echo "smolcracy: xrdb entries=$(xrdb -query 2>/dev/null | grep -c URxvt) tries=$i" \
 	>>/tmp/xrdb.log ) &
 
 mkdir -p ~/Pictures
@@ -56,5 +63,10 @@ mkdir -p ~/Pictures
 	fi
 	sleep 1
   done ) &
-i3 >>/tmp/i3.log 2>&1
+i=0
+until i3 >>/tmp/i3.log 2>&1; do
+	i=$((i+1))
+	[ $i -ge 3 ] && break
+	sleep 1
+done
 kill $DBUS_SESSION_BUS_PID 2>/dev/null

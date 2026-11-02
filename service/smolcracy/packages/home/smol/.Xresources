@@ -1,14 +1,14 @@
 ! smolcracy — Omarchy catppuccin look for rxvt-unicode
 URxvt.termName:		xterm-256color
-URxvt.font:		xft:JetBrainsMono Nerd Font:pixelsize=12:antialias=true
-URxvt.boldFont:		xft:JetBrainsMono Nerd Font:pixelsize=12:antialias=true:weight=bold
+URxvt.font:		xft:monospace:pixelsize=12:antialias=true
+URxvt.boldFont:		xft:monospace:pixelsize=12:antialias=true:weight=bold
 URxvt.internalBorder:	10
 URxvt.scrollStyle:	none
-URxvt.cursorBlink:	true
+URxvt.cursorBlink:	false
 URxvt.cursorColor:	#f5c2e7
 URxvt.underlineColor:	#89b4fa
 ! catppuccin-mocha
-URxvt.background:	#1e1e2e
+URxvt.background:	[85]#1e1e2e
 URxvt.foreground:	#cdd6f4
 URxvt.color0:		#45475a
 URxvt.color8:		#585b70
@@ -29,3 +29,4 @@ URxvt.color15:		#a6adc8
 URxvt.highlightColor:	#45475a
 URxvt.highlightTextColor: #cdd6f4
 URxvt.scrollBar: false
+URxvt.depth:		32

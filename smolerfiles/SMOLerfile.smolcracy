@@ -36,6 +36,18 @@ RUN useradd -d /home/smol -G wheel -s /usr/pkg/bin/bash -c 'smolBSD user' smol &
 	printf 'permit nopass smol\npermit nopass root as smol\n' > /etc/doas.conf && cp /etc/doas.conf /usr/pkg/etc/doas.conf || true
 # config tree arrives via the service-dir packages/ rsync as root
 RUN chown -R smol /home/smol
+# clipit's colorful stock tray icon (gradients) is replaced with a plain
+# white paperclip that reads correctly on the dark bar.  This must be a
+# RUN step, not packages/: the packages/ rsync happens before pkgin
+# installs clipit, which would overwrite the file again.  The viewBox is
+# 24x24 and the glyph is scaled down so it sits slightly smaller than
+# the bar status indicators.
+RUN printf '%s\n' '<?xml version="1.0" encoding="UTF-8"?>' \
+	'<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24">' \
+	'  <g transform="translate(4.1 4.1) scale(0.66)" fill="none" stroke="#ffffff" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">' \
+	'    <path d="M21.44 11.05l-9.19 9.19a6 6 0 0 1-8.49-8.49l9.19-9.19a4 4 0 0 1 5.66 5.66l-9.2 9.19a2 2 0 0 1-2.83-2.83l8.49-8.48"/>' \
+	'  </g>' \
+	'</svg>' > /usr/pkg/share/icons/hicolor/scalable/apps/clipit-trayicon.svg
 
 ENV LD_LIBRARY_PATH=/usr/pkg/lib:/usr/X11R7/lib
 
