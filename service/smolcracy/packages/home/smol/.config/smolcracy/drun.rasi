@@ -1,0 +1,96 @@
+/* smolcracy app launcher - adi1090x launchers/type-4 style-1, catppuccin.
+   rofi 2.0 pkgsrc: font and display strings must come from the command
+   line (drun.sh); only widget properties are honored here. */
+window {
+	width:                       600px;
+	location:                    center;
+	anchor:                      center;
+	transparency:                "real";
+	border:                      1px;
+	border-radius:               0px;
+	border-color:                #89b4fa;
+	background-color:            #1e1e2e;
+}
+mainbox {
+	padding:                     10px;
+	spacing:                     10px;
+	children:                    [ "inputbar", "listview", "mode-switcher" ];
+	background-color:            transparent;
+}
+inputbar {
+	children:                    [ "prompt", "entry" ];
+	spacing:                     10px;
+	padding:                     10px;
+	border:                      0px 0px 1px 0px;
+	border-color:                #89b4fa;
+	background-color:            #313244;
+	text-color:                  #cdd6f4;
+}
+prompt {
+	background-color:            inherit;
+	text-color:                  inherit;
+}
+entry {
+	background-color:            transparent;
+	text-color:                  inherit;
+	cursor:                      text;
+	placeholder:                 "Search...";
+	placeholder-color:           #6c7086;
+}
+listview {
+	lines:                       8;
+	columns:                     1;
+	cycle:                       true;
+	dynamic:                     true;
+	scrollbar:                   false;
+	layout:                      vertical;
+	fixed-height:                true;
+	fixed-columns:               true;
+	spacing:                     0px;
+	background-color:            transparent;
+	text-color:                  #cdd6f4;
+}
+element {
+	spacing:                     10px;
+	padding:                     10px;
+	border:                      0px;
+	border-radius:               0px;
+	background-color:            transparent;
+	text-color:                  #cdd6f4;
+	cursor:                      pointer;
+}
+element normal.normal {
+	background-color:            transparent;
+	text-color:                  #cdd6f4;
+}
+element selected.normal {
+	background-color:            #89b4fa;
+	text-color:                  #1e1e2e;
+}
+element-icon {
+	size:                        24px;
+	background-color:            transparent;
+	text-color:                  inherit;
+}
+element-text {
+	background-color:            transparent;
+	text-color:                  inherit;
+	highlight:                   inherit;
+}
+mode-switcher {
+	spacing:                     10px;
+	background-color:            transparent;
+	text-color:                  #cdd6f4;
+}
+button {
+	padding:                     10px;
+	border:                      0px;
+	border-radius:               0px;
+	background-color:            #313244;
+	text-color:                  inherit;
+	cursor:                      pointer;
+}
+button selected {
+	background-color:            #89b4fa;
+	text-color:                  #1e1e2e;
+}

@@ -20,7 +20,7 @@ floating_modifier $mod
 # (see .xsession), so a fresh merge keeps late windows colored
 bindsym $mod+Return exec --no-startup-id $term
 bindsym $mod+Shift+t exec --no-startup-id $term -e btop
-bindsym $mod+space exec --no-startup-id rofi -show drun
+bindsym $mod+space exec --no-startup-id sh ~/.config/smolcracy/drun.sh
 bindsym $mod+Escape exec --no-startup-id sh ~/.config/smolcracy/powermenu.sh
 
 # --- gaps: upstream i3 has gaps but NO smart_gaps ---
