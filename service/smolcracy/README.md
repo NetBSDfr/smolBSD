@@ -1,6 +1,6 @@
 # smolcracy
 
-Omarchy-style (DHH) keyboard-first tiling desktop for smolBSD: X11 +
+Omarchy-style keyboard-first tiling desktop for smolBSD: X11 +
 i3 + catppuccin-mocha, no Wayland stack. X runs inside QEMU via
 virtio-gpu-gl (`-X`), the session starts automatically and runs as
 user **smol** (passwordless `doas`).
