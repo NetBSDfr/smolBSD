@@ -1,0 +1,56 @@
+/* smolcracy powermenu — look of adi1090x rofi powermenu type-2 style 9:
+   a row of rounded icon tiles, the selected one light blue.
+   Glyphs are Material Design codepoints carried by the JetBrainsMono
+   Nerd Font, so entries are glyphs mapped to actions.
+   Note: the pkgsrc rofi 2.0.0 build ignores font in themes; the script
+   passes -font on the command line instead. */
+window {
+	width: 620px;
+	location: center;
+	anchor: center;
+	x-offset: 0;
+	y-offset: 0;
+	margin: 0;
+	padding: 0;
+	spacing: 0;
+	border: 0;
+	background-color: transparent;
+}
+mainbox {
+	orientation: horizontal;
+	children: [ listview ];
+	margin: 0;
+	padding: 0;
+	spacing: 0;
+	background-color: transparent;
+}
+listview {
+	lines: 1;
+	columns: 4;
+	spacing: 18px;
+	fixed-height: 0;
+	dynamic: false;
+	background-color: transparent;
+}
+element {
+	font: "JetBrainsMono Nerd Font Mono 44";
+	padding: 26px 0px 26px 48px;
+	border-radius: 18px;
+	background-color: #313244;
+	text-color: #cdd6f4;
+}
+element-text {
+	font: "JetBrainsMono Nerd Font Mono 44";
+	text-align: center;
+	background-color: transparent;
+	text-color: inherit;
+}
+element selected {
+	background-color: #89b4fa;
+	text-color: #1e1e2e;
+}
+element selected-text {
+	text-align: center;
+	background-color: transparent;
+	text-color: #1e1e2e;
+}
