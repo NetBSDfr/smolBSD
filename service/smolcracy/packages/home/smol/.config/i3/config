@@ -33,6 +33,10 @@ bindsym $mod+q kill
 bindsym $mod+t floating toggle
 bindsym $mod+f fullscreen toggle
 bindsym $mod+j split toggle
+# explicit orientations (i3 userguide "splitting containers"):
+# split h = windows side by side, split v = stacked above/below
+bindsym $mod+h split h
+bindsym $mod+v split v
 bindsym $mod+b bar mode toggle
 
 # focus / move like Omarchy arrows
