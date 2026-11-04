@@ -105,10 +105,11 @@ exec --no-startup-id sh -c 'sleep 2; picom 2>>/tmp/picom.log; sleep 1; exec pico
 exec --no-startup-id dunst
 exec --no-startup-id xidle -timeout 600 -program "i3lock -e -c 1e1e2e"
 
-# the browser is the session's main window: give it the whole screen.
-# Half tiling squeezes desktop sites into their cramped responsive
-# layout (tiny logo, clipped search box) which reads as "wrong scale".
-for_window [class="(?i)luakit"] fullscreen enable
+# fullscreen DISABLED for luakit: closing a fullscreen window on the
+# Xorg-modesetting/virtio-gpu stack wedges scanout (screen frozen on the
+# last frame while the session keeps rendering; only an X restart heals).
+# luakit tiles correctly unmodified, so no rule here.
+#for_window [class="(?i)luakit"] fullscreen enable
 
 # --- Omarchy catppuccin palette ---
 # (background border text indicator child_border)
