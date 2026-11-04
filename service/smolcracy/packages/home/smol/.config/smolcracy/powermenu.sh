@@ -1,13 +1,13 @@
 #!/bin/sh
 # smolcracy system menu (Super+Escape), Omarchy power-menu slot.
 # Look: adi1090x rofi powermenu type-2 style 9 (icon tiles, blue
-# selection). Icons are Material Design codepoints carried by the
-# JetBrainsMono Nerd Font, so entries are glyphs mapped to actions.
+# selection). Icons are the feather set (Icomoon-Feather.ttf, family
+# "feather"), as used by adi1090x; entries are glyphs mapped to actions.
 dir=$(dirname -- "$0")
-ic_lock=󰌾
-ic_logout=󰍃
-ic_reboot=󰜈
-ic_power=󰐤
+ic_lock=
+ic_logout=
+ic_reboot=
+ic_power=
 c=$(printf '%s\n%s\n%s\n%s\n' "$ic_lock" "$ic_logout" "$ic_reboot" "$ic_power" |
 	rofi -dmenu -font "JetBrainsMono Nerd Font Mono 44" -p "" -theme "$dir/powermenu.rasi")
 [ -z "$c" ] && exit 0
