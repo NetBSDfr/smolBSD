@@ -63,6 +63,9 @@ mkdir -p ~/Pictures
 	fi
 	sleep 1
   done ) &
+# terminals inherit the WM's cwd: session.sh runs from /, and without this
+# every urxvt prompt starts in / instead of ~
+cd "$HOME" 2>/dev/null || cd /
 i=0
 until i3 >>/tmp/i3.log 2>&1; do
 	i=$((i+1))

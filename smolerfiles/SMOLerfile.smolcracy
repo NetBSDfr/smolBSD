@@ -11,12 +11,12 @@
 FROM base,etc,xbase,xserver,xetc,xfont,smolset
 
 LABEL smolbsd.service=smolcracy
-LABEL smolbsd.imgsize=2048
+LABEL smolbsd.imgsize=4096
 LABEL smolbsd.use_pty=y
 
 RUN pkgin up && pkgin -y in i3 i3status i3lock rxvt-unicode rofi \
 	dunst picom maim hsetroot clipit xidle xdotool wmctrl btop \
-	JetBrainsMono-ttf Inter-UI dejavu-ttf bash starship lsd doas nerd-fonts-JetBrainsMono nerd-fonts-symbols alacritty
+	JetBrainsMono-ttf Inter-UI dejavu-ttf bash starship lsd doas nerd-fonts-JetBrainsMono nerd-fonts-symbols alacritty badwolf
 # fontconfig's CONF_FILES merge does not happen through pkgin, so its
 # default config must be placed by hand (libXft font rendering)
 RUN mkdir -p /usr/pkg/etc/fonts && \
@@ -49,6 +49,14 @@ RUN printf '%s\n' '<?xml version="1.0" encoding="UTF-8"?>' \
 	'  </g>' \
 	'</svg>' > /usr/pkg/share/icons/hicolor/scalable/apps/clipit-trayicon.svg
 
+# AI/agent stack: maki + crush, same release idiom as SMOLerfile.maki
+# and SMOLerfile.crush (runtime uname -p keeps aarch64 builds working).
+ARG MAKI_VERSION=0.7.0
+ARG CRUSH_VERSION=0.99.0
+ARG GHARCH=$(uname -p)
+ARG CRUSH_ARCH=$(uname -p|sed 's/aarch64/arm64/')
+RUN curl -L -s -o- https://github.com/tontinton/maki/releases/download/v${MAKI_VERSION}/maki-v${MAKI_VERSION}-${GHARCH}-unknown-netbsd.tar.gz | tar zxf - -C /usr/pkg/bin maki
+RUN curl -L -s -o- https://github.com/charmbracelet/crush/releases/download/v${CRUSH_VERSION}/crush_${CRUSH_VERSION}_Netbsd_${CRUSH_ARCH}.tar.gz | tar zxf - -C /usr/pkg/bin --strip-components=1 crush_${CRUSH_VERSION}_Netbsd_${CRUSH_ARCH}/crush
 ENV LD_LIBRARY_PATH=/usr/pkg/lib:/usr/X11R7/lib
 
 CMD sh /etc/session.sh

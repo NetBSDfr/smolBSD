@@ -358,6 +358,11 @@ do
 	esac
 done < $smolerfile
 
+# openpam 2025+ refuses to dlopen() PAM modules when any path component
+# (/, /usr, ...) is group-writable: pam_start fails.  Staging dirs inherit
+# the host umask 002 (mkdir tmp/, usr/pkg), so pin the trusted ones here.
+echo 'chmod 755 . usr usr/pkg' >>"$postinst"
+
 cat >>${etcrc}<<_ETCRC
 
 . /etc/include/shutdown

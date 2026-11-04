@@ -9,7 +9,7 @@ export PATH
 export DISPLAY=:1
 export LANG=C.UTF-8		# btop refuses to start without a UTF-8 locale
 export VIRGL_3D_THROTTLE=0	# else the mesa virgl swap throttle pins the desktop at ~5fps
-export FONTCONFIG_PATH=/usr/X11R7/etc/fonts	# pkgsrc fontconfig has no compiled-in config path
+export FONTCONFIG_PATH=/usr/pkg/etc/fonts	# pkgsrc fontconfig keeps its config here
 export CONSOLEDEVICE=/dev/ttyE0
 
 # Drop privileges to smol without PAM (base PAM is broken in Oct-2026
