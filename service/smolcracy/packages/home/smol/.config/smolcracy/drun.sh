@@ -13,6 +13,8 @@ exec rofi -show drun \
 	-modi drun,run,filebrowser \
 	-theme "$dir/drun.rasi" \
 	-font "JetBrainsMono Nerd Font Mono 11" \
+	-kb-mode-next "Control+Tab" \
+	-kb-mode-previous "Control+Shift+Tab" \
 	-display-drun "$ic_drun" \
 	-display-run "$ic_run" \
 	-display-filebrowser "$ic_fb" \

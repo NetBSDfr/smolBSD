@@ -47,11 +47,11 @@ element-text {
 	text-color: inherit;
 }
 element selected {
-	background-color: #89b4fa;
-	text-color: #1e1e2e;
+	background-color: #cba6f7;
+	text-color: #11111b;
 }
 element selected-text {
 	text-align: center;
 	background-color: transparent;
-	text-color: #1e1e2e;
+	text-color: #11111b;
 }

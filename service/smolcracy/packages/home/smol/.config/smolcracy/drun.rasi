@@ -8,7 +8,7 @@ window {
 	transparency:                "real";
 	border:                      1px;
 	border-radius:               0px;
-	border-color:                #89b4fa;
+	border-color:                #cba6f7;
 	background-color:            #1e1e2e;
 }
 mainbox {
@@ -22,7 +22,7 @@ inputbar {
 	spacing:                     10px;
 	padding:                     10px;
 	border:                      0px 0px 1px 0px;
-	border-color:                #89b4fa;
+	border-color:                #cba6f7;
 	background-color:            #313244;
 	text-color:                  #cdd6f4;
 }
@@ -64,8 +64,8 @@ element normal.normal {
 	text-color:                  #cdd6f4;
 }
 element selected.normal {
-	background-color:            #89b4fa;
-	text-color:                  #1e1e2e;
+	background-color:            #cba6f7;
+	text-color:                  #11111b;
 }
 element-icon {
 	size:                        24px;
@@ -91,6 +91,6 @@ button {
 	cursor:                      pointer;
 }
 button selected {
-	background-color:            #89b4fa;
-	text-color:                  #1e1e2e;
+	background-color:            #cba6f7;
+	text-color:                  #11111b;
 }
