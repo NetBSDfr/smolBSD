@@ -11,6 +11,12 @@ export LANG=C.UTF-8		# btop refuses to start without a UTF-8 locale
 export VIRGL_3D_THROTTLE=0	# else the mesa virgl swap throttle pins the desktop at ~5fps
 export FONTCONFIG_PATH=/usr/pkg/etc/fonts	# pkgsrc fontconfig keeps its config here
 export CONSOLEDEVICE=/dev/ttyE0
+# qemu -cpu host exposes AVX-512; the llvmpipe LLVM JIT (base libLLVM)
+# aborts WebProcess with "incomplete machine model" on VPGATHERDD, so
+# route GL through softpipe (no LLVM JIT) and keep WebKit off GL
+# entirely (compositing off also restores typing speed).
+export GALLIUM_DRIVER=softpipe
+export WEBKIT_DISABLE_COMPOSITING_MODE=1
 
 # Drop privileges to smol without PAM (base PAM is broken in Oct-2026
 # builds: pam_start fails for su, login, and sudo).  doas (pkgsrc) and
@@ -130,7 +136,10 @@ timeout 10 $SMOLL env DISPLAY=$DISPLAY XAUTHORITY=$XAUTHORITY /usr/X11R7/bin/glx
 # merge, so root stays out of it entirely.  End the session when
 # either side dies: user logout (i3 exit) or an Xorg crash.
 echo "SMOLCRACY: starting i3 session as smol"
-( $SMOLL env HOME=/home/smol DISPLAY=$DISPLAY XAUTHORITY=$XAUTHORITY LANG=$LANG FONTCONFIG_PATH=$FONTCONFIG_PATH LD_LIBRARY_PATH=$LD_LIBRARY_PATH VIRGL_3D_THROTTLE=$VIRGL_3D_THROTTLE sh /home/smol/.xsession ) &
+( $SMOLL env HOME=/home/smol DISPLAY=$DISPLAY XAUTHORITY=$XAUTHORITY LANG=$LANG FONTCONFIG_PATH=$FONTCONFIG_PATH LD_LIBRARY_PATH=$LD_LIBRARY_PATH VIRGL_3D_THROTTLE=$VIRGL_3D_THROTTLE \
+	GALLIUM_DRIVER=$GALLIUM_DRIVER \
+	WEBKIT_DISABLE_COMPOSITING_MODE=$WEBKIT_DISABLE_COMPOSITING_MODE \
+	sh /home/smol/.xsession ) &
 SPID=$!
 wait $SPID
 echo "SMOLCRACY: session ended"

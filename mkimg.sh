@@ -278,6 +278,10 @@ if [ "$mountfs" = "ffs" ]; then
 	mountopt="${mountopt},${ffsmountopts}"
 fi
 echo "NAME=${wedgename} / $mountfs $mountopt 1 1" > ${mnt}/etc/fstab
+# NetBSD's shm_open(3) is /var/shm tmpfs backed: without this mount, POSIX
+# shared memory fails with ENOTSUP (webkit spams "Failed to create shared
+# memory: Not supported" and renders blank pages).
+echo "tmpfs /var/shm tmpfs rw 0 0" >> ${mnt}/etc/fstab
 
 rsynclite service/${svc}/etc/ ${mnt}/etc/
 rsynclite service/common/ ${mnt}/etc/include/

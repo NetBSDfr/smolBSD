@@ -16,7 +16,7 @@ LABEL smolbsd.use_pty=y
 
 RUN pkgin up && pkgin -y in i3 i3status i3lock rxvt-unicode rofi \
 	dunst picom maim hsetroot clipit xidle xdotool wmctrl btop \
-	JetBrainsMono-ttf Inter-UI dejavu-ttf bash starship lsd doas nerd-fonts-JetBrainsMono nerd-fonts-symbols alacritty badwolf
+	JetBrainsMono-ttf Inter-UI dejavu-ttf bash starship lsd doas nerd-fonts-JetBrainsMono nerd-fonts-symbols alacritty luakit adwaita-icon-theme
 # fontconfig's CONF_FILES merge does not happen through pkgin, so its
 # default config must be placed by hand (libXft font rendering)
 RUN mkdir -p /usr/pkg/etc/fonts && \

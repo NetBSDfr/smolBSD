@@ -105,6 +105,11 @@ exec --no-startup-id sh -c 'sleep 2; picom 2>>/tmp/picom.log; sleep 1; exec pico
 exec --no-startup-id dunst
 exec --no-startup-id xidle -timeout 600 -program "i3lock -e -c 1e1e2e"
 
+# the browser is the session's main window: give it the whole screen.
+# Half tiling squeezes desktop sites into their cramped responsive
+# layout (tiny logo, clipped search box) which reads as "wrong scale".
+for_window [class="(?i)luakit"] fullscreen enable
+
 # --- Omarchy catppuccin palette ---
 # (background border text indicator child_border)
 client.focused		#1e1e2e #cba6f7 #cdd6f4 #cba6f7 #cba6f7
