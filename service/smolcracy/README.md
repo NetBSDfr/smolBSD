@@ -5,6 +5,12 @@ i3 + catppuccin-mocha, no Wayland stack. X runs inside QEMU via
 virtio-gpu-gl (`-X`), the session starts automatically and runs as
 user **smol** (passwordless `doas`).
 
+<div align="center">
+
+![smolcracy desktop: terminal, luakit, rofi launcher](www/smolcracy-desktop.png)
+
+</div>
+
 ## Prerequisites (host)
 
 - QEMU >= 10 built with SDL + GL (`~/src/qemu/build/qemu-system-x86_64`),
@@ -38,7 +44,7 @@ exit) tears down X and makes QEMU exit (session `power_off` +
 |---|---|
 | Return | terminal (alacritty, catppuccin TOML theme) |
 | `Shift+t` | btop system monitor |
-| space | rofi launcher (card, centered; `apps` chip) |
+| space | rofi app launcher: apps / shell / files (`Ctrl+Tab` cycles modes) |
 | Escape | power menu: lock / logout / reboot / power off |
 | Ctrl+l | lock (i3lock) |
 | Print | area screenshot (maim) to `~/Pictures/` |
@@ -52,7 +58,7 @@ exit) tears down X and makes QEMU exit (session `power_off` +
 | Shift+1-9 | move window to workspace and follow |
 | Mod1+Shift+1-9 | move window, stay on current workspace |
 | Tab / Shift+Tab | next / previous workspace |
-| Ctrl+Tab | workspace back-and-forth |
+| Ctrl+Tab | workspace back-and-forth (inside launcher: next mode) |
 | s / Shift+s | show scratchpad / move window to scratchpad |
 | Shift+e | logout (exits i3 -> closes the VM window) |
 
@@ -63,9 +69,11 @@ dark top bar with workspace pills, thin mauve border on the focused
 window (2px pixel borders), 12px rounded corners + soft shadows via
 picom, JetBrains Mono Nerd Font terminal, Inter UI. Prompt is
 p10k-flavored (starship): mauve directory pill, dark clock pill, green
-command duration, pink exit-code box on failure. Rofi is a centered
-card: crust background, periwinkle (`#9199cb`) border, lavender
-(`#45475a`) selection chips. A flat background is the intentional
+command duration, pink exit-code box on failure. Rofi follows adi1090x theme
+layouts: the launcher is `launchers/type-4 style-1` (600px panel, 1px
+`#cba6f7` border, search bar, footer mode-switcher) and the power menu a
+dark rounded panel of feather-icon tiles. Icons come from the bundled
+Icomoon-Feather font (`~/.local/share/fonts`). A flat background is the intentional
 default (Omarchy uses a matching solid color per theme).
 
 ## Session components
