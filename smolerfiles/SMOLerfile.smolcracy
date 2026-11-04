@@ -22,6 +22,13 @@ RUN pkgin up && pkgin -y in i3 i3status i3lock rxvt-unicode rofi \
 RUN mkdir -p /usr/pkg/etc/fonts && \
 	cp /usr/pkg/share/examples/fontconfig/fonts.conf \
 	/usr/pkg/etc/fonts/fonts.conf
+# luakit is hit by the same CONF_FILES gap: without a system rc.lua it aborts
+# at startup ("couldn't load any rc file" / "couldn't find rc file").  Place
+# the packaged defaults in the target dir pkg_add would have used.
+RUN mkdir -p /usr/pkg/etc/xdg/luakit && \
+	cp /usr/pkg/share/examples/luakit/rc.lua \
+	/usr/pkg/share/examples/luakit/theme.lua \
+	/usr/pkg/etc/xdg/luakit/
 # dbus needs a machine-id for the session bus (dunst, notify-send);
 # pkgsrc dbus looks in /var/lib/dbus and /etc, and none exists in a
 # fresh smolBSD image, so write one from base uuidgen
