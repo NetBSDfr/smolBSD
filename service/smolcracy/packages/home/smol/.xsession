@@ -15,8 +15,20 @@ export SHELL
 GALLIUM_DRIVER=softpipe
 export GALLIUM_DRIVER
 # never blank: DPMS-off over virtio-gpu shows QEMU's "Display output
-# is not active" placeholder instead of the desktop (guest stays fine!)
-( sleep 2; xset s off -dpms; xset dpms 0 0 0 ) >/dev/null 2>&1 &
+# is not active" placeholder instead of the desktop (guest stays fine!).
+# xorg.conf already zeroes BlankTime/DPMS, but Xorg's late input-device
+# init resets the screensaver attributes to their 600s defaults (the same
+# clobbering window that forces the xrdb and xmodmap hammers below) and a
+# screensaver blank at 10min kills the virtio-gpu scanout for good: the
+# desktop keeps running but the QEMU window stays black.  Re-assert for
+# two full minutes so the settings survive every reset.
+( i=0
+  while [ $i -lt 60 ]; do
+	i=$((i+1))
+	xset s off -dpms >/dev/null 2>&1
+	xset dpms 0 0 0 >/dev/null 2>&1
+	sleep 2
+  done ) &
 FONTCONFIG_PATH=/usr/X11R7/etc/fonts
 export FONTCONFIG_PATH
 LANG=C.UTF-8	# btop refuses to start without a UTF-8 locale
