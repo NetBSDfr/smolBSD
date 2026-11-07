@@ -9,6 +9,7 @@ on:
       - 'www/**'
       - 'app/**'
       - '.github/workflows/smoler.yml'
+      - '.github/workflows/release-watch.yml'
       - 'smolerfiles/*'
   workflow_dispatch:
     inputs:

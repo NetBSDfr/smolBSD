@@ -60,7 +60,9 @@ Side-effect gotcha: the bot pushes directly to main, so local main goes
 behind; `git pull --rebase` before pushing local fixes.
 
 ## KNOWN FAILURE MODE: "latest" release republish race (hit 2026-11-07)
-main.yml ("Build smolBSD image", every push) ends by force-republishing
+main.yml ("Build smolBSD image", every push except its own paths-ignore:
+`**.md`, `www/**`, `app/**`, `smolerfiles/*`, `smoler.yml`,
+`release-watch.yml`) ends by force-republishing
 builder images (`build-<arch>.img.xz`) into the shared GitHub `latest`
 release (softprops action). smoler.yml's `fetchimg` downloads those same
 assets with `curl | xz -dc` and NO checksum verification (.sha256 is only
