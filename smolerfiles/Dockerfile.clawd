@@ -41,7 +41,7 @@ ENV MAXFILES=4096
 ARG GHARCH=$(uname -p|sed 's/aarch64/arm64/;s/arm$/arm64/')
 # afjcjsbx's repo: the one publishing NetBSD binaries in its releases
 ARG GHREPO=https://github.com/afjcjsbx/picoclaw/releases/download
-ARG GHRELEASE=v0.5.0
+ARG GHRELEASE=v0.5.3
 
 RUN <<EOF
 useradd -m ${NBUSER}
