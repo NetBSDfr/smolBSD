@@ -69,5 +69,14 @@ jobs:
           git add "${changed[@]}"
           git commit -m "release-watch: bump ${msgs[*]}"
           git push origin HEAD:main
-          # push with GITHUB_TOKEN never re-triggers workflows; dispatch explicitly
+          # push with GITHUB_TOKEN never re-triggers workflows; dispatch explicitly.
+          # But only after the push-triggered main.yml finishes: it republishes
+          # builder images into the 'latest' release and smoler's fetchimg racing
+          # that yields a corrupt builder disk (incident 2026-11-07).
+          sleep 90
+          i=0
+          while [ "$i" -lt 30 ]; do
+            gh run list --workflow main.yml --status in_progress --json databaseId --jq '.[]' | grep -q . || break
+            echo "waiting for main.yml latest-release republish…"; sleep 60; i=$((i+1))
+          done
           gh workflow run smoler.yml --ref main -f dockerfiles="${changed[*]}"
