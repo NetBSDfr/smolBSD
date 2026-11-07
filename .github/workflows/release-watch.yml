@@ -50,11 +50,12 @@ jobs:
               fi
             done
             if [ "$newer" = 1 ]; then
+              newv="$ver"; [ "$vstyle" = keep ] && newv="$latest"
               case "$vstyle" in
                 strip) sed -i -E "s|^(ARG $var=).*|\\1\"$ver\"|" "$file" ;;
                 keep)  sed -i -E "s|^(ARG $var=).*|\\1$latest|" "$file" ;;
               esac
-              changed+=("$file"); msgs+=("$name $pin->$ver"); report+=("$name: $pin -> $latest")
+              changed+=("$file"); msgs+=("$name $pin->$newv"); report+=("$name: $pin -> $newv")
             fi
           done <<< "$tools"
 
