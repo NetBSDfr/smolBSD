@@ -1,0 +1,71 @@
+name: release-watch
+
+on:
+  schedule:
+    - cron: '0 1 * * *'        # 01:00 UTC ~ 02:00 Madrid (winter)
+  workflow_dispatch:
+    inputs:
+      dry_run:
+        description: 'Dry run: report only, no commit/push/build'
+        type: boolean
+        default: true
+
+permissions:
+  contents: write
+
+concurrency: release-watch
+
+jobs:
+  watch:
+    runs-on: ubuntu-latest
+    env:
+      GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Check upstream releases and bump pins
+        run: |
+          set -euo pipefail
+          dry='${{ github.event_name == 'workflow_dispatch' && inputs.dry_run || 'false' }}'
+          # name|repo|file|var|vstyle|amd64_asset|arm64_asset   (%v = bare version)
+          tools='
+          maki|tontinton/maki|smolerfiles/SMOLerfile.maki|MAKI_VERSION|strip|maki-v%v-x86_64-unknown-netbsd.tar.gz|maki-v%v-aarch64-unknown-netbsd.tar.gz
+          crush|charmbracelet/crush|smolerfiles/SMOLerfile.crush|CRUSH_VERSION|strip|crush_%v_Netbsd_x86_64.tar.gz|crush_%v_Netbsd_arm64.tar.gz
+          picoclaw|afjcjsbx/picoclaw|smolerfiles/Dockerfile.clawd|GHRELEASE|keep|picoclaw_Netbsd_x86_64.tar.gz|picoclaw_Netbsd_arm64.tar.gz
+          '
+          changed=(); report=(); msgs=()
+          while IFS='|' read -r name repo file var vstyle a_amd a_arm; do
+            name="${name// /}"; [ -z "$name" ] && continue
+            latest=$(gh api "repos/$repo/releases/latest" --jq .tag_name)   # v0.7.1
+            ver="${latest#v}"
+            pin=$(grep -oP "^ARG $var=\"?\Kv?[0-9][0-9.]*(?=\"?$)" "$file"); pin="${pin#v}"
+            newer=0
+            if [ "$pin" != "$ver" ] && [ "$(printf '%s\n%s\n' "$pin" "$ver" | sort -V | head -n1)" = "$pin" ]; then
+              newer=1
+            fi
+            assets=$(gh api "repos/$repo/releases/latest" --jq '.assets[].name')
+            for a in "${a_amd//%v/$ver}" "${a_arm//%v/$ver}"; do
+              if ! echo "$assets" | grep -qxF "$a"; then
+                report+=("$name $latest: SKIP (missing asset $a)"); newer=0
+              fi
+            done
+            if [ "$newer" = 1 ]; then
+              case "$vstyle" in
+                strip) sed -i -E "s|^(ARG $var=).*|\\1\"$ver\"|" "$file" ;;
+                keep)  sed -i -E "s|^(ARG $var=).*|\\1$latest|" "$file" ;;
+              esac
+              changed+=("$file"); msgs+=("$name $pin->$ver"); report+=("$name: $pin -> $latest")
+            fi
+          done <<< "$tools"
+
+          { [ ${#report[@]} -gt 0 ] && printf '%s\n' "${report[@]}"; echo "dry_run=$dry"; } | tee -a "$GITHUB_STEP_SUMMARY"
+          [ "$dry" = "true" ] && exit 0
+          [ ${#changed[@]} -gt 0 ] || { echo "All pins current." >> "$GITHUB_STEP_SUMMARY"; exit 0; }
+
+          git config user.name github-actions[bot]
+          git config user.email 41898282+github-actions[bot]@users.noreply.github.com
+          git add "${changed[@]}"
+          git commit -m "release-watch: bump ${msgs[*]}"
+          git push origin HEAD:main
+          # push with GITHUB_TOKEN never re-triggers workflows; dispatch explicitly
+          gh workflow run smoler.yml --ref main -f dockerfiles="${changed[*]}"
