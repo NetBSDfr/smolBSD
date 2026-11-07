@@ -3,8 +3,9 @@
 ## Workflows
 
 ### main.yml — image builds
-Builds VM images (`img` workflow_dispatch input). `paths-ignore` on
-`smolerfiles/*` so tool-image pushes don't double-trigger.
+Builds VM images (`img` workflow_dispatch input). `paths-ignore`:
+`**.md`, `www/**`, `app/**`, `smolerfiles/*`, and the smoler.yml /
+release-watch.yml workflows — CI plumbing pushes never rebuild the image.
 
 ### smoler.yml — tool image builds
 - Triggers: push to `main` with `paths: smolerfiles/*`, or
