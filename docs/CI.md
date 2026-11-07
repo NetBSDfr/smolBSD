@@ -87,3 +87,19 @@ Mitigations:
 - STILL TRUE for manual smoler.yml dispatches: check
   `gh run list --workflow main.yml --status in_progress` first.
   Longer-term idea: per-run asset names instead of shared 'latest'.
+
+## ROOT CAUSE (2026-11-07): nightly aarch64 kernel asset shipped as ELF
+Symptom: every smoler aarch64 build (CI + local) hangs silently right
+after "driftfix 'slew'" warning; builder VM never outputs, ssh never up.
+Diagnosis (geonosis KVM + tatooine TCG, qemu 8.2.2/10.0.11, com/viocon
+all silent; June GENERIC + Oct-26 nightly both boot fine):
+  https://smolbsd.org/assets/aarch64/smolbsd since the Nov 5 build is
+  a raw unstripped ELF (`\x7fELF`, 3.6 MB) instead of the arm64
+  "Linux boot executable Image" (`ARMd` magic at offset 56, ~4.9 MB).
+  qemu-system-aarch64 -kernel needs the Image format; it loads the ELF
+  as flat garbage and the guest dies before the console.
+Sanity check for the asset (publisher-side guard):
+  dd if=smolbsd bs=1 skip=56 count=4   -> must print ARMd
+Fix: republish the kernel pipeline's *Image* artifact (not the ELF) to
+KDIST aarch64/smolbsd; add the magic check to the publish step.
+CI is blocked on all aarch64 builds until then.
