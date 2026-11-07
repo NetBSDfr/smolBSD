@@ -210,10 +210,24 @@ buildimg:
 
 fetchimg:
 	$Qecho "${ARROW} fetching builder image"
-	$Qcurl -L -o- ${BUILDIMGURL}.xz | xz -dc > ${BUILDIMGPATH}
-	$Qcurl -L -o ${BUILDIMGSIG} ${BUILDIMGURL}.xz.sha256
-	# update the freshness cache so 'build' uses the fetched image
-	# instead of rebuilding the builder image
+	$Qcurl -fL -o ${BUILDIMGSIG} ${BUILDIMGURL}.xz.sha256
+	# the "latest" release is force-republished by main.yml; a download racing
+	# that republish yields a corrupt xz (incident 2026-11-07), so verify
+	# against the published .sha256 and retry before unpacking.
+	$Qi=1; while :; do \
+	  if curl -fsSL -o ${BUILDIMGPATH}.xz.part ${BUILDIMGURL}.xz; then \
+	    want=`grep -Eo '[0-9a-f]{64}' ${BUILDIMGSIG} | sed -n '1p'`; \
+	    have=`(sha256sum ${BUILDIMGPATH}.xz.part || sha256 ${BUILDIMGPATH}.xz.part || cksum -a sha256 ${BUILDIMGPATH}.xz.part) 2>/dev/null | grep -Eo '[0-9a-f]{64}' | sed -n '1p'`; \
+	    if [ -n "$$want" ] && [ "$$want" = "$$have" ]; then \
+	      mv ${BUILDIMGPATH}.xz.part ${BUILDIMGPATH}.xz; break; \
+	    fi; \
+	    echo "${WARN} sha256 mismatch on ${BUILDIMG} (republish race?)"; \
+	  fi; \
+	  i=`expr $$i + 1`; if [ $$i -gt 3 ]; then rm -f ${BUILDIMGPATH}.xz.part; exit 1; fi; \
+	  sleep 30; \
+	done
+	$Qxz -dc < ${BUILDIMGPATH}.xz > ${BUILDIMGPATH}
+	$Qrm -f ${BUILDIMGPATH}.xz
 	$Q${FRESHCHK} ${BUILDIMGURL}.xz.sha256 ${BUILDIMGSIG} || true
 
 build: fetchall # Build an image (with SERVICE=$SERVICE from service/)
