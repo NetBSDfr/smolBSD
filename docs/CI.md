@@ -75,13 +75,12 @@ dispatched 09:32:48 fetched `build-evbarm-aarch64.img.xz` mid-replacement
 `qemu-system-aarch64: warning: driftfix 'slew' ...`.
 
 Mitigations:
-- NEVER dispatch smoler.yml while any main.yml run is in flight
-  (`gh run list --workflow main.yml --limit 1` first).
-- Fix candidate #1 (Makefile fetchimg): verify downloaded xz against the
-  published .sha256 and retry on mismatch.
-- Fix candidate #2: smoler.yml should `need`/serialize against main.yml,
-  or publish per-run asset names instead of `latest`.
-- release-watch's 01:00 UTC cron only bumps (triggering main.yml once);
-  its own smoler.yml dispatch happens ~seconds after its push — main.yml
-  for the SAME commit starts simultaneously => the race is STRUCTURAL:
-  every bot bump risks it. Must fix before trusting nightly bumps.
+- DONE 2026-11-07 (Makefile): fetchimg verifies the downloaded xz
+  against the published .sha256, retrying 3x; a corrupt download now
+  fails the build loudly instead of hanging on a zombie builder VM.
+- DONE 2026-11-07 (release-watch.yml): the bot waits for the
+  push-triggered main.yml to finish before dispatching smoler.yml, so
+  automated bumps can no longer race the republish.
+- STILL TRUE for manual smoler.yml dispatches: check
+  `gh run list --workflow main.yml --status in_progress` first.
+  Longer-term idea: per-run asset names instead of shared 'latest'.
