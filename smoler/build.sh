@@ -140,7 +140,7 @@ printf '' >"$args"
 
 shhead()
 {
-	printf '%s\n\n' "#!${SHELL_CMD}" >"$postinst"
+	printf '%s\nset -e\n\n' "#!${SHELL_CMD}" >"$postinst"
 	cat >>"$postinst"<<-EOHEAD
 
 	export CHOUPI=y

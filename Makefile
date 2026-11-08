@@ -115,7 +115,8 @@ ARROW!=		. ${CHOUPI} && echo "$$ARROW"
 CHECK!=		. ${CHOUPI} && echo "$$CHECK"
 CPU!=		. ${CHOUPI} && echo "$$CPU"
 FREEZE!=	. ${CHOUPI} && echo "$$FREEZE"
-WARN!=		. ${CHOUPI} && echo "$$WARN"
+WARN!=	. ${CHOUPI} && echo "$$WARN"
+ERROR!=	. ${CHOUPI} && echo "$$ERROR"
 WHITEBULLET!=	. ${CHOUPI} && echo "$$WHITEBULLET"
 
 help:	# This help you are reading
@@ -261,6 +262,7 @@ build: fetchall # Build an image (with SERVICE=$SERVICE from service/)
 	$Qecho "${ARROW} creating the disk image"
 	# generate disk image on the host, faster and avoids layering on 9p
 	$Qdd if=/dev/zero of=${DSTIMG} bs=1${DDUNIT} count=${IMGSIZE}
+	$Qrm -f tmp/build-err-${SERVICE}
 	$Qecho "${ARROW} starting the builder microvm with"
 	$Qecho "  ${WHITEBULLET} ${BUILDMEM}MB RAM"
 	$Qecho "  ${WHITEBULLET} ${BUILDCPUS} cores"
@@ -273,6 +275,11 @@ build: fetchall # Build an image (with SERVICE=$SERVICE from service/)
 	$Qecho "${ARROW} killing the builder microvm"
 	$Qkill $$(cat qemu-${.TARGET}.pid)
 	$Qwhile lsof ${DSTIMG} >/dev/null 2>&1; do sleep 0.2; done
+	$Qif [ -f tmp/build-err-${SERVICE} ]; then \
+			rm -f tmp/build-err-${SERVICE}; \
+			echo "${ERROR} the build failed inside the builder VM"; \
+			exit 1; \
+		fi
 	$Qif [ -n "${MINIMIZE}" ] && [ -f "tmp/${IMGNAME}.size" ]; then \
 			qemu-img resize -q -f raw --shrink ${DSTIMG} \
 				$$(cat tmp/${IMGNAME}.size); \

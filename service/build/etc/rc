@@ -36,9 +36,15 @@ echo "${ARROW} building $SERVICE image"
 echo "${INFO} exported variables"
 cat tmp/build*|sed "s/^/${WHITEBULLET} /"
 make $(grep -v ADDPKGS tmp/build*|xargs) base
-echo "${CHECK} build finished, Ctrl-A X to exit"
+buildrc=$?
+if [ $buildrc -eq 0 ]; then
+	echo "${CHECK} build finished, Ctrl-A X to exit"
+else
+	echo "${ERROR} build failed in the builder VM"
+	touch tmp/build-err-${SERVICE}
+fi
 sync; sync
 umount /drive2 2>/dev/null || :
 sync
-rm -f tmp/build*
+rm -f tmp/build-${SERVICE}
 cat
