@@ -11,7 +11,7 @@ release-watch.yml workflows — CI plumbing pushes never rebuild the image.
 - Triggers: push to `main` with `paths: smolerfiles/*`, or
   `workflow_dispatch` with `dockerfiles` input (space-separated paths).
 - Push path selects files via `git diff --name-only HEAD~1` filtered by
-  the `DFILES` regex (`(Dock|SMOL)erfile.(crush|clawd|...|maki|...)`)
+  the `DFILES` regex (`(Dock|SMOL)erfile.(crush|picoclaw|...|maki|...)`)
   => multi-file changes must land in ONE commit.
 - Builds amd64 + aarch64 under TCG via `./smoler.sh build -y`, pushes
   images to ghcr.io. NOTE: `smolcracy` is NOT in the DFILES regex; the
@@ -24,7 +24,7 @@ release-watch.yml workflows — CI plumbing pushes never rebuild the image.
   `dry_run` boolean (default true = report only).
 - Watches GitHub releases: tontinton/maki (MAKI_VERSION in
   SMOLerfile.maki), charmbracelet/crush (CRUSH_VERSION in
-  SMOLerfile.crush), afjcjsbx/picoclaw (GHRELEASE in Dockerfile.clawd).
+  SMOLerfile.crush), afjcjsbx/picoclaw (GHRELEASE in SMOLerfile.picoclaw).
 - Gates on NetBSD amd64+arm64 release assets existing; missing asset =>
   tool skipped with a report line. `SMOLerfile.smolcracy` pins are
   intentionally NEVER touched.

@@ -1,0 +1,155 @@
+# smolClaw: run an picoclaw instance in a microVM
+#
+# picoclaw and picoclaw-launcher are the NetBSD release binaries from
+# https://github.com/afjcjsbx/picoclaw, installed in the user's ~/bin
+# (which .bash_profile adds to PATH). The pinned release (ARG GHRELEASE)
+# baked in at build time is what runs; bump the pin and rebuild to
+# update.
+#
+# build this service:
+# $ ./smoler.sh build -y smolerfiles/SMOLerfile.picoclaw
+# run this service:
+# $ ./smoler.sh run picoclaw-amd64:latest -c 2 -m 1024 -w /path/to/shared/directory
+
+FROM base,etc,man,comp
+
+LABEL smolbsd.service=picoclaw
+# final image size
+LABEL smolbsd.imgsize=2048
+# default picoclaw gateway port and SSH access
+LABEL smolbsd.publish="18789:18789,18800:18800,2289:22"
+# microvm will use a pty as console
+LABEL smolbsd.use_pty="y"
+# only for bumping
+LABEL version="0.5.4-smol1"
+
+ARG PYVERS="314"
+# ripgrep, fd, jq and rsync for convenience and tool writing
+# w3m for dumping webpages, go and python for code check
+RUN pkgin up && pkgin -y in \
+	bash curl git-base gmake vim \
+	jq rsync ripgrep fd-find imapfilter socat gh \
+	w3m python${PYVERS} py${PYVERS}-pipx py${PYVERS}-pip py${PYVERS}-uv
+
+ENV NBUSER=picoclaw
+ENV NBHOME=/home/${NBUSER}
+ENV LANG=en_US.UTF-8
+ENV TERM=tmux-256color
+ENV MAXFILES=4096
+
+ARG GHARCH=$(uname -p|sed 's/aarch64/arm64/;s/arm$/arm64/')
+# afjcjsbx's repo: the one publishing NetBSD binaries in its releases
+ARG GHREPO=https://github.com/afjcjsbx/picoclaw/releases/download
+ARG GHRELEASE=v0.5.4
+
+RUN <<EOF
+useradd -m ${NBUSER}
+chsh -s /usr/pkg/bin/bash ${NBUSER}
+mkdir -p ${NBHOME}/.tmux
+curl -s -Lo ${NBHOME}/.tmux/tmux-power.tmux \
+	https://raw.githubusercontent.com/wfxr/tmux-power/master/tmux-power.tmux
+sed -i'' 's/status-right "\$RS"/status-right ":: powered by 🚩 + smolBSD "/' \
+	${NBHOME}/.tmux/tmux-power.tmux
+chmod +x ${NBHOME}/.tmux/tmux-power.tmux
+
+# for convenience
+PYDOTVERS=3.${PYVERS#3}
+for p in python pip pipx uv- uvx-; do
+	ln -s /usr/pkg/bin/\${p}3.${PYVERS#3} /usr/pkg/bin/\${p%-}
+done
+EOF
+
+# baked-in baseline: the release binaries go in the user's ~/bin, which
+# .bash_profile adds to PATH. -f + && make a failed download visible
+# instead of feeding tar an error page (tar: Unrecognized archive format)
+RUN mkdir -p ${NBHOME}/bin && \
+	curl -fL -s --retry 5 --retry-delay 5 --retry-all-errors --max-time 600 \
+		-o /tmp/picoclaw.tgz ${GHREPO}/${GHRELEASE}/picoclaw_Netbsd_${GHARCH}.tar.gz && \
+	tar zxf /tmp/picoclaw.tgz -C ${NBHOME}/bin picoclaw picoclaw-launcher && \
+	rm -f /tmp/picoclaw.tgz
+
+# boot script: hand over to tmux, where picoclaw is started
+RUN cat <<'EOF' >${NBHOME}/cmd.sh
+
+PATH="\$HOME/bin:\$PATH"
+export PATH
+
+exec tmux -u new
+EOF
+RUN chmod +x ${NBHOME}/cmd.sh
+
+RUN cat <<EOF >${NBHOME}/.vimrc
+set nocompatible
+set ts=8
+set noai
+syntax on
+set mouse-=a
+
+noremap <C-t> :tabnew<CR>
+noremap <C-right> :tabnext<CR>
+noremap <C-left> :tabprevious<CR>
+noremap <C-l> :tabnext<CR>
+noremap <C-k> :tabprevious<CR>
+EOF
+
+RUN cat <<EOF >${NBHOME}/.tmux.conf
+set -g default-terminal "tmux-256color"
+set -g @tmux_power_theme "coral"
+set-option -g repeat-time 0
+unbind |
+bind | split-window -h
+unbind -
+bind - split-window -v
+run "~/.tmux/tmux-power.tmux"
+EOF
+
+RUN cat <<EOF >${NBHOME}/.bash_profile
+LIGHTGREEN="\033[92m"
+BOLD="\033[1m"
+NORMAL="\033[0m"
+
+PS1="[\w]@😈+🦞> "
+export PATH="\${PATH}:${NBHOME}/.local/bin:${NBHOME}/bin"
+export LANG="${LANG}"
+export TERM="${TERM}"
+alias vi=vim
+export EDITOR=vim
+EOF
+
+RUN cat <<'EOF' >>${NBHOME}/.bash_profile
+
+printf "
+---
+📝 the \${LIGHTGREEN}vim\${NORMAL} editor is available
+🪟 you are in a \${LIGHTGREEN}tmux\${NORMAL} multiplexer
+➡️  \${BOLD}setup picoclaw\${NORMAL}: \${LIGHTGREEN}picoclaw onboard\${NORMAL}
+➡️  \${BOLD}start picoclaw gateway\${NORMAL}: \${LIGHTGREEN}picoclaw gateway\${NORMAL}
+➡️  \${BOLD}or\${NORMAL}: \${LIGHTGREEN}picoclaw-launcher -public\${NORMAL} for a web GUI at http://127.0.0.1:18800
+➡️  \${LIGHTGREEN}ssh -p 2289 picoclaw@localhost\${NORMAL} to SSH to this microvm
+---
+
+"
+
+EOF
+
+# SSH access
+ARG SSH_PUBKEY="/mnt/share/ssh.pub"
+COPY ${SSH_PUBKEY} ${NBHOME}/.ssh/authorized_keys
+
+RUN [ -d "${NBHOME}/.ssh" ] && \
+    chown -R ${NBUSER} ${NBHOME} && \
+    chmod 755 ${NBHOME} && \
+    chmod -R go-rwx ${NBHOME}/.ssh
+
+RUN cat <<EOF >/etc/rc.local
+hostname ${NBUSER}
+ulimit -n ${MAXFILES}
+EOF
+
+RUN echo 'eval \$(resize)' >>/etc/rc.local
+
+EXPOSE 18800
+
+# script creates a pty, do not su - in order to get env vars
+CMD /etc/rc.d/sshd onestart && \
+	script -c "cd ${NBHOME} && su ${NBUSER} -c './cmd.sh'" /dev/null || bash

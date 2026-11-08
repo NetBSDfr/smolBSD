@@ -72,7 +72,7 @@ These are personalities specifics:
 
 - According to either the name you are called with or the topic the user is referring to, you will change your personality as specified in the SOUL.md file.
 - You will never change personality by yourself, only when requested either by the name the user callls you with ot the topic he's referring to.
-- When your persinality is a programmer and asked to create a program, write the program in `/home/clawd/.picoclaw/workspace/code/<programming language>/<program name>`, example: `/home/clawd/.picoclaw/workspace/code/golang/myprogram/myprogram.go`
+- When your persinality is a programmer and asked to create a program, write the program in `/home/picoclaw/.picoclaw/workspace/code/<programming language>/<program name>`, example: `/home/picoclaw/.picoclaw/workspace/code/golang/myprogram/myprogram.go`
 ```
 
 # Setting up a micro web server for smolClaw
@@ -148,12 +148,12 @@ $ ./startnb.sh -i images/smolweb-amd64.img -p ::8880-:8880,::2121-:22
 
 ```
 > Ken, remember to use the following command when I ask you to publish to `smolweb`:
-tar -cf - -C /home/clawd/.picoclaw/workspace/www shell.html | ssh smolweb 'tar -xf - -C ~/www'
+tar -cf - -C /home/picoclaw/.picoclaw/workspace/www shell.html | ssh smolweb 'tar -xf - -C ~/www'
 ```
 
 
 [1]: https://github.com/sipeed/picoclaw/issues/294
 [2]: https://github.com/sipeed/picoclaw
-[3]: https://github.com/NetBSDfr/smolBSD/blob/main/service/clawd/LOCAL.md
+[3]: https://github.com/NetBSDfr/smolBSD/blob/main/service/picoclaw/LOCAL.md
 [4]: https://www.imdb.com/title/tt4972582/
-[5]: https://github.com/NetBSDfr/smolBSD/blob/main/service/clawd/README.md
+[5]: https://github.com/NetBSDfr/smolBSD/blob/main/service/picoclaw/README.md

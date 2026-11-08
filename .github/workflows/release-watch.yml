@@ -32,7 +32,7 @@ jobs:
           tools='
           maki|tontinton/maki|smolerfiles/SMOLerfile.maki|MAKI_VERSION|strip|maki-v%v-x86_64-unknown-netbsd.tar.gz|maki-v%v-aarch64-unknown-netbsd.tar.gz
           crush|charmbracelet/crush|smolerfiles/SMOLerfile.crush|CRUSH_VERSION|strip|crush_%v_Netbsd_x86_64.tar.gz|crush_%v_Netbsd_arm64.tar.gz
-          picoclaw|afjcjsbx/picoclaw|smolerfiles/Dockerfile.clawd|GHRELEASE|keep|picoclaw_Netbsd_x86_64.tar.gz|picoclaw_Netbsd_arm64.tar.gz
+          picoclaw|afjcjsbx/picoclaw|smolerfiles/SMOLerfile.picoclaw|GHRELEASE|keep|picoclaw_Netbsd_x86_64.tar.gz|picoclaw_Netbsd_arm64.tar.gz
           '
           changed=(); report=(); msgs=()
           while IFS='|' read -r name repo file var vstyle a_amd a_arm; do

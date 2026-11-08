@@ -225,8 +225,8 @@ base-amd64:latest                 279M                 Mar 16 09:11
 basic-amd64:latest                279M                 Mar 16 09:52
 bsdshell-amd64:latest             55M                  Mar 23 08:50
 caddy-amd64:latest                347M                 Mar 16 10:01
-clawd-amd64:latest                2.1G                 Mar 17 14:56
-clawd-evbarm-aarch64:latest       2.1G                 Mar 17 14:48
+picoclaw-amd64:latest             2.1G                 Mar 17 14:56
+picoclaw-evbarm-aarch64:latest    2.1G                 Mar 17 14:48
 rescue-amd64:latest               20M                  Mar 15 16:41
 ```
 

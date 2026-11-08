@@ -44,17 +44,17 @@ cd smolBSD
 ```
   * Pull the ghcr.io _smolClaw_ image (`amd64` and `evbarm-aarch64` images available)
 ```sh
-./smoler.sh pull clawd-amd64:latest
+./smoler.sh pull picoclaw-amd64:latest
 ```
   * OR build it yourself
 ```sh
-./smoler.sh build -y smolerfiles/Dockerfile.clawd
+./smoler.sh build -y smolerfiles/SMOLerfile.picoclaw
 ```
 
 * Run the microVM
 
 ```sh
-./smoler.sh run clawd-amd64:latest -c 2 -m 1024
+./smoler.sh run picoclaw-amd64:latest -c 2 -m 1024
 ```
 
 Options:
@@ -65,7 +65,7 @@ Options:
 To share a host directory:
 
 ```sh
-./smoler.sh run clawd-amd64:latest -c 2 -m 1024 -w /path/to/directory
+./smoler.sh run picoclaw-amd64:latest -c 2 -m 1024 -w /path/to/directory
 ```
 
 Inside the VM it will be mounted at:
@@ -94,10 +94,10 @@ Inside the VM it will be mounted at:
 * `ssh.pub` is the **file name the build looks for**: an `id_rsa.pub` or `id_ed25519.pub`
   simply dropped in `share/` is silently ignored, and you'll be prompted for a password at
   every connection. Either rename your key, or use another name by editing the
-  `ARG SSH_PUBKEY=` line in `smolerfiles/Dockerfile.clawd`. You can also override it at
+  `ARG SSH_PUBKEY=` line in `smolerfiles/SMOLerfile.picoclaw`. You can also override it at
   build time without touching the file:
 ```sh
-$ ./smoler.sh build -y --build-arg SSH_PUBKEY=/mnt/share/id_rsa.pub smolerfiles/Dockerfile.clawd
+$ ./smoler.sh build -y --build-arg SSH_PUBKEY=/mnt/share/id_rsa.pub smolerfiles/SMOLerfile.picoclaw
 ```
 * You can also do it once the microvm is started but you'll have to re-do it at every build:
 ```sh
@@ -111,7 +111,7 @@ Just paste your public key and press Ctrl+D, then
 In both cases, you'll be able to _SSH_ to your _smolClaw_ instance like this:
 
 ```sh
-$ ssh -p 2289 clawd@localhost
+$ ssh -p 2289 picoclaw@localhost
 ```
 
 ---
