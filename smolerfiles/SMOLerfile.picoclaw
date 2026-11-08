@@ -26,8 +26,7 @@ LABEL version="0.5.4-smol1"
 ARG PYVERS="314"
 # ripgrep, fd, jq and rsync for convenience and tool writing
 # w3m for dumping webpages, go and python for code check
-RUN pkgin up
-RUN pkgin -y in \
+RUN pkgin up && pkgin -y in \
 	bash curl git-base gmake vim \
 	jq rsync ripgrep fd-find imapfilter socat gh \
 	w3m python${PYVERS} py${PYVERS}-pipx py${PYVERS}-pip py${PYVERS}-uv
