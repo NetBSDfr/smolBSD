@@ -26,7 +26,8 @@ LABEL version="0.5.4-smol1"
 ARG PYVERS="314"
 # ripgrep, fd, jq and rsync for convenience and tool writing
 # w3m for dumping webpages, go and python for code check
-RUN pkgin up && pkgin -y in \
+RUN pkgin up
+RUN pkgin -y in \
 	bash curl git-base gmake vim \
 	jq rsync ripgrep fd-find imapfilter socat gh \
 	w3m python${PYVERS} py${PYVERS}-pipx py${PYVERS}-pip py${PYVERS}-uv
@@ -63,7 +64,8 @@ EOF
 # .bash_profile adds to PATH. -f + && make a failed download visible
 # instead of feeding tar an error page (tar: Unrecognized archive format)
 RUN mkdir -p ${NBHOME}/bin && \
-	curl -fL -s --retry 5 --retry-delay 5 --retry-all-errors --max-time 600 \
+	curl -fL -s --retry 15 --retry-delay 15 --retry-all-errors \
+		--retry-max-time 600 --max-time 600 \
 		-o /tmp/picoclaw.tgz ${GHREPO}/${GHRELEASE}/picoclaw_Netbsd_${GHARCH}.tar.gz && \
 	tar zxf /tmp/picoclaw.tgz -C ${NBHOME}/bin picoclaw picoclaw-launcher && \
 	rm -f /tmp/picoclaw.tgz
@@ -132,14 +134,16 @@ printf "
 
 EOF
 
-# SSH access
+# SSH access is optional: rsynclite silently skips a missing ssh.pub,
+# so do not gate the chown/chmod on ${NBHOME}/.ssh existing
 ARG SSH_PUBKEY="/mnt/share/ssh.pub"
 COPY ${SSH_PUBKEY} ${NBHOME}/.ssh/authorized_keys
 
-RUN [ -d "${NBHOME}/.ssh" ] && \
-    chown -R ${NBUSER} ${NBHOME} && \
-    chmod 755 ${NBHOME} && \
-    chmod -R go-rwx ${NBHOME}/.ssh
+RUN <<EOF
+chown -R ${NBUSER} ${NBHOME}
+chmod 755 ${NBHOME}
+[ ! -d ${NBHOME}/.ssh ] || chmod -R go-rwx ${NBHOME}/.ssh
+EOF
 
 RUN cat <<EOF >/etc/rc.local
 hostname ${NBUSER}
