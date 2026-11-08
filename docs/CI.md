@@ -18,7 +18,9 @@ release-watch.yml workflows — CI plumbing pushes never rebuild the image.
   smolcracy image is built through main.yml.
 
 ### release-watch.yml — nightly pin bumper
-- Cron `0 1 * * *` UTC (~02:00 Madrid winter) + manual dispatch with
+- Cron `17 1 * * *` UTC (~02:17 Madrid winter) + manual dispatch with
+  (`0 1` missed its slot 2026-11-08: minute-0 slots congest/skip under
+  load; odd minutes are the standard workaround)`,
   `dry_run` boolean (default true = report only).
 - Watches GitHub releases: tontinton/maki (MAKI_VERSION in
   SMOLerfile.maki), charmbracelet/crush (CRUSH_VERSION in

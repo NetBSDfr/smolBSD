@@ -2,7 +2,7 @@ name: release-watch
 
 on:
   schedule:
-    - cron: '0 1 * * *'        # 01:00 UTC ~ 02:00 Madrid (winter)
+    - cron: '17 1 * * *'       # 01:17 UTC ~ 02:17 Madrid (winter)
   workflow_dispatch:
     inputs:
       dry_run:
