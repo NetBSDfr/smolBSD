@@ -114,17 +114,25 @@ CI is blocked on all aarch64 builds until then.
   GitHub `schedule` is best-effort: under load it delays (hours) or
   skips slots silently — minute-0 slots are the most congested.
 - Mitigation live: cron now `17 1 * * *` (~02:17 Madrid), commit 9961f0a.
-  First test: 2026-11-09 01:17 UTC. GitHub may also deliver a skipped
-  slot late — a stray scheduled run appearing hours later is normal.
+  First test 2026-11-09 01:17 UTC: ALSO SKIPPED. Repo-wide
+  `runs?event=schedule` => ZERO scheduled runs ever. Odd-minute slots do
+  not help; the minute-0 congestion theory is dead.
+- Prime suspect: scheduled workflows PAUSED org-wide. An Actions spending
+  limit reached pauses ALL `schedule` triggers while push/dispatch keep
+  working — matches these symptoms exactly. Check the banner at
+  github.com/NetBSDfr/settings/actions / billing UI (the billing API
+  needs admin:org scope). GitHub e-mails when this fires.
+- Fallback if confirmed (trigger we own): cron on our own host calling
+  `gh workflow run release-watch.yml -f dry_run=false`.
 - Verifying a night:
   `gh run list --workflow release-watch.yml --limit 1`
-  expect `schedule` event, `success`, ~10s. No upstream releases =>
-  stdout just `dry_run=false` + summary "All pins current." A release =>
-  bump commit by github-actions[bot], `waiting for main.yml…` log lines,
-  and an auto-dispatched smoler.yml run (the full path is only exercised
-  on real bumps; verified manually 2026-11-07, not yet via the bot).
-- If odd-minute slots also skip: replace the schedule with a trigger we
-  own — cron on our own host calling
-  `gh workflow run release-watch.yml -f dry_run=false`.
-- Bot health: manual dispatch 2026-11-08 09:16 UTC succeeded in 11s
+  expect `schedule` event, `success`, ~10s. No new releases => stdout and
+  summary read "No new releases: all pins current." (output added
+  2026-11-09; earlier no-op runs printed only the `dry_run=` marker).
+  A release => bump commit by github-actions[bot], `waiting for main.yml…`
+  log lines, and an auto-dispatched smoler.yml run (the full path is only
+  exercised on real bumps; verified manually 2026-11-07, not yet via the
+  bot).
+- Bot health: manual dispatches 2026-11-08 09:16 UTC and 2026-11-09
+  05:21 UTC (dry_run=false) both green, pins current, clean no-op.
   (no-op, pins current).

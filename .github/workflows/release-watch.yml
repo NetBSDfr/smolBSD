@@ -60,9 +60,9 @@ jobs:
             fi
           done <<< "$tools"
 
-          { [ ${#report[@]} -gt 0 ] && printf '%s\n' "${report[@]}"; echo "dry_run=$dry"; } | tee -a "$GITHUB_STEP_SUMMARY"
+          { if [ ${#report[@]} -gt 0 ]; then printf '%s\n' "${report[@]}"; else echo "No new releases: all pins current."; fi; echo "dry_run=$dry"; } | tee -a "$GITHUB_STEP_SUMMARY"
           [ "$dry" = "true" ] && exit 0
-          [ ${#changed[@]} -gt 0 ] || { echo "All pins current." >> "$GITHUB_STEP_SUMMARY"; exit 0; }
+          [ ${#changed[@]} -gt 0 ] || exit 0
 
           git config user.name github-actions[bot]
           git config user.email 41898282+github-actions[bot]@users.noreply.github.com
