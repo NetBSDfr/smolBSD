@@ -1,0 +1,55 @@
+#!/bin/sh
+
+. /etc/include/basicrc
+. /etc/include/mount9p
+
+# NOTE: keep logs off the 9p mount while building: the in-image mount_9p
+# is the OLD buggy one (stale size mirror breaks appends), so log locally
+# and copy out with a fresh `cp` each time (fresh file, no append).
+L=/tmp/build.log
+diag() { echo "== $* ==" >> $L; "$@" </dev/null >> $L 2>&1; echo "rc=$?" >> $L; }
+say() { echo "rc: $*" >> /dev/console; }
+
+say start
+echo "p9build: $(date)" > $L
+df -h / >> $L 2>&1
+say disk-ok
+diag ls -la /usr/libexec/cc1
+say ls-ok
+diag ldd /usr/libexec/cc1
+say ldd-ok
+diag timeout 30 /usr/libexec/cc1 -version
+say cc1-ok
+diag timeout 30 gcc --version
+say gcc-ok
+echo 'int main(void){return 3;}' > /tmp/t.c
+diag timeout 60 gcc /tmp/t.c -o /tmp/t
+say compile-ok
+diag /tmp/t
+say diag-done
+cp $L /mnt/diag.log
+say diag-copied
+
+mkdir -p /tmp/src && cd /tmp/src || { echo "mkdir failed" >> $L; cp $L /mnt/build.log; dmesg > /mnt/dmesg-build.txt; exit 1; }
+diag tar xzf /mnt/mount_9p.tgz
+cd usr.sbin/puffs/mount_9p || { echo "cd failed" >> $L; cp $L /mnt/build.log; exit 1; }
+
+echo "--- make -j1 ---" >> $L
+say make-start
+timeout 600 make -j1 MKOBJDIR=no >> $L 2>&1
+rc=$?
+echo "make rc=$rc" >> $L
+say "make-done rc=$rc"
+
+if [ $rc -eq 0 ] && [ -x ./mount_9p ]; then
+	cp mount_9p /mnt/mount_9p.new
+	echo "copied: $(ls -l /mnt/mount_9p.new)" >> $L
+else
+	echo "BUILD FAILED" >> $L
+fi
+
+cp $L /mnt/build.log
+dmesg > /mnt/dmesg-build.txt
+say end
+
+. /etc/include/shutdown

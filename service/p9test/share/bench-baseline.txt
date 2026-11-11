@@ -1,0 +1,35 @@
+BENCH stat_glob files=2000 real=1.32 secs=1 rc=0
+BENCH cat_small files=2000 real=2.30 secs=3 rc=0
+BENCH ls_cold files=2000 real=0.57 secs=0 rc=0
+BENCH ls_warm files=2000 real=0.70 secs=1 rc=0
+BENCH write500 files=500 real=0.65 secs=1 rc=0
+BENCH unlink500 files=500 real=0.67 secs=1 rc=0
+BENCH cat_8k files=200 real=0.27 secs=0 rc=0
+BENCH dd_1m files=1 real=0.03 secs=0 rc=0
+BENCH done
+msize=16384 bytes_tx=1422284 bytes_rx=8198474
+T_VERSION tx=1 rx=0
+R_VERSION tx=0 rx=1
+T_ATTACH tx=1 rx=0
+R_ATTACH tx=0 rx=1
+R_ERROR tx=0 rx=1005
+T_WALK tx=24359 rx=0
+R_WALK tx=0 rx=23855
+T_OPEN tx=3215 rx=0
+R_OPEN tx=0 rx=3215
+T_CREATE tx=502 rx=0
+R_CREATE tx=0 rx=502
+T_READ tx=2562 rx=0
+R_READ tx=0 rx=2562
+T_WRITE tx=502 rx=0
+R_WRITE tx=0 rx=502
+T_CLUNK tx=19643 rx=0
+R_CLUNK tx=0 rx=19142
+T_REMOVE tx=501 rx=0
+R_REMOVE tx=0 rx=501
+T_STAT tx=28354 rx=0
+R_STAT tx=0 rx=28354
+T_WSTAT tx=2705 rx=0
+R_WSTAT tx=0 rx=2704
+-- mount_9p stats --
+msize=16384 bytes_tx=1422284 bytes_rx=8198474

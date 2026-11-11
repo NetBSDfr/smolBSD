@@ -1,0 +1,89 @@
+#!/bin/sh
+
+ulimit -c unlimited
+
+# debug: catch heap corruption at the offending write (jemalloc guard pages)
+MALLOC_OPTIONS=GU; export MALLOC_OPTIONS
+C=/dev/console
+
+. /etc/include/basicrc
+. /etc/include/mount9p
+rm -f /tmp/report.txt
+echo "rc: boot mount done rc=$?" > $C
+
+# swap in the freshly built mount_9p if the share has one, then remount
+# with it so all tests below exercise the NEW client.
+if [ -f /mnt/mount_9p.new ]; then
+	cp /mnt/mount_9p.new /tmp/mount_9p && chmod +x /tmp/mount_9p
+	echo "rc: remounting with new mount_9p" > $C
+	umount /mnt && sleep 1
+	/tmp/mount_9p -cu /dev/vio9p0 /mnt
+	sleep 1
+	ls /mnt > /dev/null 2>&1
+	echo "rc: remount rc=$?" > $C
+	PATH=/tmp:$PATH; export PATH
+	echo "using new mount_9p: $(ls -l /mnt/mount_9p.new)" > /mnt/version.txt
+	echo "rc: version.txt rc=$?" > $C
+fi
+
+echo "rc: dmesg" > $C
+timeout 60 dmesg > /mnt/dmesg.txt 2>&1; echo "rc: dmesg rc=$?" > $C
+echo "rc: ls -l /mnt" > $C
+timeout 120 ls -l /mnt > /mnt/ls.txt 2>&1; echo "rc: ls rc=$?" > $C
+echo "rc: stat" > $C
+timeout 60 stat -f '%N mode=%Sp uid=%u gid=%g' /mnt /mnt/test.sh /mnt/hostfile > /mnt/stat.txt 2>&1; echo "rc: stat rc=$?" > $C
+
+if [ -f /mnt/mini.sh ]; then
+	echo "rc: mini start" > $C
+	cp /mnt/mini.sh /tmp/mini.sh
+	sh /tmp/mini.sh
+	echo "rc: mini done rc=$?" > $C
+	cp /tmp/report.txt /mnt/report-rc.txt 2>/dev/null
+	. /etc/include/shutdown
+fi
+
+if [ -f /mnt/test.sh ]; then
+	echo "booted, running /mnt/test.sh" > /mnt/status.txt
+	cp /mnt/test.sh /tmp/test.sh
+	( sleep 240
+	  echo "RC: WATCHDOG: report tail" > $C
+	  tail -14 /tmp/report.txt > $C 2>&1
+	  echo "RC: WATCHDOG: ps" > $C
+	  ps -al > $C 2>&1
+	) &
+	wd=$!
+	sh /tmp/test.sh
+	rc=$?
+	kill $wd 2>/dev/null
+	echo "rc: test.sh done rc=$rc" > $C
+ls -l /core /tmp/*.core > $C 2>/dev/null
+	if [ -f /core ]; then
+		echo "rc: core present, copying" > $C
+		umount /mnt 2>/dev/null
+		timeout 10 /sbin/mount_9p /dev/vio9p0 /mnt
+		timeout 30 cp /tmp/mount_9p /mnt/mount_9p.used
+		timeout 30 cp /core /mnt/core.m9p && echo "rc: core copied" > $C
+		rm /core
+	else
+		echo "rc: NO CORE" > $C
+	fi
+	dmesg | tail -6 > $C 2>/dev/null
+	timeout 5 sh -c "echo test-done-$rc >> /mnt/status.txt" 2>/dev/null
+	cat /tmp/report.txt > $C 2>/dev/null
+fi
+
+if [ -f /mnt/bench.sh ] && [ -d /mnt/bench ]; then
+	echo "rc: bench start" > $C
+	cp /mnt/bench.sh /tmp/bench.sh
+	sh /tmp/bench.sh /mnt >> /tmp/report.txt 2>&1
+	echo "rc: bench rc=$?" > $C
+	if [ -f /tmp/mount_9p.pid ]; then
+		kill -INFO $(cat /tmp/mount_9p.pid) 2>/dev/null
+		sleep 1
+		echo "-- mount_9p stats --" >> /tmp/report.txt
+		cat /tmp/mount_9p.stats >> /tmp/report.txt 2>/dev/null
+	fi
+fi
+
+cp /tmp/report.txt /mnt/report-rc.txt 2>/dev/null
+. /etc/include/shutdown

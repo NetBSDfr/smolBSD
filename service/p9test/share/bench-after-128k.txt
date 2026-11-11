@@ -1,0 +1,69 @@
+===== 9p test: Wed Nov 11 19:07:38 UTC 2026 =====
+--- mount ---
+/dev/vio9p0 on /mnt type puffs|9p
+--- bigdir ---
+file count:     2000
+ls -l bigdir: rc=0 time=0s
+--- stat of hostfile (host: uid=1000 gid=1000 mode=0750 size=20) ---
+/mnt/hostfile uid=1000 gid=1000 mode=100750 size=2052 mtime=1792994418
+--- symlink (host: symlink -> hostfile) ---
+lrwxrwxrwx  1 1000  1000  8 Oct 24 08:25 /mnt/symlink -> hostfile
+symlink type=@
+hostfile
+--- guest symlink create/readlink/remove ---
+symlink create: ok, readlink=hostfile
+newlink type=@ mode=120777
+newlink removed
+--- guest chown/chmod (expect host to see uid/gid 1000, mode 640) ---
+gown.txt uid=1000 gid=1000 mode=100640
+--- guest->host write ---
+guestfile read-back: hello-from-guest rc=0
+guestfile size=17
+--- mkdir/create/rename/rmdir ---
+f2
+dir ops: OK
+--- staleness (sleep 15; host appends to hostfile meanwhile) ---
+stat size before: 2052
+stat size after:  2052
+read bytes after:     2052
+--- 30x ls -l bigdir stress ---
+stress done
+--- remount stress (10x umount/mount) ---
+remount stress done: 10/10
+--- bigdir count again ---
+file count:     2000
+===== done: Wed Nov 11 19:08:23 UTC 2026 =====
+BENCH stat_glob files=2000 real=0.54 secs=0 rc=0
+BENCH cat_small files=2000 real=1.78 secs=2 rc=0
+BENCH ls_cold files=2000 real=0.56 secs=1 rc=0
+BENCH ls_warm files=2000 real=0.10 secs=0 rc=0
+BENCH write500 files=500 real=0.69 secs=1 rc=0
+BENCH unlink500 files=500 real=0.43 secs=0 rc=0
+BENCH cat_8k files=200 real=0.25 secs=1 rc=0
+BENCH dd_1m files=1 real=0.03 secs=0 rc=0
+BENCH done
+-- mount_9p stats --
+msize=131072 bytes_tx=759426 bytes_rx=6035804
+T_VERSION tx=1 rx=0
+R_VERSION tx=0 rx=1
+T_ATTACH tx=1 rx=0
+R_ATTACH tx=0 rx=1
+R_ERROR tx=0 rx=1008
+T_WALK tx=11511 rx=0
+R_WALK tx=0 rx=11010
+T_OPEN tx=3215 rx=0
+R_OPEN tx=0 rx=3215
+T_CREATE tx=501 rx=0
+R_CREATE tx=0 rx=501
+T_READ tx=2498 rx=0
+R_READ tx=0 rx=2498
+T_WRITE tx=502 rx=0
+R_WRITE tx=0 rx=502
+T_CLUNK tx=6801 rx=0
+R_CLUNK tx=0 rx=6300
+T_REMOVE tx=501 rx=0
+R_REMOVE tx=0 rx=501
+T_STAT tx=9000 rx=0
+R_STAT tx=0 rx=8994
+T_WSTAT tx=2706 rx=0
+R_WSTAT tx=0 rx=2706
