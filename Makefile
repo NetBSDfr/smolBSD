@@ -130,7 +130,8 @@ kernfetch:
 	$Qu=${KDIST}/${ARCH:C/.*-//}/${KERNEL}; \
 	if curl -LfsI $$u >/dev/null; then \
 		${FRESHCHK} $$u ${KERNELDIR}/${KERNEL} || \
-			${FETCH} -o ${KERNELDIR}/${KERNEL} $$u; \
+			${FETCH} -o ${KERNELDIR}/${KERNEL} $$u || \
+			{ echo "${ERROR} fetch failed: $$u" >&2; exit 1; }; \
 		if curl -LfsI $$u.sha256 >/dev/null; then \
 			cd ${KERNELDIR} && curl -L -s $$u.sha256 | \
 				${CKSUM} ${CKSUMQ} && \
@@ -176,14 +177,16 @@ setfetch:
 			echo "no source for $${set}" >&2; exit 1; \
 		fi; \
 		${FRESHCHK} $$url ${SETSDIR}/$${set} || \
-			${FETCH} -o ${SETSDIR}/$${set} $$url; \
+			${FETCH} -o ${SETSDIR}/$${set} $$url || \
+			{ echo "set fetch failed: $$url" >&2; exit 1; }; \
 	done
 
 pkgfetch:
 	@[ -d ${PKGSDIR} ] || mkdir -p ${PKGSDIR}
 	$Qfor p in ${ADDPKGS};do \
 		${FRESHCHK} ${PKGSITE}/$${p}* ${PKGSDIR}/$${p}.tgz || \
-			${FETCH} -o ${PKGSDIR}/$${p}.tgz ${PKGSITE}/$${p}*; \
+			${FETCH} -o ${PKGSDIR}/$${p}.tgz ${PKGSITE}/$${p}* || \
+			{ echo "pkg fetch failed: $${p}" >&2; exit 1; }; \
 	done
 
 fetchall: kernfetch setfetch pkgfetch
