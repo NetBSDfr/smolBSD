@@ -1,2 +1,0 @@
-SETS=base.${SETSEXT} comp.${SETSEXT} etc.${SETSEXT}
-IMGSIZE=1024
