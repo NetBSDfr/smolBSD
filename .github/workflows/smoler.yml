@@ -36,7 +36,7 @@ jobs:
             jq \
             libarchive-tools \
             qemu-system-x86 \
-            qemu-system-aarch64 \
+            qemu-system-arm \
             rsync \
             socat \
             xz-utils
