@@ -1,28 +1,8 @@
 # smol'd version of maki https://github.com/tontinton/maki
 #
-# maki is written in Rust (edition 2024, needs rust 1.88+) and there is
-# no NetBSD binary in the releases, so it is built from source here.
-# The build follows the FreeBSD port (devel/maki): a C toolchain plus
-# rust-bin (prebuilt, no deps), openssl, perl, python (pyo3/monty),
-# pkgconfig and git (cargo pulls the git dependencies: pydantic/monty
-# and astral-sh/ruff).
+# the NetBSD release binary, its dependencies and the NetBSD build quirks
+# live in smolerfiles/install-maki.inc (shared with SMOLerfile.agents).
 #
-# isahc's static-curl/static-ssl build curl and OpenSSL from source and
-# forward cargo's jobserver to make; that breaks bmake (--jobserver-fds),
-# so cargo runs with GNU make from /usr/pkg/gnu/bin (like USES=gmake).
-#
-# luau (via mlua) uses std::numeric_limits without including <limits>;
-# GCC's libstdc++ does not provide it transitively, so force-include it
-# for C++ files (CXXFLAGS only applies to .cpp, not the C parts).
-#
-# the libc crate does not bind nl_langinfo_l on netbsd even though the
-# NetBSD libc provides it, so maki-ui/src/clock.rs is patched the same
-# way it already is for apple: declare the symbol via extern "C".
-#
-# parallel cargo builds die at random crates with "could not execute
-# process rustc ... (never executed)" (ENOENT), so build with
-# CARGO_BUILD_JOBS=1 after a separate cargo fetch.
-
 # copy a configured maki init.lua in the directory of the
 # project you want to work on and:
 #
@@ -35,32 +15,17 @@
 #
 # ./smoler.sh run maki-amd64:latest -E makiconf=/path/to/init.lua
 #
-# NOTE: the cargo build of ~600 crates (30 tree-sitter grammars, luau
-# jit, static curl/openssl) is heavy — build with at least:
-#
-# BUILDMEM=8192 BUILDCPUS=4 ./smoler.sh build smolerfiles/SMOLerfile.maki
-#
 
 FROM base,comp,etc
 
 LABEL smolbsd.service=maki
 LABEL smolbsd.imgsize=2048
 LABEL smolbsd.use_pty=y
-LABEL revision="smol3"
-
-ARG MAKI_VERSION="0.7.2"
+LABEL revision="smol4"
 
 ENV NBUSER=maki
 
-RUN pkgin up && pkgin -y in curl git-base ripgrep fd-find gh bash rsync \
-	tmux openssl perl python gmake
-
-ARG GHARCH=$(uname -p)
-# iMil's repo with local fixes
-ARG GHREPO=https://github.com/tontinton/maki/releases/download
-
-RUN curl -L -s -o- ${GHREPO}/v${MAKI_VERSION}/maki-v${MAKI_VERSION}-${GHARCH}-unknown-netbsd.tar.gz | \
-        tar zxf - -C /usr/pkg/bin maki
+INCLUDE smolerfiles/install-maki.inc
 
 INCLUDE smolerfiles/agent.inc
 

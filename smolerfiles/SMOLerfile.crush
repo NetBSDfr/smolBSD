@@ -14,17 +14,9 @@ LABEL smolbsd.imgsize=2048
 LABEL smolbsd.use_pty=y
 LABEL revision="smol1"
 
-ARG CRUSH_VERSION="0.101.0"
-ARG CRUSH_ARCH=$(uname -p|sed 's/aarch64/arm64/')
-
 ENV NBUSER=crush
 
-RUN pkgin up && pkgin -y in curl git-base ripgrep fd-find gh bash rsync python314
-
-RUN mkdir -p /usr/pkg/bin && \
-	curl -L -s -o- \
-		https://github.com/charmbracelet/crush/releases/download/v${CRUSH_VERSION}/crush_${CRUSH_VERSION}_Netbsd_${CRUSH_ARCH}.tar.gz | \
-		tar zxf - -C /usr/pkg/bin --strip-components=1 crush_${CRUSH_VERSION}_Netbsd_${CRUSH_ARCH}/crush
+INCLUDE smolerfiles/install-crush.inc
 
 INCLUDE smolerfiles/agent.inc
 

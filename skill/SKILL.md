@@ -29,10 +29,14 @@ compatibility:
   - git
   - rsync
 metadata:
-  version: "3.2"
+  version: "3.3"
   author: iMil / smolBSD community (document maintained by Qwen 3.8 27B)
-  last-updated: "2026-09-04"
+  last-updated: "2026-11-11"
   changelog: >
+    3.3 — Documented the agent install fragments, agent-multi.inc and
+    SMOLerfile.agents (crush+maki+codeur in one image); corrected the
+    stale smoler.yml service list in §10; explicit generated-files rule
+    in §3.1; §4.8 parser gotcha on `#` lines inside heredocs.
     3.2 — Full verification pass against the codebase. Fixed: startnb.sh -P
     default console is picocom (not cu(1)); RTC is always
     base=utc,clock=host,driftfix=slew (not localtime); aarch64 kernel is
@@ -175,7 +179,10 @@ smolBSD/
 build.sh deletes its `etc/rc`, `options.mk`, `postinst/` and
 `etc/<name>.conf` before regenerating them. Untracked files in the service
 dir (e.g. `sailor.conf`, `own.mk`) survive, but anything hand-edited in the
-deleted files is lost — commit what matters first.
+deleted files is lost — commit what matters first. **For a
+SMOLerfile-backed service, `options.mk`, `etc/rc`, `postinst/` and
+`etc/<name>.conf` are generated build artifacts: every edit belongs in the
+SMOLerfile, never in those files.**
 
 ### 3.2 bmake / make (Manual, low-level)
 
@@ -311,6 +318,24 @@ The parser generates numbered postinst scripts:
   and `cmd.sh` (config-check + tmux launch), driven by `ARG`s (`AGENT`,
   `AGENT_EMOJI`, `CONF_FILES`, `CONF_TARGET`, `CONF_NAME`, `CONF_VAR`, optional
   `CONF_SHARE`, `CONF_MODE`, `CONF_ENV_FALLBACK`, `CONF_HINT`) set before the INCLUDE.
+- **`install-crush.inc` / `install-maki.inc` / `install-codeur.inc`** — per-agent
+  pkgsrc deps, versions and binary install/build (the NetBSD quirks are
+  documented there); included by both the single-agent SMOLerfiles and
+  `SMOLerfile.agents` so a version bump happens once.
+- **`SMOLerfile.agents`** (`service=agents`, imgsize 3072) — one image shipping
+  crush, maki and codeur, launched by `agent-multi.inc` instead of
+  `agent-launch.inc`: `cmd.sh` detects each agent's config (`crush.json`,
+  `init.lua`/`.maki/init.lua`, `config.ini`; codeur also via `-e
+  CODEUR_API_URL,CODEUR_API_KEY`) in the 9P share or through `-E
+  crush=…,makiconf=…,codeurconf=…`; the single configured agent auto-launches,
+  zero or several configs show a descriptive menu (shell with `s`); the
+  choice goes to `~/.agentrc` and `.profile` runs it in tmux. `chown -R
+  $NBUSER:$NBUSER /home/$NBUSER` at the end of the fragment hands the
+  root-written dotfiles to the agent user (postinst runs chrooted as root).
+- **Parser gotcha for `.inc` heredocs**: `smoler/build.sh` drops every line
+  whose first non-blank character is `#` — including inside `RUN <<EOF`
+  bodies — so generated scripts carry no comments and generated `cmd.sh`
+  files have no shebang (they run via the shell's ENOEXEC fallback).
 
 ### 4.9 make vs bmake
 
@@ -855,7 +880,13 @@ Two workflows in `.github/workflows/`:
 
 ### smoler.yml — SMOLerfile service images
 
-Triggers on push to `smolerfiles/*` (or manual dispatch with a list of files). Builds a fixed set of services (`crush`, `clawd`, `bsdshell`, `nbakery`, `tiny`, `clawlite`, `ttyd`, `maki`, `zeroclaw`) with `smoler.sh build` on plain runners using `QEMU_ACCEL=tcg` (no KVM), after `bmake fetchimg` for amd64 and evbarm-aarch64; publishes to GitHub Packages (`packages: write`). New SMOLerfiles you want CI-tested must be added to the `DFILES` regex in this workflow.
+Triggers on push to `smolerfiles/*` (or manual dispatch with a list of files). The
+`DFILES` regex (line 22) selects what gets built: `crush`, `picoclaw`, `bsdshell`,
+`nbakery`, `tiny`, `clawlite`, `ttyd`, `maki`, `zeroclaw`, `codeur` — each in both
+architectures — with `smoler.sh build` on plain runners using `QEMU_ACCEL=tcg` (no
+KVM), after `bmake fetchimg`; publishes to GitHub Packages (`packages: write`). New
+SMOLerfiles you want CI-tested must be added to the `DFILES` regex in this workflow
+(`agents` is built locally-only until CI is updated).
 
 **Note:** CI builds the images natively inside a NetBSD VM (via `vmactions/netbsd-vm`), so the FFS path (WAPBL guard, `resize_ffs`, sailor when `MINIMIZE` + `sailor.conf`) *is* exercised. Only compressing and publishing run on the Linux host. See §20.
 

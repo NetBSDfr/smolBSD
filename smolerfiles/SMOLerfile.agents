@@ -1,0 +1,55 @@
+# agents — three AI coding agents in one microvm: crush, maki and codeur.
+#
+# All three run full-screen inside tmux (prefix ^b); quitting the agent
+# halts the microvm. Each agent gets its configuration from the host:
+#
+#   crush   charmbracelet/crush (Go TUI)          config: crush.json
+#   maki    tontinton/maki (Rust, Lua config)     config: init.lua
+#   codeur  codeberg bapt/codeur (tiny C agent)   config: config.ini
+#
+# put the config file(s) of the agent(s) you want in the directory of the
+# project you want to work on and:
+#
+# ./smoler.sh run agents-amd64:latest -m 1024 -w /path/to/project
+#
+# /path/to/project is mounted in /mnt; .maki/init.lua inside the project
+# is also picked up for maki. Without a share, inject configs through
+# fw_cfg (one comma-separated -E flag):
+#
+# ./smoler.sh run agents-amd64:latest -E crush=/p/crush.json,makiconf=/p/init.lua,codeurconf=/p/config.ini
+#
+# codeur also runs without any config file on environment variables only:
+#
+# ./smoler.sh run agents-amd64:latest -e CODEUR_API_URL=https://api.openai.com/v1/chat/completions,CODEUR_API_KEY=sk-...,CODEUR_MODEL=gpt-4o
+#
+# at boot the image prints a banner listing the agents and which configs
+# were found; the single configured agent is launched directly, with zero
+# or several configs a menu lets you pick one, or a shell.
+#
+# sessions and memory live inside the image and are lost on reboot unless
+# the share carries a share/<agent>/ subdirectory, which is copied over
+# the agent's config directory at boot.
+#
+# the agents themselves (packages, versions, build quirks) live in the
+# install-<agent>.inc fragments, shared with SMOLerfile.crush/.maki/.codeur.
+
+FROM base,comp,etc
+
+LABEL smolbsd.service=agents
+LABEL smolbsd.imgsize=3072
+LABEL smolbsd.use_pty=y
+LABEL revision="smol1"
+
+ENV NBUSER=agents
+
+INCLUDE smolerfiles/install-crush.inc
+INCLUDE smolerfiles/install-maki.inc
+INCLUDE smolerfiles/install-codeur.inc
+
+INCLUDE smolerfiles/agent.inc
+
+INCLUDE smolerfiles/agent-multi.inc
+
+CMD ./cmd.sh
+
+# vim: filetype=dockerfile :
