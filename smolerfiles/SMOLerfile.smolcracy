@@ -56,13 +56,11 @@ RUN printf '%s\n' '<?xml version="1.0" encoding="UTF-8"?>' \
 	'  </g>' \
 	'</svg>' > /usr/pkg/share/icons/hicolor/scalable/apps/clipit-trayicon.svg
 
-# AI/agent stack: maki + crush, same release idiom as SMOLerfile.maki
-# and SMOLerfile.crush (runtime uname -p keeps aarch64 builds working).
-ARG MAKI_VERSION=0.7.0
+# AI/agent stack: maki pin+install from the shared fragment (release-watch
+# bumps install-maki.inc, smolcracy inherits), crush stays pinned here.
 ARG CRUSH_VERSION=0.99.0
-ARG GHARCH=$(uname -p)
+INCLUDE smolerfiles/install-maki.inc
 ARG CRUSH_ARCH=$(uname -p|sed 's/aarch64/arm64/')
-RUN curl -L -s -o- https://github.com/tontinton/maki/releases/download/v${MAKI_VERSION}/maki-v${MAKI_VERSION}-${GHARCH}-unknown-netbsd.tar.gz | tar zxf - -C /usr/pkg/bin maki
 RUN curl -L -s -o- https://github.com/charmbracelet/crush/releases/download/v${CRUSH_VERSION}/crush_${CRUSH_VERSION}_Netbsd_${CRUSH_ARCH}.tar.gz | tar zxf - -C /usr/pkg/bin --strip-components=1 crush_${CRUSH_VERSION}_Netbsd_${CRUSH_ARCH}/crush
 ENV LD_LIBRARY_PATH=/usr/pkg/lib:/usr/X11R7/lib
 
