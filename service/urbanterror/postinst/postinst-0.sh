@@ -17,5 +17,6 @@ cp /etc/resolv.conf etc/
 mkdir -p usr/pkg/etc/pkgin
 # evbarm-aarch64 repo name is aarch64
 ARCH=${ARCH#evbarm-}
-echo "https://cdn.netbsd.org/pub/pkgsrc/packages/NetBSD/${ARCH}/${PKGVERS}/All" 	>usr/pkg/etc/pkgin/repositories.conf
+PKGSITE="${PKGSITE:-https://pkg.smolbsd.org/pub/pkgsrc/packages/NetBSD/${ARCH}/${PKGVERS}/All}"
+printf '%s\n' "${PKGSITE}" "# fallback if ever needed: https://cdn.netbsd.org/pub/pkgsrc/packages/NetBSD/${ARCH}/${PKGVERS}/All" 	>usr/pkg/etc/pkgin/repositories.conf
 rsynclite /etc/openssl/ ${rootdir}/etc/openssl

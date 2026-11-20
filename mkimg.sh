@@ -49,7 +49,7 @@ do
 	esac
 done
 
-export ARCH PKGVERS
+export ARCH PKGVERS PKGSITE
 
 arch=${ARCH:-"amd64"}
 
