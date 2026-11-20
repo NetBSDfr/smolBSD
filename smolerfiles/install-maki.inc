@@ -12,7 +12,7 @@
 # automatically; a global config comes from the -w shared directory or
 # -E makiconf=/path/to/init.lua
 
-ARG MAKI_VERSION="0.7.2"
+ARG MAKI_VERSION="0.7.3"
 
 ARG GHARCH=$(uname -p)
 # repo with the NetBSD release binaries
