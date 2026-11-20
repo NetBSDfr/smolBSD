@@ -22,6 +22,9 @@ VERS?=		11
 PKGVERS?=	11.0
 # for an obscure reason, packages path use uname -p...
 DIST?=		https://pkg.smolbsd.org/pub/NetBSD-daily/netbsd-${VERS}/latest/${ARCH}/binary
+# BIOS boot kernels come from the official daily tree: binary/kernel/ is
+# not part of the pkg.smolbsd.org mirror (packages + binary/sets only)
+DISTKERNEL?=	https://nycdn.netbsd.org/pub/NetBSD-daily/netbsd-${VERS}/latest/${ARCH}/binary/kernel
 PKGSITE?=	https://pkg.smolbsd.org/pub/pkgsrc/packages/NetBSD/${MACHINE}/${PKGVERS}/All
 WHOAMI!=	whoami
 USER!= 		id -un
@@ -54,6 +57,14 @@ LIVEIMG=	images/NetBSD-${ARCH}-live.img
 
 # sets to fetch, defaults to base
 SETS?=		base.${SETSEXT} etc.${SETSEXT} smolset.tar.xz
+
+# kernels to fetch: the default one, plus the SMOLX kernel (virtiodrm +
+# LinuxKPI, required to boot xbase-based images with startnb.sh -X)
+# whenever the xbase set is installed
+KERNELS?=	${KERNEL}
+.if !empty(SETS:Mxbase*) && empty(KERNELS:Msmolbsdx)
+KERNELS+=		smolbsdx
+.endif
 
 # Default: BSD
 DDUNIT=		m
@@ -124,28 +135,30 @@ help:	# This help you are reading
 
 kernfetch:
 	@[ -d ${KERNELDIR} ] || mkdir -p ${KERNELDIR}
-	# kernel published at KDIST/<machine arch>/smolbsd (aarch64, not
+	# kernels published at KDIST/<machine arch>/<name> (aarch64, not
 	# evbarm-aarch64) with optional .sha256 alongside; probe first so
 	# unpublished assets warn instead of swallowing a 404 page
-	$Qu=${KDIST}/${ARCH:C/.*-//}/${KERNEL}; \
-	if curl -LfsI $$u >/dev/null; then \
-		${FRESHCHK} $$u ${KERNELDIR}/${KERNEL} || \
-			${FETCH} -o ${KERNELDIR}/${KERNEL} $$u || \
-			{ echo "${ERROR} fetch failed: $$u" >&2; exit 1; }; \
-		if curl -LfsI $$u.sha256 >/dev/null; then \
-			cd ${KERNELDIR} && curl -L -s $$u.sha256 | \
-				${CKSUM} ${CKSUMQ} && \
-				echo "${CHECK} ${KERNEL} sha256 checks out"; \
+	$Qm=${ARCH:C/.*-//}; for k in ${KERNELS}; do \
+		u="${KDIST}/$$m/$$k"; \
+		if curl -LfsI $$u >/dev/null; then \
+			${FRESHCHK} $$u ${KERNELDIR}/$$k || \
+				${FETCH} -o ${KERNELDIR}/$$k $$u || \
+				{ echo "${ERROR} fetch failed: $$u" >&2; exit 1; }; \
+			if curl -LfsI $$u.sha256 >/dev/null; then \
+				( cd ${KERNELDIR} && curl -L -s $$u.sha256 | \
+					${CKSUM} ${CKSUMQ} && \
+					echo "${CHECK} $$k sha256 checks out" ); \
+			else \
+				echo "${WARN} no $$u.sha256"; \
+			fi; \
 		else \
-			echo "${WARN} no $$u.sha256"; \
+			echo "${WARN} no $$k in ${KDIST} yet"; \
 		fi; \
-	else \
-		echo "${WARN} no ${KERNEL} in ${KDIST} yet"; \
-	fi
+	done
 
 	$Qif [ "${BIOSBOOT}" = "y" ]; then \
-		${FRESHCHK} ${DIST}/kernel/${BIOSKERNEL}.gz kernels/${BIOSKERNEL} || \
-			curl -L -o- ${DIST}/kernel/${BIOSKERNEL}.gz | \
+		${FRESHCHK} ${DISTKERNEL}/${BIOSKERNEL}.gz kernels/${BIOSKERNEL} || \
+			curl -L -o- ${DISTKERNEL}/${BIOSKERNEL}.gz | \
 				gzip -dc > kernels/${BIOSKERNEL}; \
 		cp -f kernels/${BIOSKERNEL} kernels/${BIOSKERNEL}.SMOL; \
 		if [ -f "confkerndev/confkerndev" ] && [ "${SMOLIFY}" = "y" ] ; then \
