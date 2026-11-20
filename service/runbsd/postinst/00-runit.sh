@@ -3,7 +3,7 @@
 # https://smarden.org/runit/replaceinit
 # switch from /sbin/init to runit!
 
-PKGURL="https://cdn.netbsd.org/pub/pkgsrc/packages/NetBSD/${ARCH}/${PKGVERS}.0/All"
+PKGURL="${PKGSITE:-https://pkg.smolbsd.org/pub/pkgsrc/packages/NetBSD/${ARCH}/${PKGVERS}.0/All}"
 RUNPKG=$(curl -L -s ${PKGURL}|sed -nE "s/.*(runit-[a-z0-9\.]+).*/\1/p")
 
 mkdir -p usr/pkg

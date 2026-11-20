@@ -293,6 +293,32 @@ $ bmake SERVICE=nitro build
 ```
 This will spawn a microvm running the build image, and will build the _service_ specified with the `SERVICE` `make(1)` variable.
 
+### Package sources (`PKGSITE` and `DIST`)
+
+By default, packages and NetBSD sets are fetched from
+[`pkg.smolbsd.org`](https://pkg.smolbsd.org), a curated smolBSD mirror
+(S3 + CloudFront) serving the dependency closure of the smolBSD services,
+refreshed from the official trees. Its URL layout is identical to
+`cdn.netbsd.org` and `nycdn.netbsd.org`, so any conforming mirror works as
+a drop-in replacement:
+
+```sh
+$ bmake PKGSITE=https://cdn.netbsd.org/pub/pkgsrc/packages/NetBSD/x86_64/11.0/All SERVICE=rescue build
+```
+
+* `PKGSITE` (packages): the `.../NetBSD/<arch>/<version>/All` directory.
+  It is also exported into the build microvm and becomes the `pkgin`
+  `repositories.conf` of the image; the `cdn.netbsd.org` equivalent is
+  written as a commented-out line only, so builds and runtime rely
+  solely on the mirror (unmirrored packages are served by the mirror's
+  own summary and the official tree stays a manual fallback).
+* `DIST` (sets): the `.../NetBSD-daily/netbsd-<n>/latest/<arch>/binary`
+  directory.
+
+> [!Note]
+> Daily `HEAD` live images and `binary/kernel` paths are not mirrored and
+> keep using `nycdn.netbsd.org`.
+
 ## Baremetal or non-PVH/MMIO aware VMMs
 
 It is possible to build _smolBSD_ images for bare metal platforms or vmms others than `qemu` and `Firecracker`, but you'll lose the sub-second boot speed, using a _BIOS_ bootable image and shipped with a _NetBSD GENERIC_ kernel.

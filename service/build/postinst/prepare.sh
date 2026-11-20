@@ -1,7 +1,9 @@
 #!/bin/sh
 
 mkdir -p usr/pkg/etc/pkgin
-echo "https://cdn.netbsd.org/pub/pkgsrc/packages/NetBSD/${ARCH#evbarm-}/${PKGVERS}/All" > \
+ARCHN=${ARCH#evbarm-}
+PKGSITE="${PKGSITE:-https://pkg.smolbsd.org/pub/pkgsrc/packages/NetBSD/${ARCHN}/${PKGVERS}/All}"
+printf '%s\n' "${PKGSITE}" "# fallback if ever needed: https://cdn.netbsd.org/pub/pkgsrc/packages/NetBSD/${ARCHN}/${PKGVERS}/All" > \
 	usr/pkg/etc/pkgin/repositories.conf
 
 touch BUILDIMG

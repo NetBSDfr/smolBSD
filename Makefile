@@ -21,8 +21,8 @@ LIVEIMGGZ=	https://nycdn.netbsd.org/pub/NetBSD-daily/HEAD/latest/images/NetBSD-1
 VERS?=		11
 PKGVERS?=	11.0
 # for an obscure reason, packages path use uname -p...
-DIST?=		https://nycdn.netbsd.org/pub/NetBSD-daily/netbsd-${VERS}/latest/${ARCH}/binary
-PKGSITE?=	https://cdn.netbsd.org/pub/pkgsrc/packages/NetBSD/${MACHINE}/${PKGVERS}/All
+DIST?=		https://pkg.smolbsd.org/pub/NetBSD-daily/netbsd-${VERS}/latest/${ARCH}/binary
+PKGSITE?=	https://pkg.smolbsd.org/pub/pkgsrc/packages/NetBSD/${MACHINE}/${PKGVERS}/All
 WHOAMI!=	whoami
 USER!= 		id -un
 GROUP!= 	id -gn
