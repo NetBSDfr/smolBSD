@@ -24,6 +24,7 @@ PKGVERS?=	11.0
 DIST?=		https://pkg.smolbsd.org/pub/NetBSD-daily/netbsd-${VERS}/latest/${ARCH}/binary
 PKGSITE?=	https://pkg.smolbsd.org/pub/pkgsrc/packages/NetBSD/${MACHINE}/${PKGVERS}/All
 WHOAMI!=	whoami
+HOSTUID!=	id -u
 USER!= 		id -un
 GROUP!= 	id -gn
 BUILDIMG=	build-${ARCH}.img
@@ -97,6 +98,7 @@ ENVVARS=	SERVICE=${SERVICE} \
 		ADDPKGS="${ADDPKGS}" \
 		MINIMIZE=${MINIMIZE} \
 		BIOSCONSOLE=${BIOSCONSOLE} \
+		HOSTUID=${HOSTUID} \
 		FROMIMG=${FROMIMG}
 
 .if ${WHOAMI} != "root" && !defined(NOSUDO) # allow non root builds
@@ -198,7 +200,7 @@ base:
 	$Qecho "${ARROW} creating root filesystem (${IMGSIZE}M)"
 	$Q${SUDO} ./mkimg.sh -i ${DSTIMG} -s ${SERVICE} \
 		-m ${IMGSIZE} -x "${SETS}" ${EXTRAS}
-	$Q${SUDO} chown ${USER}:${GROUP} ${DSTIMG}
+	$Q${SUDO} chown ${HOSTUID} ${DSTIMG}
 	$Qif [ -n "${MOUNTRO}" ]; then \
 		echo "${FREEZE} system root filesystem will be read-only"; fi
 	$Qecho "${CHECK} image ready: ${DSTIMG}"
