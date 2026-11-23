@@ -3,7 +3,9 @@
 # smol with passwordless doas to root.  Same GL stack as xbase
 # (SMOLX kernel, virtiodrm/vioinput, virgl).  Look & feel clones the
 # Omarchy catppuccin theme: Inter UI font, JetBrainsMono terminal,
-# dark rounded windows, thin accent borders, top bar, corner notices.
+# dark windows with thin accent borders (square corners — picom's
+# xrender backend cannot draw the border along a rounded arc), top
+# bar, corner notices.
 
 # smolset LAST: its patched libdrm/libglapi/virtio_gpu_dri must overwrite
 # the official same-named files from the xbase set (extraction order =

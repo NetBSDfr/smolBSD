@@ -66,8 +66,9 @@ exit) tears down X and makes QEMU exit (session `power_off` +
 
 Catppuccin mocha throughout (`#1e1e2e` base, `#cba6f7` mauve accent):
 dark top bar with workspace pills, thin mauve border on the focused
-window (2px pixel borders), 12px rounded corners + soft shadows via
-picom, JetBrains Mono Nerd Font terminal, Inter UI. Prompt is
+window (2px pixel borders), soft shadows via picom (square corners:
+xrender cannot draw the border along a rounded arc), JetBrains Mono
+Nerd Font terminal, Inter UI. Prompt is
 p10k-flavored (starship): mauve directory pill, dark clock pill, green
 command duration, pink exit-code box on failure. Rofi follows adi1090x theme
 layouts: the launcher is `launchers/type-4 style-1` (600px panel, 1px
