@@ -6,19 +6,22 @@
 # The clock rides in the first block and i3bar right-packs blocks
 # (this i3bar ignores the "align" property), so it is centered with
 # trailing &#160; spacers sized from the live bar width: bar font
-# ~8.2 px/char at the pinned Xft.dpi 96, status group ~222 px ->
-# NB = barW*100/1616 - 38 (1280 -> 41, 1920 -> 80; measured within
-# 8px of center at 1024/1280/1920).  X mode changes are picked up on
-# the next tick.
+# ~8.2 px/char at Xft.dpi 96, status group ~222 px ->
+# NB = (barW*100/1616 - 38) * 96/DPI (1280 -> 41, 1920 -> 80; measured
+# within 8px of center at 1024/1280/1920).  At Retina metrics (DPI 192)
+# chars and blocks both double in px, so the spacer count halves.  X
+# mode changes are picked up on the next tick.
 BARW=$(xdpyinfo 2>/dev/null | awk '/dimensions/{print $2+0}' | sed -n 1p)
 [ -n "$BARW" ] || BARW=1280
+DPI=$(xrdb -query 2>/dev/null | awk '/Xft\.dpi/{print $2+0}' | sed -n 1p)
+[ "${DPI:-0}" -ge 96 ] || DPI=96
 NB=""
 mknb() {
 	NB=""
 	i=0
 	while [ $i -lt $1 ]; do NB="$NB&#160;"; i=$((i+1)); done
 }
-N=$(( BARW * 100 / 1616 - 38 ))
+N=$(( (BARW * 100 / 1616 - 38) * 96 / DPI ))
 [ $N -lt 0 ] && N=0
 mknb $N
 ( printf '{"version":1}\n[\n' )
@@ -31,7 +34,7 @@ while :; do
 	B=$(xdpyinfo 2>/dev/null | awk '/dimensions/{print $2+0}' | sed -n 1p)
 	if [ -n "$B" ] && [ "$B" != "$BARW" ]; then
 		BARW=$B
-		N=$(( BARW * 100 / 1616 - 38 ))
+		N=$(( (BARW * 100 / 1616 - 38) * 96 / DPI ))
 		[ $N -lt 0 ] && N=0
 		mknb $N
 	fi

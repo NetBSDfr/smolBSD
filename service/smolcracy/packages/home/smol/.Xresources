@@ -1,7 +1,9 @@
 ! smolcracy — Omarchy catppuccin look for rxvt-unicode
 URxvt.termName:		xterm-256color
-URxvt.font:		xft:monospace:pixelsize=12:antialias=true
-URxvt.boldFont:		xft:monospace:pixelsize=12:antialias=true:weight=bold
+# size= is POINTS: scales with Xft.dpi (9pt = 12px at 96dpi, 24px at
+# the Retina 192).  pixelsize= would ignore Xft.dpi and stay tiny.
+URxvt.font:		xft:monospace:size=9:antialias=true
+URxvt.boldFont:		xft:monospace:size=9:antialias=true:weight=bold
 URxvt.internalBorder:	10
 URxvt.scrollStyle:	none
 URxvt.cursorBlink:	false
@@ -30,10 +32,7 @@ URxvt.highlightColor:	#45475a
 URxvt.highlightTextColor: #cdd6f4
 URxvt.scrollBar: false
 URxvt.depth:		32
-# Pin Xft DPI: virtio-gpu (edid=off) reports a fixed physical size, so
-# the core DPI follows the pixel size of each X mode (1280 -> 96dpi,
-# 1920 -> 144dpi) and every Xft font in the session inflates with the
-# resolution.  A fixed 96 keeps the bar and all fonts pixel-constant
-# across mode changes, which is what smolbar.sh's centering formula
-# calibrates against.
-Xft.dpi: 96
+# Xft.dpi is NOT pinned here: .xsession computes it per display
+# (96 normally; 192 on native-panel Retina modes >=2400 wide, where
+# the cocoa frontend maps fb pixels 1:1 to physical pixels) and merges
+# it after this file.  A static pin here would clobber that.

@@ -37,6 +37,17 @@ export LANG
 # session bus for dunst (notify-send) and friends
 eval $(dbus-launch --sh-syntax)
 
+# Xft DPI: the Retina cocoa frontend maps fb pixels 1:1 to physical
+# pixels, so a native-panel mode (Mac: >=2400 wide) needs 2x metrics;
+# edid=off virtio modes stay 96 (pixel-constant across mode changes,
+# which is what smolbar.sh's centering formula calibrates against).
+# Xorg drops RESOURCE_MANAGER writes for its first seconds, so the
+# DPI merge rides the xrdb hammer loop below AND i3 waits (bounded)
+# for it to land: i3 reads Xft.dpi exactly once, at startup.
+W=$(xdpyinfo 2>/dev/null | awk -F'[x ]+' '/dimensions/{print $2+0; exit}')
+DPI=96
+[ "${W:-0}" -ge 2400 ] && DPI=192
+
 # X resources (plain urxvt, no daemon, so every window picks up the
 # database fresh).  Xorg drops RESOURCE_MANAGER writes for the first
 # tens of seconds of its life, so hammer in the background until one
@@ -46,12 +57,17 @@ eval $(dbus-launch --sh-syntax)
   while [ $i -lt 60 ]; do
 	i=$((i+1))
 	xrdb -merge $HOME/.Xresources 2>>/tmp/xrdb.log
+	echo "Xft.dpi: $DPI" | xrdb -merge 2>>/tmp/xrdb.log
 	# grep for a real entry: a failed xrdb prints its error to stdout,
 	# which a plain wc -l would count as "entries present"
-	[ "$(xrdb -query 2>/dev/null | grep -c URxvt)" -gt 0 ] && break
+	if [ "$(xrdb -query 2>/dev/null | grep -c URxvt)" -gt 0 ] &&
+	   [ "$(xrdb -query 2>/dev/null | awk '/Xft\.dpi/{print $2}')" = "$DPI" ]; then
+		touch /tmp/xrdb.done
+		break
+	fi
 	sleep 2
   done
-  echo "smolcracy: xrdb entries=$(xrdb -query 2>/dev/null | grep -c URxvt) tries=$i" \
+  echo "smolcracy: xrdb entries=$(xrdb -query 2>/dev/null | grep -c URxvt) dpi=$DPI tries=$i" \
 	>>/tmp/xrdb.log ) &
 
 mkdir -p ~/Pictures
@@ -78,6 +94,10 @@ mkdir -p ~/Pictures
 # terminals inherit the WM's cwd: session.sh runs from /, and without this
 # every urxvt prompt starts in / instead of ~
 cd "$HOME" 2>/dev/null || cd /
+# i3 reads Xft.dpi once at startup: give the hammer loop a bounded head
+# start (it normally lands within seconds of X being connectable)
+i=0
+while [ $i -lt 20 ] && [ ! -f /tmp/xrdb.done ]; do i=$((i+1)); sleep 1; done
 i=0
 until i3 >>/tmp/i3.log 2>&1; do
 	i=$((i+1))
