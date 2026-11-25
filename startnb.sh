@@ -342,9 +342,15 @@ if [ -n "$glx" ]; then
 	# GL-capable virtio-gpu claimed by virtiodrm
 	# in the guest (virgl 3D to the host GPU), virtio keyboard and
 	# tablet through vioinput, rendered in a GL window.
-	# QEMU_DISPLAY picks the windowing backend, sdl (default) or gtk;
-	# gtk is a fallback for hosts where the SDL GL path misbehaves.
-	gui=${QEMU_DISPLAY:-sdl}
+	# QEMU_DISPLAY picks the windowing backend; the default is sdl
+	# elsewhere but cocoa on macOS, whose QEMU builds typically ship
+	# no SDL.  gtk is a fallback for hosts where the SDL GL path
+	# misbehaves.
+	if [ "$(uname -s)" = "Darwin" ]; then
+		gui=${QEMU_DISPLAY:-cocoa}
+	else
+		gui=${QEMU_DISPLAY:-sdl}
+	fi
 	if [ -n "$gl2d" ]; then
 		gpudevice=virtio-gpu-device
 	else
@@ -357,6 +363,13 @@ if [ -n "$glx" ]; then
 		else
 			d="-display sdl,gl=on"
 		fi;;
+	cocoa)	# native macOS backend; the 2D scanout path is the
+		# supported one here (no GLX on this fleet)
+		if [ -n "$gl2d" ]; then
+			d="-display cocoa"
+		else
+			d="-display cocoa,gl=on"
+		fi;;
 	gtk)	# NVIDIA EGL blob renders the GLArea black on this host;
 		# pin the host GL stack to Mesa software (slower, correct).
 		export LIBGL_ALWAYS_SOFTWARE=1
@@ -366,7 +379,7 @@ if [ -n "$glx" ]; then
 		else
 			d="-display gtk,gl=on"
 		fi;;
-	*)	echo "${ERROR} QEMU_DISPLAY must be sdl or gtk (got '$gui')"
+	*)	echo "${ERROR} QEMU_DISPLAY must be sdl, gtk or cocoa (got '$gui')"
 		exit 1;;
 	esac
 	d="$d -pidfile ${pidfile}"
