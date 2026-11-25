@@ -364,11 +364,15 @@ if [ -n "$glx" ]; then
 			d="-display sdl,gl=on"
 		fi;;
 	cocoa)	# native macOS backend; the 2D scanout path is the
-		# supported one here (no GLX on this fleet)
+		# supported one here (no GLX on this fleet).
+		# swap-opt-cmd: Command only reaches the guest while the
+		# mouse is grabbed, which a virtio-tablet never triggers,
+		# so map Option to Super instead: on a Mac i3's $mod is
+		# Option, and Command stays free for host/clipboard use.
 		if [ -n "$gl2d" ]; then
-			d="-display cocoa"
+			d="-display cocoa,swap-opt-cmd=on"
 		else
-			d="-display cocoa,gl=on"
+			d="-display cocoa,gl=on,swap-opt-cmd=on"
 		fi;;
 	gtk)	# NVIDIA EGL blob renders the GLArea black on this host;
 		# pin the host GL stack to Mesa software (slower, correct).
