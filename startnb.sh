@@ -527,6 +527,36 @@ eval $cmd
 if [ -n "$use_pty" ]; then
 	ptyfile="qemu-${svc}.pty"
 	while [ ! -f "$ptyfile" ]; do sleep 0.2; done
+	# -daemonize swallows qemu's early death: the pts disappears and
+	# picocom's complaint about it hides the real error (e.g. a GLX
+	# BadValue from -display sdl,gl=on on NVIDIA hosts).  Verify qemu
+	# survived, show its stderr, and for the GL path retry once on
+	# gtk, whose Mesa software pinning survives that driver.
+	vm_dead() {
+		[ ! -f "$pidfile" ] || ! kill -0 "$(cat $pidfile 2>/dev/null)" 2>/dev/null
+	}
+	die_report() {
+		echo "${ERROR} qemu exited immediately:" 1>&2
+		[ -s "$ptyfile" ] && sed 's/^/    /' "$ptyfile" 1>&2
+		rm -f "$ptyfile"
+		exit 1
+	}
+	sleep 1
+	if vm_dead; then
+		if [ -z "$gl2d" ] && [ "$gui" = "sdl" ]; then
+			echo "${WARN} sdl GL failed:"
+			[ -s "$ptyfile" ] && sed 's/^/    /' "$ptyfile" 1>&2
+			echo "${ARROW} retrying with -display gtk (Mesa software GL)"
+			export LIBGL_ALWAYS_SOFTWARE=1
+			export __EGL_VENDOR_LIBRARY_FILENAMES=/usr/share/glvnd/egl_vendor.d/50_mesa.json
+			cmd=$(printf '%s' "$cmd" | sed 's/-display sdl,gl=on/-display gtk,gl=on/')
+			rm -f "$ptyfile"
+			eval $cmd
+			while [ ! -f "$ptyfile" ]; do sleep 0.2; done
+			sleep 1
+		fi
+		vm_dead && die_report
+	fi
 	${ptycmd} $(grep -o '/dev/[^ ]*' $ptyfile)
 	kill $(cat ${pidfile})
 	rm -f $ptyfile
