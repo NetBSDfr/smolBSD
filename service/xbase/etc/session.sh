@@ -37,9 +37,19 @@ cd /
 
 mount -t tmpfs -o -s64M tmpfs /tmp 2>/dev/null
 
+# aarch64 (SMOLX kernel): no virtiodrm/DRM — viogpu dumbfb + patched
+# wsfb DDX (WSDISPLAYIO_DAMAGE).  No GLX on this route, so also skip
+# the glxinfo probe.  Root is mounted ro, so never copy over
+# /etc/xorg.conf — hand the wsfb config to Xorg directly.
+XCONFFILE=/etc/xorg.conf
+if [ "$(uname -p)" = aarch64 ]; then
+	XCONFFILE=/etc/xorg.conf.wsfb
+	NOGLX=1
+fi
+
 xtry() {
 	echo "XBASE: trying Xorg $*"
-	Xorg "$@" -config /etc/xorg.conf -nolisten tcp >/tmp/Xorg.log 2>&1 &
+	Xorg "$@" -config "$XCONFFILE" -nolisten tcp >/tmp/Xorg.log 2>&1 &
 	XPID=$!
 	i=0
 	while [ $i -lt 20 ]; do
@@ -62,8 +72,13 @@ if xtry :1 || xtry :1 -vtdev /dev/ttyE0 || xtry :1 vt2 ||
 	{ export CONSOLEDEVICE=/dev/ttyE0; xtry :1 -novtswitch; }; then
 	:
 else
-	echo "XBASE: all Xorg attempts failed, tail of /tmp/Xorg.log:"
-	tail -25 /tmp/Xorg.log
+	echo "XBASE: all Xorg attempts failed, /tmp/Xorg.log:"
+	cat /tmp/Xorg.log
+	echo "=== KEY LINES ==="
+	ls -la "$XCONFFILE"
+	head -3 "$XCONFFILE"
+	grep -nE '\(EE\)|\(WW\)|Load|robing|ABI|module|wsfb|wscons|Fatal' \
+		/tmp/Xorg.log | tail -30
 	power_off
 	exit 1
 fi
@@ -78,9 +93,11 @@ echo "XBASE: starting console shell"
 
 # GLX sanity: log renderer to serial console (timeout: glxinfo can wedge
 # on a dead X)
-timeout 10 glxinfo 2>&1 |
-	grep -E 'direct rendering|renderer string|version string' |
-	sed 's/^/XBASE glx: /'
+if [ -z "$NOGLX" ]; then
+	timeout 10 glxinfo 2>&1 |
+		grep -E 'direct rendering|renderer string|version string' |
+		sed 's/^/XBASE glx: /'
+fi
 
 # window manager: fluxbox.  It falls back to packaged defaults when
 # ~/.fluxbox is absent, but its default rootCommand (fbsetbg -l) needs

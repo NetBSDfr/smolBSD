@@ -30,7 +30,10 @@ Usage:	${0##*/} -f conffile | -k kernel -i image [-c CPUs] [-m memory]
 			kernel and 2048 MB by default; mode is
 			window, fullscreen (-full-screen, guest video
 			mode detected from the host desktop size) or
-			an explicit WxH to force it
+			an explicit WxH to force it.  2d (or 2d:WxH)
+			uses the plain virtio-gpu 2D device with a
+			plain window: the viogpu(4)+wsfb guest stack,
+			no GL, works on QEMU >= 8
 	-S		virtio-sound device (viosnd in guest), host
 			backend picked by AUDIODEV (coreaudio on macOS,
 			pa elsewhere)
@@ -243,7 +246,12 @@ aarch64)
 	mflags="-M virt,gic-version=$gicvers"
 	cpuflags="-cpu ${cputype}"
 	extra="$extra -device virtio-rng-pci"
-	kernel=${kernel:-kernels/evbarm-aarch64/smolbsd}
+	# -X boots the SMOLX kernel (viogpu 2D + wscons, GLX-free desktop)
+	if [ -n "$glx" ]; then
+		kernel=${kernel:-kernels/evbarm-aarch64/smolbsdx}
+	else
+		kernel=${kernel:-kernels/evbarm-aarch64/smolbsd}
+	fi
 	;;
 *)
 	echo "${WARN} Unknown architecture"
@@ -313,10 +321,16 @@ pidfile="qemu-${svc}.pid"
 
 if [ -n "$glx" ]; then
 	case $glx in
-	window|fullscreen|[0-9]*x[0-9]*) ;;
-	*)	echo "${ERROR} -X must be window, fullscreen or WxH (got '$glx')"
+	window|fullscreen|[0-9]*x[0-9]*|2d|2d:[0-9]*x[0-9]*) ;;
+	*)	echo "${ERROR} -X must be window, fullscreen, 2d, 2d:WxH or WxH (got '$glx')"
 		exit 1;;
 	esac
+	# 2d: plain virtio-gpu-device, no GL: the viogpu(4) dumbfb +
+	# patched wsfb (WSDISPLAYIO_DAMAGE) guest stack.  Renders on any
+	# QEMU >= 8, so the QEMU 10 gate below does not apply.
+	gl2d=""
+	case $glx in 2d*) gl2d=1;; esac
+	if [ -z "$gl2d" ]; then
 	# stock QEMU < 10 cannot render virtio-gpu-gl (virgl/DMABUF
 	# display path broken), so fail early instead of silently
 	qver=$($QEMU --version 2>/dev/null | sed -nE 's/.*version ([0-9]+).*/\1/p' | head -1)
@@ -324,21 +338,34 @@ if [ -n "$glx" ]; then
 		echo "${ERROR} qemu ${qver:-?} is too old for GL (-X needs QEMU >= 10 for virtio-gpu-gl)"
 		exit 1
 	fi
+	fi
 	# GL-capable virtio-gpu claimed by virtiodrm
 	# in the guest (virgl 3D to the host GPU), virtio keyboard and
 	# tablet through vioinput, rendered in a GL window.
 	# QEMU_DISPLAY picks the windowing backend, sdl (default) or gtk;
 	# gtk is a fallback for hosts where the SDL GL path misbehaves.
 	gui=${QEMU_DISPLAY:-sdl}
-	gpudevice=virtio-gpu-gl-device
+	if [ -n "$gl2d" ]; then
+		gpudevice=virtio-gpu-device
+	else
+		gpudevice=virtio-gpu-gl-device
+	fi
 	case $gui in
 	sdl)	export IBUS_ADDRESS=bogus	# SDL ibus crash-fix
-		d="-display sdl,gl=on";;
+		if [ -n "$gl2d" ]; then
+			d="-display sdl"
+		else
+			d="-display sdl,gl=on"
+		fi;;
 	gtk)	# NVIDIA EGL blob renders the GLArea black on this host;
 		# pin the host GL stack to Mesa software (slower, correct).
 		export LIBGL_ALWAYS_SOFTWARE=1
 		export __EGL_VENDOR_LIBRARY_FILENAMES=/usr/share/glvnd/egl_vendor.d/50_mesa.json
-		d="-display gtk,gl=on";;
+		if [ -n "$gl2d" ]; then
+			d="-display gtk"
+		else
+			d="-display gtk,gl=on"
+		fi;;
 	*)	echo "${ERROR} QEMU_DISPLAY must be sdl or gtk (got '$gui')"
 		exit 1;;
 	esac
@@ -350,6 +377,10 @@ if [ -n "$glx" ]; then
 	# the detection and forces it.
 	gpuopts=""
 	case $glx in
+	2d:*)	gpures=${glx#2d:}
+		gpuopts=",xres=${gpures%x*},yres=${gpures#*x}"
+		echo "${INFO} 2D framebuffer at ${gpures}";;
+	2d)	;;
 	# QEMU >= 10 defaults the virtio-gpu EDID on, and the built-in
 	# EDID times 1280x800 at 74.99Hz: virtio-drm fakes vblank against
 	# that and GL swaps judder (glxgears 27 FPS flicker).  Window mode

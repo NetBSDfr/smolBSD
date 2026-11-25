@@ -1,0 +1,40 @@
+# xorg.conf for aarch64 SMOLX: viogpu(4) dumbfb via the patched wsfb DDX
+# (WSDISPLAYIO_DAMAGE repaint).  No DRM, no GLX — never on this route.
+Section "ServerFlags"
+	Option "DisableVT" "true"
+	Option "AutoAddDevices" "false"
+	Option "BlankTime" "0"
+	Option "StandbyTime" "0"
+	Option "SuspendTime" "0"
+	Option "OffTime" "0"
+	Option "DPMS" "false"
+EndSection
+Section "Device"
+	Identifier "v"
+	Driver     "wsfb"
+	Option     "SWCursor" "true"
+EndSection
+Section "Screen"
+	Identifier "s"
+	Device     "v"
+EndSection
+# Static core kbd/mouse (same rationale as the modesetting config:
+# AutoAddDevices off keeps kbd0; console here is wsdisplay0/ttyE0, which
+# X grabs via DisableVT).
+Section "InputDevice"
+	Identifier "kbd0"
+	Driver     "kbd"
+	Option     "Protocol" "wskbd"
+	Option     "Device"   "/dev/wskbd0"
+EndSection
+Section "InputDevice"
+	Identifier "mouse0"
+	Driver     "ws"
+	Option     "Device"   "/dev/wsmouse"
+EndSection
+Section "ServerLayout"
+	Identifier  "l"
+	Screen      "s"
+	InputDevice "kbd0"   "CoreKeyboard"
+	InputDevice "mouse0" "CorePointer"
+EndSection

@@ -64,6 +64,16 @@ mount -t procfs procfs /proc 2>/dev/null
 mkdir -p /var/run
 [ -e /var/run/log ] || : >/var/run/log
 
+# aarch64 (SMOLX kernel): no virtiodrm/DRM — viogpu dumbfb + patched
+# wsfb DDX (WSDISPLAYIO_DAMAGE), GLX-free desktop.  Root is mounted ro,
+# so never copy over /etc/xorg.conf — hand the wsfb config to Xorg
+# directly (picom falls back to xrender, urxvt/rofi/dunst are software).
+XCONFFILE=/etc/xorg.conf
+if [ "$(uname -p)" = aarch64 ]; then
+	XCONFFILE=/etc/xorg.conf.wsfb
+	NOGLX=1
+fi
+
 # the desktop runs as smol: give the user the DRM nodes (no udev on
 # the guest) and an X cookie owned by smol that Xorg seeds itself
 chmod 666 /dev/dri/* 2>/dev/null
@@ -74,7 +84,7 @@ chown smol $XAUTHORITY 2>/dev/null
 
 xtry() {
 	echo "SMOLCRACY: trying Xorg $*"
-	Xorg "$@" -config /etc/xorg.conf -nolisten tcp >/mnt/Xorg.log 2>&1 &
+	Xorg "$@" -config "$XCONFFILE" -nolisten tcp >/mnt/Xorg.log 2>&1 &
 	XPID=$!
 	i=0
 	while [ $i -lt 20 ]; do
@@ -126,9 +136,11 @@ echo "SMOLCRACY: starting console shell"
 
 # GLX sanity as the session user: also proves /dev/dri perms for smol
 # (timeout: glxinfo can wedge on a dead X)
-timeout 10 $SMOLL env DISPLAY=$DISPLAY XAUTHORITY=$XAUTHORITY /usr/X11R7/bin/glxinfo 2>&1 |
-	grep -E 'direct rendering|renderer string|version string' |
-	sed 's/^/SMOLCRACY glx: /'
+if [ -z "$NOGLX" ]; then
+	timeout 10 $SMOLL env DISPLAY=$DISPLAY XAUTHORITY=$XAUTHORITY /usr/X11R7/bin/glxinfo 2>&1 |
+		grep -E 'direct rendering|renderer string|version string' |
+		sed 's/^/SMOLCRACY glx: /'
+fi
 
 # the desktop: HOME pinned for the ~/.config lookups, env kept by
 # su -m.  X resources load inside .xsession: early root-side xrdb
