@@ -8,8 +8,9 @@
 # netbsd so clock.rs declares it extern "C"; CARGO_BUILD_JOBS=1 after a
 # separate cargo fetch (parallel rustc spawns ENOENT).
 #
-# config file: init.lua — the project's .maki/init.lua is picked up
-# automatically; a global config comes from the -w shared directory or
+# configuration: none required, maki runs bare. When one is wanted it is
+# an init.lua — the project's .maki/init.lua is picked up automatically; a
+# global config comes from the -w shared directory or
 # -E makiconf=/path/to/init.lua
 
 ARG MAKI_VERSION="0.7.3"

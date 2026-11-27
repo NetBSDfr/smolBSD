@@ -12,11 +12,19 @@ FROM base,comp,etc
 LABEL smolbsd.service=crush
 LABEL smolbsd.imgsize=2048
 LABEL smolbsd.use_pty=y
-LABEL revision="smol1"
+LABEL revision="smol2"
 
 ENV NBUSER=crush
 
 INCLUDE smolerfiles/install-crush.inc
+
+# passwordless doas (nbakery style). the user is created here, before
+# agent.inc's USER step: the parser's USER handler skips useradd when the
+# id already exists, and after that switch RUN commands run as the user,
+# who could not usermod itself.
+RUN pkgin -y in doas && useradd -m ${NBUSER} && \
+	usermod -G wheel ${NBUSER} && \
+	echo "permit nopass keepenv setenv { PATH } :wheel" > /usr/pkg/etc/doas.conf
 
 INCLUDE smolerfiles/agent.inc
 

@@ -1,9 +1,10 @@
 FROM base,etc
 
 LABEL smolbsd.service="clawlite"
+LABEL smolbsd.imgsize="1024"
 LABEL smolbsd.minimize="y"
 LABEL smolbsd.use_pty="y"
-LABEL version="smol1"
+LABEL version="smol2"
 
 ARG HOSTNAME=smolbsd
 ARG USERSHELL=/usr/pkg/bin/zsh
@@ -12,7 +13,7 @@ ENV USERNAME=clawlite
 # used by clawlite
 ARG TARGET_HOME=/home/$USERNAME
 
-RUN pkgin -y in zsh curl jq vim tmux && \
+RUN pkgin -y in zsh curl jq vim tmux doas python314 && \
 	curl -o /usr/pkg/bin/claw -L \
 		https://raw.githubusercontent.com/kilian-ai/claw/refs/heads/main/clawlite.sh && \
 	chmod +x /usr/pkg/bin/claw && \
@@ -26,6 +27,11 @@ PS1="%K{237}%F{yellow} %n@%m %F{white}%~ %K{black}%F{237}%k%f "
 _ZSHRC
 
 INCLUDE smolerfiles/usershell.inc
+
+# passwordless doas (nbakery style); the user was created by usershell.inc
+# and we're still root here, so it can be added to wheel
+RUN usermod -G wheel ${USERNAME} && \
+	echo "permit nopass keepenv setenv { PATH } :wheel" > /usr/pkg/etc/doas.conf
 
 CMD login -f -p $USERNAME
 

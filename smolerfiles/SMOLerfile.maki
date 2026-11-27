@@ -3,8 +3,8 @@
 # the NetBSD release binary, its dependencies and the NetBSD build quirks
 # live in smolerfiles/install-maki.inc (shared with SMOLerfile.agents).
 #
-# copy a configured maki init.lua in the directory of the
-# project you want to work on and:
+# maki runs without any configuration file. to pass one anyway, copy it in
+# the directory of the project you want to work on and:
 #
 # ./smoler.sh run maki-amd64:latest -m 1024 -w /path/to/project
 #
@@ -21,20 +21,26 @@ FROM base,comp,etc
 LABEL smolbsd.service=maki
 LABEL smolbsd.imgsize=2048
 LABEL smolbsd.use_pty=y
-LABEL revision="smol4"
+LABEL revision="smol6"
 
 ENV NBUSER=maki
 
 INCLUDE smolerfiles/install-maki.inc
 
+# passwordless doas (nbakery style). the user is created here, before
+# agent.inc's USER step: the parser's USER handler skips useradd when the
+# id already exists, and after that switch RUN commands run as the user,
+# who could not usermod itself.
+RUN pkgin -y in doas && useradd -m ${NBUSER} && \
+	usermod -G wheel ${NBUSER} && \
+	echo "permit nopass keepenv setenv { PATH } :wheel" > /usr/pkg/etc/doas.conf
+
 INCLUDE smolerfiles/agent.inc
 
 ARG CONF_FILES=/mnt/init.lua /mnt/.maki/init.lua /var/qemufwcfg/opt/org.smolbsd.file.makiconf
 ARG CONF_TARGET=.config/maki/init.lua
-ARG CONF_NAME=init.lua
-ARG CONF_VAR=makiconf
 ARG CONF_SHARE=/mnt/share/maki
-ARG CONF_HINT=or drop a .maki/init.lua in the project (picked up by maki)
+ARG CONF_OPTIONAL=y
 INCLUDE smolerfiles/agent-launch.inc
 
 CMD ./cmd.sh

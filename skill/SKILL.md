@@ -317,7 +317,9 @@ The parser generates numbered postinst scripts:
   `ENV NBUSER=<name>` before it; `agent-launch.inc` adds the parameterized `.profile`
   and `cmd.sh` (config-check + tmux launch), driven by `ARG`s (`AGENT`,
   `AGENT_EMOJI`, `CONF_FILES`, `CONF_TARGET`, `CONF_NAME`, `CONF_VAR`, optional
-  `CONF_SHARE`, `CONF_MODE`, `CONF_ENV_FALLBACK`, `CONF_HINT`) set before the INCLUDE.
+  `CONF_SHARE`, `CONF_MODE`, `CONF_ENV_FALLBACK`, `CONF_HINT`, `CONF_OPTIONAL` —
+  the last one, when set, skips the "no config" warning and launches the agent
+  bare (used by maki, which runs without any configuration file).
 - **`install-crush.inc` / `install-maki.inc` / `install-codeur.inc`** — per-agent
   pkgsrc deps, versions and binary install/build (the NetBSD quirks are
   documented there); included by both the single-agent SMOLerfiles and

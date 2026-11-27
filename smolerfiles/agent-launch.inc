@@ -16,6 +16,8 @@
 #   CONF_MODE        chmod mode of the copied config (default: 644)
 #   CONF_ENV_FALLBACK  space-separated env vars; if any is set, launch anyway
 #   CONF_HINT        extra hint line appended to the warning
+#   CONF_OPTIONAL    when set, the agent can run with no configuration at
+#                    all: no config found means launch it bare, not a shell
 #
 # INCLUDE smolerfiles/agent-launch.inc
 
@@ -25,6 +27,7 @@ ARG CONF_MODE=644
 ARG CONF_SHARE=
 ARG CONF_ENV_FALLBACK=
 ARG CONF_HINT=
+ARG CONF_OPTIONAL=
 
 RUN cat <<EOF >.profile
 cd /home/$NBUSER
@@ -61,6 +64,8 @@ for v in ${CONF_ENV_FALLBACK}; do
 		exec su ${NBUSER} -c "tmux -u new"
 	fi
 done
+
+[ -n "${CONF_OPTIONAL}" ] && exec su ${NBUSER} -c "tmux -u new"
 
 printf "⚠️ no ${CONF_NAME} passed from the host, either:\n"
 printf "\n- add ${LIGHTGREEN}-E ${CONF_VAR}=/path/to/${CONF_NAME}${NORMAL} to the command line"
