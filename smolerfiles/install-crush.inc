@@ -5,7 +5,7 @@
 # config file: crush.json — put it in the -w shared directory, or pass
 # -E crush=/path/to/crush.json
 
-ARG CRUSH_VERSION="0.103.0"
+ARG CRUSH_VERSION="0.104.0"
 ARG CRUSH_ARCH=$(uname -p|sed 's/aarch64/arm64/')
 
 RUN pkgin up && pkgin -y in curl git-base ripgrep fd-find gh bash rsync python314
